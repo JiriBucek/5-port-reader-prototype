@@ -1,0 +1,47 @@
+/* Navigation and Transitions */
+
+/* Fade transition for screen changes */
+.screen {
+    animation-duration: 0.3s;
+    animation-fill-mode: both;
+}
+
+.screen.active {
+    animation-name: fadeIn;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Optional: Add slide transitions */
+.screen.slide-in {
+    animation-name: slideIn;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+.screen.slide-out {
+    animation-name: slideOut;
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}

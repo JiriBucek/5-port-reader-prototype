@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milk Testing Device - Prototype</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/tablet.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/navigation.css">
+</head>
+<body>
+    <!-- Tablet Container -->
+    <div id="tablet-container">
+
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen active">
+            <header>
+                <h1>Milk Testing Device</h1>
+            </header>
+
+            <main>
+                <div class="welcome-content">
+                    <h2>Welcome</h2>
+                    <p>Select an option to begin</p>
+
+                    <div class="button-grid">
+                        <button class="primary-button" onclick="navigateTo('test-workflow')">
+                            Start Test
+                        </button>
+                        <button class="secondary-button" onclick="navigateTo('history')">
+                            View History
+                        </button>
+                        <button class="secondary-button" onclick="navigateTo('settings')">
+                            Settings
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Placeholder screens (to be developed) -->
+        <div id="test-workflow" class="screen">
+            <header>
+                <button class="back-button" onclick="navigateTo('home-screen')">← Back</button>
+                <h1>Test Workflow</h1>
+            </header>
+            <main>
+                <p>Test workflow will be implemented here</p>
+            </main>
+        </div>
+
+        <div id="history" class="screen">
+            <header>
+                <button class="back-button" onclick="navigateTo('home-screen')">← Back</button>
+                <h1>Test History</h1>
+            </header>
+            <main>
+                <p>History view will be implemented here</p>
+            </main>
+        </div>
+
+        <div id="settings" class="screen">
+            <header>
+                <button class="back-button" onclick="navigateTo('home-screen')">← Back</button>
+                <h1>Settings</h1>
+            </header>
+            <main>
+                <p>Settings will be implemented here</p>
+            </main>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/navigation.js"></script>
+    <script src="js/workflows.js"></script>
+</body>
+</html>
