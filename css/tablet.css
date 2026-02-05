@@ -1,16 +1,46 @@
 /* Tablet Display Layout */
 
 :root {
-    /* Tablet dimensions - adjust these based on actual device specs */
+    /* Tablet dimensions - 7 inch display */
     --tablet-width: 1280px;
     --tablet-height: 800px;
 
-    /* Colors */
-    --primary-color: #2563eb;
-    --secondary-color: #64748b;
+    /* Brand Colors */
+    --primary-color: #0066FF;
+    --primary-hover: #0052CC;
+
+    /* Status Colors */
+    --status-negative: #22c55e;
+    --status-positive: #ef4444;
+    --status-pending: #f59e0b;
+    --status-testing: #3b82f6;
+    --status-empty: #94a3b8;
+
+    /* UI Colors */
     --background-color: #f8fafc;
-    --text-color: #1e293b;
+    --surface-color: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
     --border-color: #e2e8f0;
+    --border-dark: #cbd5e1;
+
+    /* Cassette Line Colors */
+    --line-positive: #ef4444;
+    --line-negative: #22c55e;
+    --line-testing: #3b82f6;
+    --line-empty: #d1d5db;
+
+    /* Spacing */
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
 }
 
 * {
@@ -23,10 +53,11 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #333;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    gap: 0;
 }
 
 #tablet-container {
@@ -55,27 +86,94 @@ body {
     display: flex;
 }
 
-/* Header */
+/* Header / Status Bar */
 header {
-    background-color: white;
-    padding: 20px 30px;
+    background-color: var(--surface-color);
+    padding: 16px 24px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 20px;
+    justify-content: space-between;
+    min-height: 64px;
 }
 
-header h1 {
-    font-size: 28px;
-    color: var(--text-color);
-    font-weight: 600;
+.status-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.status-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.menu-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+}
+
+.menu-button:hover {
+    color: var(--text-primary);
 }
 
 /* Main Content Area */
 main {
     flex: 1;
-    padding: 40px;
+    padding: var(--spacing-lg);
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Channel Grid Layout */
+.channels-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: 1fr;
+    gap: var(--spacing-sm);
+    flex: 1;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* Alert Banner */
+.alert-banner {
+    background-color: #fef3c7;
+    border: 1px solid #f59e0b;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: #92400e;
+}
+
+.alert-banner .icon {
+    font-size: 20px;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    display: flex;
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
 }
 
 /* Responsive scaling for smaller displays */

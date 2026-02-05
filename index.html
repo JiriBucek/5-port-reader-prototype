@@ -8,6 +8,8 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/tablet.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/channel-card.css">
+    <link rel="stylesheet" href="css/modals.css">
     <link rel="stylesheet" href="css/navigation.css">
 </head>
 <body>
@@ -16,54 +18,75 @@
 
         <!-- Home Screen -->
         <div id="home-screen" class="screen active">
+            <!-- Status Bar -->
             <header>
-                <h1>Milk Testing Device</h1>
+                <div class="status-bar-left">
+                    <div class="status-item">
+                        <span class="icon">🕐</span>
+                        <span id="current-time">14:23</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="icon">🌡️</span>
+                        <span id="device-temp">35.0°C</span>
+                    </div>
+                    <div class="status-item" id="wifi-status">
+                        <span class="icon">📶</span>
+                    </div>
+                </div>
+                <div class="status-bar-right">
+                    <button class="menu-button" onclick="openMenu()">
+                        <span>☰</span>
+                    </button>
+                </div>
             </header>
 
+            <!-- Main Content -->
             <main>
-                <div class="welcome-content">
-                    <h2>Welcome</h2>
-                    <p>Select an option to begin</p>
+                <!-- Verification Alert (shown when >250 tests) -->
+                <div class="alert-banner" id="verification-alert" style="display: none;">
+                    <span class="icon">⚠️</span>
+                    <span><strong>Verification Required:</strong> 248 tests completed since last verification</span>
+                </div>
 
-                    <div class="button-grid">
-                        <button class="primary-button" onclick="navigateTo('test-workflow')">
-                            Start Test
-                        </button>
-                        <button class="secondary-button" onclick="navigateTo('history')">
-                            View History
-                        </button>
-                        <button class="secondary-button" onclick="navigateTo('settings')">
-                            Settings
-                        </button>
-                    </div>
+                <!-- 5 Channel Grid -->
+                <div class="channels-grid" id="channels-grid">
+                    <!-- Channels will be dynamically populated by JavaScript -->
+                </div>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <button class="nav-button" onclick="navigateTo('history')">
+                        Test History
+                    </button>
+                    <button class="nav-button" onclick="navigateTo('settings')">
+                        Settings
+                    </button>
+                    <button class="nav-button" onclick="navigateTo('verification')">
+                        Run Verification
+                    </button>
                 </div>
             </main>
         </div>
 
-        <!-- Placeholder screens (to be developed) -->
-        <div id="test-workflow" class="screen">
-            <header>
-                <button class="back-button" onclick="navigateTo('home-screen')">← Back</button>
-                <h1>Test Workflow</h1>
-            </header>
-            <main>
-                <p>Test workflow will be implemented here</p>
-            </main>
-        </div>
-
+        <!-- History Screen -->
         <div id="history" class="screen">
             <header>
-                <button class="back-button" onclick="navigateTo('home-screen')">← Back</button>
+                <button class="btn-text" onclick="navigateTo('home-screen')">
+                    <span>←</span> Back
+                </button>
                 <h1>Test History</h1>
             </header>
             <main>
-                <p>History view will be implemented here</p>
+                <p>Test history will be implemented here</p>
             </main>
         </div>
 
+        <!-- Settings Screen -->
         <div id="settings" class="screen">
             <header>
-                <button class="back-button" onclick="navigateTo('home-screen')">← Back</button>
+                <button class="btn-text" onclick="navigateTo('home-screen')">
+                    <span>←</span> Back
+                </button>
                 <h1>Settings</h1>
             </header>
             <main>
@@ -71,10 +94,210 @@
             </main>
         </div>
 
+        <!-- Verification Screen -->
+        <div id="verification" class="screen">
+            <header>
+                <button class="btn-text" onclick="navigateTo('home-screen')">
+                    <span>←</span> Back
+                </button>
+                <h1>Run Verification</h1>
+            </header>
+            <main>
+                <p>Verification workflow will be implemented here</p>
+            </main>
+        </div>
+
+    </div>
+
+    <!-- Control Panel (Outside Device Frame) -->
+    <div class="external-control-panel">
+        <div class="control-buttons">
+            <button class="btn-primary" onclick="insertCassette(1, 'positive')">CH1 Insert Positive</button>
+            <button class="btn-secondary" onclick="insertCassette(1, 'negative')">CH1 Insert Negative</button>
+            <button class="btn-primary" onclick="insertCassette(2, 'positive')">CH2 Insert Positive</button>
+            <button class="btn-secondary" onclick="insertCassette(2, 'negative')">CH2 Insert Negative</button>
+            <button class="btn-primary" onclick="insertCassette(3, 'positive')">CH3 Insert Positive</button>
+            <button class="btn-secondary" onclick="insertCassette(3, 'negative')">CH3 Insert Negative</button>
+            <button class="btn-primary" onclick="insertCassette(4, 'positive')">CH4 Insert Positive</button>
+            <button class="btn-secondary" onclick="insertCassette(4, 'negative')">CH4 Insert Negative</button>
+            <button class="btn-primary" onclick="insertCassette(5, 'positive')">CH5 Insert Positive</button>
+            <button class="btn-secondary" onclick="insertCassette(5, 'negative')">CH5 Insert Negative</button>
+        </div>
+    </div>
+
+    <!-- Start Test Modal -->
+    <div class="modal-overlay" id="start-test-modal">
+        <div class="modal large">
+            <div class="modal-header">
+                <h2 class="modal-title">Start New Test</h2>
+                <button class="modal-close" onclick="closeModal('start-test-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="start-test-form" onsubmit="startTest(event)">
+                    <!-- Channel Selection -->
+                    <div class="form-field">
+                        <label class="field-label">Selected Channel</label>
+                        <select class="field-input" id="test-channel" required>
+                            <option value="1">Channel 1</option>
+                            <option value="2">Channel 2</option>
+                            <option value="3">Channel 3</option>
+                            <option value="4">Channel 4</option>
+                            <option value="5">Channel 5</option>
+                        </select>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Test Type -->
+                    <div class="form-field">
+                        <label class="field-label">Test Type</label>
+                        <select class="field-input" id="test-type" required>
+                            <option value="3BTC">MilkSafe™ 3BTC</option>
+                            <option value="4BTCS">MilkSafe™ 4BTCS</option>
+                            <option value="2BC">MilkSafe™ 2BC</option>
+                        </select>
+                        <div class="field-hint">✓ Auto-filled from QR code</div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Test Scenario -->
+                    <div class="form-field">
+                        <label class="field-label">Test Scenario</label>
+                        <div class="radio-group">
+                            <label class="radio-option selected">
+                                <input type="radio" name="scenario" value="test" checked>
+                                <span>Test (Regular)</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="scenario" value="control">
+                                <span>Positive Control</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Route -->
+                    <div class="form-field">
+                        <label class="field-label">Route</label>
+                        <input type="text" class="field-input" id="test-route" placeholder="Enter route" required>
+                        <div class="recent-values">
+                            <span class="recent-chip" onclick="fillRoute('Daws')">Daws</span>
+                            <span class="recent-chip" onclick="fillRoute('Route A')">Route A</span>
+                            <span class="recent-chip" onclick="fillRoute('Route B')">Route B</span>
+                        </div>
+                    </div>
+
+                    <!-- Operator ID -->
+                    <div class="form-field">
+                        <label class="field-label">Operator ID</label>
+                        <input type="text" class="field-input" id="test-operator" placeholder="Enter operator ID" required>
+                        <div class="recent-values">
+                            <span class="recent-chip" onclick="fillOperator('KAYU')">KAYU</span>
+                            <span class="recent-chip" onclick="fillOperator('ALW')">ALW</span>
+                            <span class="recent-chip" onclick="fillOperator('JDoe')">JDoe</span>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <!-- Processing Options -->
+                    <div class="form-field">
+                        <label class="field-label">Processing Options</label>
+                        <div class="radio-group">
+                            <label class="radio-option selected">
+                                <input type="radio" name="processing" value="incubate" checked>
+                                <span>Read and Incubate</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="processing" value="read-only">
+                                <span>Read Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Optional Fields -->
+                    <div class="form-field">
+                        <label class="field-label">Sample ID (Optional)</label>
+                        <input type="text" class="field-input" id="sample-id" placeholder="Enter sample ID">
+                    </div>
+
+                    <div class="form-field">
+                        <label class="field-label">Notes (Optional)</label>
+                        <input type="text" class="field-input" id="test-notes" placeholder="Enter notes">
+                    </div>
+
+                    <!-- Reserved Space -->
+                    <div class="reserved-space">
+                        [ Reserved for future fields ]
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('start-test-modal')">Cancel</button>
+                <button type="submit" form="start-test-form" class="btn-primary btn-large">
+                    Start Test →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail View Modal -->
+    <div class="modal-overlay" id="detail-modal">
+        <div class="modal medium">
+            <div class="modal-header">
+                <h2 class="modal-title" id="detail-modal-title">Channel Details</h2>
+                <button class="modal-close" onclick="closeModal('detail-modal')">✕</button>
+            </div>
+            <div class="modal-body" id="detail-modal-body">
+                <!-- Content populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-text" onclick="closeModal('detail-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Labeling Modal -->
+    <div class="modal-overlay" id="control-label-modal">
+        <div class="modal medium blocking">
+            <div class="modal-header">
+                <h2 class="modal-title">Label Control Test</h2>
+            </div>
+            <div class="modal-body">
+                <div id="control-label-content">
+                    <p class="text-center mb-md">Positive Control Test Complete</p>
+                    <p class="text-center text-secondary mb-lg">Result: POSITIVE ✓ (Expected)</p>
+
+                    <div class="section-divider"></div>
+
+                    <div class="form-field">
+                        <label class="field-label">Label this control as:</label>
+                        <div class="radio-group">
+                            <label class="radio-option selected">
+                                <input type="radio" name="control-label" value="positive" checked>
+                                <span>Positive Control</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="control-label" value="animal">
+                                <span>Animal Control</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary btn-block btn-large" onclick="confirmControlLabel()">
+                    Confirm Label →
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="js/navigation.js"></script>
     <script src="js/workflows.js"></script>
+    <script src="js/channels.js"></script>
 </body>
 </html>
