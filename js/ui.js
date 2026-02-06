@@ -263,8 +263,10 @@ function renderCardStatus(ch) {
         case STATES.COMPLETE:
             if (ch.groupResult === 'inconclusive') {
                 statusHtml = `<span class="status-text" style="color:var(--warning)">Test stopped</span>`;
+            } else if (ch.groupResult === 'positive') {
+                statusHtml = `<span class="status-text status-error">Flow result POSITIVE</span>`;
             } else {
-                statusHtml = `<span class="status-text">Test complete</span>`;
+                statusHtml = `<span class="status-text" style="color:var(--success)">Flow result NEGATIVE</span>`;
             }
             break;
 
@@ -352,7 +354,7 @@ function renderCardAction(ch) {
         case STATES.ERROR:
             return `<div class="card-action">
                 <button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>
-                <button class="action-btn btn-danger" data-action="abort" data-ch="${ch.id}">Abort</button>
+                <button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>
             </div>`;
 
         default:
@@ -430,11 +432,6 @@ function showConfigModal(ch) {
         { value: 'animal_control', label: 'Animal Control' }
     ];
 
-    const processingOpts = [
-        { value: 'read_incubate', label: 'Read + Incubate' },
-        { value: 'read_only', label: 'Read Only' }
-    ];
-
     modal.innerHTML = `
         <div class="modal-header">
             <h2>Configure Test</h2>
@@ -472,18 +469,11 @@ function showConfigModal(ch) {
                     ${RECENT_OPERATORS.map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
                 </div>
             </div>
-            <div class="form-field">
-                <label>Processing Mode</label>
-                <div class="segmented-control" id="cfg-processing">
-                    ${processingOpts.map(o =>
-                        `<button class="seg-option${o.value === 'read_incubate' ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
-                    ).join('')}
-                </div>
-            </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="cfg-cancel">Cancel</button>
-            <button class="modal-btn btn-primary" id="cfg-start">Start Test &rarr;</button>
+            <button class="modal-btn btn-primary" id="cfg-read-only">Read</button>
+            <button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -512,17 +502,24 @@ function showConfigModal(ch) {
         handleConfigCancel(ch.id);
     });
 
-    // Start
-    document.getElementById('cfg-start').addEventListener('click', () => {
+    // Start helpers
+    function collectConfigAndStart(processing) {
         const scenario = modal.querySelector('#cfg-scenario .seg-option.selected')?.dataset.value || 'test';
         const testType = document.getElementById('cfg-type').value;
         const route = document.getElementById('cfg-route').value || 'Default Route';
         const operator = document.getElementById('cfg-operator').value || 'OP-000';
-        const processing = modal.querySelector('#cfg-processing .seg-option.selected')?.dataset.value || 'read_incubate';
 
         handleConfigStart(ch.id, {
             scenario, testType, route, operatorId: operator, processing
         });
+    }
+
+    document.getElementById('cfg-read-only').addEventListener('click', () => {
+        collectConfigAndStart('read_only');
+    });
+
+    document.getElementById('cfg-read-incubate').addEventListener('click', () => {
+        collectConfigAndStart('read_incubate');
     });
 }
 
@@ -556,13 +553,13 @@ function showDecisionModal(ch, variant) {
         resultClass = 'result-positive';
         messageHtml = `<p><strong>Confirmation test required.</strong></p>
                        <p>The initial test detected a positive result. To confirm, please remove this cassette and insert a new ${ch.cassetteType} cassette for Test 2.</p>
-                       <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">If you abort, the result will be marked as <strong>Inconclusive</strong>.</p>`;
+                       <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">If you abort, the flow result will be marked as <strong>Inconclusive</strong>.</p>`;
     } else {
         // After T2 negative (variant b)
         resultTitle = 'Test 2 Result: NEGATIVE';
         resultClass = 'result-negative';
         messageHtml = `<p><strong>Tiebreaker test required.</strong></p>
-                       <p>Test 2 is negative, which conflicts with the positive result from Test 1. A third test is needed to determine the final result.</p>
+                       <p>Test 2 is negative, which conflicts with the positive result from Test 1. A third test is needed to determine the final flow result.</p>
                        <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">Remove this cassette and insert a new ${ch.cassetteType} cassette for the tiebreaker.</p>
                        <div class="prev-results">Test 1: POSITIVE &rarr; Test 2: NEGATIVE &rarr; Test 3 needed</div>`;
     }
@@ -586,7 +583,7 @@ function showDecisionModal(ch, variant) {
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="decision-abort">Abort &mdash; Inconclusive</button>
-            <button class="modal-btn btn-success" id="decision-continue">Continue Testing &rarr;</button>
+            <button class="modal-btn btn-primary" id="decision-continue">Continue Testing &rarr;</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -625,14 +622,14 @@ function showStopConfirmationModal(ch) {
         <div class="modal-body">
             <div class="decision-message">
                 <p><strong>Are you sure you want to stop?</strong></p>
-                <p>The confirmation flow is still in progress. Stopping now means the test group result will be marked as <strong>INCONCLUSIVE</strong>.</p>
+                <p>The confirmation flow is still in progress. Stopping now means the flow result will be marked as <strong>INCONCLUSIVE</strong>.</p>
                 <p style="margin-top:8px">You will still be able to view this result in the test history.</p>
                 ${completedTests > 0 ? `<div class="prev-results" style="margin-top:10px">Completed tests: ${testsHtml}</div>` : ''}
             </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="stop-cancel">Go Back</button>
-            <button class="modal-btn btn-warning" id="stop-confirm">Stop &mdash; Mark Inconclusive</button>
+            <button class="modal-btn btn-secondary" id="stop-confirm">Stop &mdash; Mark Inconclusive</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -683,7 +680,7 @@ function showDetailModal(ch) {
         };
         const c = colors[ch.groupResult];
         groupResultHtml = `<div class="detail-group-result" style="background:${c.bg}">
-            <div class="detail-result-label">Group Result</div>
+            <div class="detail-result-label">Flow Result</div>
             <div class="detail-result-value" style="color:${c.fg}">${ch.groupResult.toUpperCase()}</div>
         </div>`;
     }
