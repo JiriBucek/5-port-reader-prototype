@@ -38,14 +38,12 @@ function renderCardHeader(ch) {
         badges += `<span class="badge badge-type">${ch.cassetteType}</span>`;
     }
 
-    if (ch.scenario) {
+    if (ch.scenario && ch.scenario !== 'test') {
         const scenarioLabels = {
-            'test': 'Test',
             'pos_control': 'Pos Control',
             'animal_control': 'Animal Ctrl'
         };
-        const isControl = ch.scenario !== 'test';
-        badges += `<span class="badge badge-scenario${isControl ? ' scenario-control' : ''}">${scenarioLabels[ch.scenario]}</span>`;
+        badges += `<span class="badge badge-scenario scenario-control">${scenarioLabels[ch.scenario]}</span>`;
     }
 
     if (ch.currentTestNumber > 1 && ch.state !== STATES.COMPLETE) {
@@ -266,7 +264,7 @@ function renderCardStatus(ch) {
                 const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
                 statusHtml = `<span class="status-text" style="color:var(--gray-500)">${controlLabel}</span>`;
             } else if (ch.groupResult === 'inconclusive') {
-                statusHtml = `<span class="status-text" style="color:var(--warning)">Test stopped</span>`;
+                statusHtml = `<span class="status-text" style="color:var(--warning)">Flow aborted</span>`;
             } else if (ch.groupResult === 'positive') {
                 statusHtml = `<span class="status-text status-error">Flow result POSITIVE</span>`;
             } else {
@@ -355,9 +353,14 @@ function renderCardAction(ch) {
             </div>`;
 
         case STATES.ERROR:
+            if (ch.currentTestNumber > 1) {
+                return `<div class="card-action">
+                    <button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>
+                    <button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>
+                </div>`;
+            }
             return `<div class="card-action">
                 <button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>
-                <button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>
             </div>`;
 
         default:
@@ -551,7 +554,6 @@ function showDecisionModal(ch, variant) {
 
     const lastResult = ch.testResults[ch.testResults.length - 1];
     const isPos = isTestPositive(lastResult.substances);
-    const testNum = lastResult.testNumber;
 
     let resultLabel, resultValue, messageHtml;
 
@@ -565,7 +567,8 @@ function showDecisionModal(ch, variant) {
         // After T2 negative (variant b)
         resultLabel = 'Test 2';
         resultValue = 'NEGATIVE';
-        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert new ${ch.cassetteType} for Test 3.</p>`;
+        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert new ${ch.cassetteType} for Test 3.</p>
+                       <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
     }
 
     const substancesHtml = lastResult.substances.map(s => {
@@ -731,7 +734,6 @@ function showDetailModal(ch) {
     };
 
     const totalTests = ch.testResults.length;
-    const completedAt = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
     modal.innerHTML = `
         <div class="modal-header">
@@ -746,7 +748,6 @@ function showDetailModal(ch) {
                         <span class="meta-item"><span class="meta-value">${processingLabels[ch.processing] || ch.processing}</span></span>
                     </div>
                 </div>
-                <button class="close-btn" id="detail-close">&times;</button>
             </div>
         </div>
         <div class="modal-body">
@@ -763,6 +764,5 @@ function showDetailModal(ch) {
     overlay.classList.add('active');
     modal.classList.add('active');
 
-    document.getElementById('detail-close').addEventListener('click', () => handleCloseDetail());
     document.getElementById('detail-close-btn').addEventListener('click', () => handleCloseDetail());
 }

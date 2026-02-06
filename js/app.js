@@ -476,17 +476,12 @@ function handleRetry(channelId) {
     const ch = getChannel(channelId);
     if (ch.state !== STATES.ERROR) return;
 
+    // Preserve config, go to WAITING_FOR_SWAP so user inserts cassette and retries
+    // Decrement test number so next start re-runs the same test
     ch.errorMessage = '';
-    if (ch.currentTestNumber > 1) {
-        // Mid-confirmation retry: go back to waiting for swap
-        // Decrement test number so next start re-runs the same test
-        ch.cassettePresent = false;
-        ch.currentTestNumber--;
-        ch.state = STATES.WAITING_FOR_SWAP;
-    } else {
-        // T1 retry: reset to empty, user inserts new cassette
-        resetChannel(ch);
-    }
+    ch.cassettePresent = false;
+    ch.currentTestNumber--;
+    ch.state = STATES.WAITING_FOR_SWAP;
 
     renderCard(ch);
     renderSimulationButtons();
