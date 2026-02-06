@@ -34,48 +34,48 @@
 
 /* Modal header */
 .modal-header {
-    padding: 16px 20px 12px;
+    padding: 20px 24px 14px;
     border-bottom: 1px solid var(--gray-200);
     text-align: center;
 }
 
 .modal-header h2 {
-    font-size: var(--font-xl);
+    font-size: var(--font-2xl);
     font-weight: 700;
     color: var(--gray-800);
-    margin-bottom: 2px;
+    margin-bottom: 4px;
 }
 
 .modal-header .modal-subtitle {
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     color: var(--gray-500);
 }
 
 /* Modal body */
 .modal-body {
-    padding: 16px 20px;
+    padding: 20px 24px;
     overflow-y: auto;
     flex: 1;
 }
 
 /* Modal footer */
 .modal-footer {
-    padding: 12px 20px 16px;
+    padding: 16px 24px 20px;
     border-top: 1px solid var(--gray-200);
     display: flex;
-    gap: 10px;
+    gap: 12px;
     justify-content: flex-end;
 }
 
 .modal-footer .modal-btn {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
     border-radius: var(--radius-md);
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
     font-weight: 600;
     cursor: pointer;
-    min-height: 44px;
-    min-width: 120px;
+    min-height: 52px;
+    min-width: 140px;
     text-align: center;
     transition: background-color 0.15s, transform 0.1s;
 }
@@ -86,12 +86,12 @@
 
 /* ---- Config Modal ---- */
 .config-modal {
-    width: 500px;
+    width: 580px;
 }
 
 /* Form field */
 .form-field {
-    margin-bottom: 14px;
+    margin-bottom: 18px;
 }
 
 .form-field label {
@@ -99,7 +99,7 @@
     font-size: var(--font-sm);
     font-weight: 600;
     color: var(--gray-600);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -115,16 +115,16 @@
 
 .segmented-control .seg-option {
     flex: 1;
-    padding: 10px 8px;
+    padding: 12px 8px;
     border: none;
     background: var(--white);
     color: var(--gray-600);
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
     text-align: center;
-    min-height: 44px;
+    min-height: 48px;
     border-right: 1px solid var(--gray-300);
 }
 
@@ -144,14 +144,14 @@
 /* Select dropdown */
 .form-select {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
     color: var(--gray-700);
     background: var(--white);
     cursor: pointer;
-    min-height: 44px;
+    min-height: 48px;
 }
 
 .form-select:focus {
@@ -163,12 +163,12 @@
 /* Text input */
 .form-input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
     color: var(--gray-700);
-    min-height: 44px;
+    min-height: 48px;
 }
 
 .form-input:focus {
@@ -180,13 +180,13 @@
 /* Recent chips */
 .recent-chips {
     display: flex;
-    gap: 6px;
-    margin-top: 6px;
+    gap: 8px;
+    margin-top: 8px;
     flex-wrap: wrap;
 }
 
 .recent-chip {
-    padding: 4px 10px;
+    padding: 6px 14px;
     background: var(--gray-100);
     border: 1px solid var(--gray-300);
     border-radius: 20px;
@@ -211,7 +211,7 @@
 
 /* ---- Decision Modal ---- */
 .decision-modal {
-    width: 500px;
+    width: 580px;
 }
 
 .decision-modal .modal-header {
@@ -219,7 +219,7 @@
 }
 
 .decision-modal .result-title {
-    font-size: var(--font-xl);
+    font-size: var(--font-2xl);
     font-weight: 700;
 }
 
@@ -235,30 +235,30 @@
 .substance-results {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .substance-result-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 12px 16px;
     border-radius: var(--radius-sm);
     background: var(--gray-50);
 }
 
 .substance-result-row .sub-name {
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
     color: var(--gray-700);
     font-weight: 500;
 }
 
 .substance-result-row .sub-result {
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 3px;
+    padding: 4px 12px;
+    border-radius: 4px;
 }
 
 .sub-result-positive {
@@ -273,22 +273,22 @@
 
 /* Decision message */
 .decision-message {
-    padding: 12px 16px;
+    padding: 16px 20px;
     background: var(--gray-50);
-    border-left: 3px solid var(--warning);
+    border-left: 4px solid var(--warning);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .decision-message p {
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
     color: var(--gray-700);
     line-height: 1.5;
 }
 
 .decision-message .prev-results {
-    margin-top: 8px;
-    font-size: var(--font-sm);
+    margin-top: 10px;
+    font-size: var(--font-base);
     color: var(--gray-500);
 }
 
@@ -303,8 +303,8 @@
 
 /* ---- Detail Modal ---- */
 .detail-modal {
-    width: 600px;
-    max-height: 650px;
+    width: 660px;
+    max-height: 680px;
 }
 
 .detail-modal .modal-header {
@@ -319,12 +319,12 @@
 }
 
 .detail-modal .close-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: none;
     background: var(--gray-100);
     border-radius: 50%;
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
     color: var(--gray-500);
     display: flex;
@@ -342,13 +342,13 @@
 .test-history {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
 }
 
 .test-entry {
     border: 1px solid var(--gray-200);
     border-radius: var(--radius-md);
-    padding: 12px;
+    padding: 14px;
 }
 
 .test-entry-header {
@@ -360,15 +360,15 @@
 
 .test-entry-header .test-num {
     font-weight: 700;
-    font-size: var(--font-base);
+    font-size: var(--font-lg);
     color: var(--gray-700);
 }
 
 .test-entry-header .test-overall {
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 3px;
+    padding: 4px 12px;
+    border-radius: 4px;
 }
 
 .test-entry .test-substances {
@@ -381,8 +381,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
-    font-size: var(--font-sm);
+    padding: 6px 0;
+    font-size: var(--font-base);
 }
 
 .test-substance-row .ts-name {
@@ -398,17 +398,17 @@
 
 /* Config summary in detail */
 .config-summary {
-    margin-top: 12px;
-    padding: 12px;
+    margin-top: 16px;
+    padding: 16px;
     background: var(--gray-50);
     border-radius: var(--radius-md);
 }
 
 .config-summary h4 {
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     font-weight: 700;
     color: var(--gray-600);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -416,11 +416,11 @@
 .config-summary-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px 16px;
+    gap: 8px 20px;
 }
 
 .config-summary-item {
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
 }
 
 .config-summary-item .cs-label {
@@ -434,14 +434,14 @@
 
 /* Final group result in detail */
 .detail-group-result {
-    margin-top: 16px;
-    padding: 16px;
+    margin-top: 0;
+    padding: 20px;
     text-align: center;
     border-radius: var(--radius-md);
 }
 
 .detail-group-result .detail-result-label {
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     color: var(--gray-500);
     margin-bottom: 4px;
     text-transform: uppercase;
@@ -449,6 +449,6 @@
 }
 
 .detail-group-result .detail-result-value {
-    font-size: var(--font-2xl);
+    font-size: 32px;
     font-weight: 800;
 }

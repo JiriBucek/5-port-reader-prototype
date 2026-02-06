@@ -180,24 +180,26 @@ function renderCardStatus(ch) {
 
     switch (ch.state) {
         case STATES.EMPTY:
-            statusHtml = `<span class="status-text status-waiting">No cassette</span>`;
+            statusHtml = `<span class="status-text status-waiting">No cassette inserted</span>`;
             break;
 
         case STATES.DETECTED:
-            statusHtml = `<span class="status-text">Cassette detected</span>`;
+            statusHtml = `<span class="status-text">Cassette detected</span>
+                          <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure to start</span>`;
             break;
 
         case STATES.ERROR_USED:
         case STATES.ERROR_USED_CONFIRMATION:
-            statusHtml = `<span class="status-text status-error">Already used &mdash; remove cassette</span>`;
+            statusHtml = `<span class="status-text status-error">Used cassette detected</span>
+                          <span class="status-text status-error" style="font-size:var(--font-xs)">Remove and insert new</span>`;
             break;
 
         case STATES.CONFIGURING:
-            statusHtml = `<span class="status-text status-processing">Configuring...</span>`;
+            statusHtml = `<span class="status-text status-processing">Configuring test...</span>`;
             break;
 
         case STATES.WAITING_TEMP:
-            statusHtml = `<span class="status-text status-processing">Waiting for temperature...</span>
+            statusHtml = `<span class="status-text status-processing">Reaching temperature</span>
                           <div class="spinner"></div>`;
             break;
 
@@ -215,14 +217,14 @@ function renderCardStatus(ch) {
         }
 
         case STATES.INCUBATION_ALERT:
-            statusHtml = `<span class="status-text status-alert">Reinsert cassette!</span>
+            statusHtml = `<span class="status-text status-alert">Reinsert cassette now!</span>
                           <span class="countdown-text countdown-alert">${ch.alertRemaining}s</span>
                           <div class="progress-bar"><div class="progress-fill progress-alert" style="width:${ch.alertRemaining / TIMING.ALERT_TIMEOUT * 100}%"></div></div>`;
             break;
 
         case STATES.READING:
             statusHtml = `<div class="spinner"></div>
-                          <span class="status-text status-processing">Reading...</span>`;
+                          <span class="status-text status-processing">Reading cassette...</span>`;
             break;
 
         case STATES.RESULT: {
@@ -230,27 +232,32 @@ function renderCardStatus(ch) {
             const isPos = isTestPositive(lastResult.substances);
             const testNum = lastResult.testNumber;
             if (testNum === 1 && isPos) {
-                statusHtml = `<span class="status-text status-error">Test 1: Positive &mdash; Confirmation needed</span>`;
+                statusHtml = `<span class="status-text status-error">Test 1: Positive</span>
+                              <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Confirmation required</span>`;
             } else if (testNum === 2 && !isPos) {
-                statusHtml = `<span class="status-text" style="color:var(--warning)">Test 2: Negative &mdash; Tiebreaker needed</span>`;
+                statusHtml = `<span class="status-text" style="color:var(--warning)">Test 2: Negative</span>
+                              <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Tiebreaker test needed</span>`;
             }
             break;
         }
 
         case STATES.AWAITING_CONFIRMATION: {
             const nextTest = ch.currentTestNumber + 1;
-            statusHtml = `<span class="status-text status-waiting">Remove cassette, insert new for Test ${nextTest}</span>`;
+            statusHtml = `<span class="status-text status-waiting">Remove cassette</span>
+                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert new cassette for Test ${nextTest}</span>`;
             break;
         }
 
         case STATES.WAITING_FOR_SWAP: {
             const nextTest = ch.currentTestNumber + 1;
-            statusHtml = `<span class="status-text status-waiting">Waiting for new cassette...</span>`;
+            statusHtml = `<span class="status-text status-waiting">Insert new cassette</span>
+                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Waiting for Test ${nextTest} cassette</span>`;
             break;
         }
 
         case STATES.READY_FOR_TEST_N:
-            statusHtml = `<span class="status-text">Ready for Test ${ch.currentTestNumber + 1}</span>`;
+            statusHtml = `<span class="status-text">Ready for Test ${ch.currentTestNumber + 1}</span>
+                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Tap Start to begin</span>`;
             break;
 
         case STATES.COMPLETE:
@@ -267,7 +274,8 @@ function renderCardStatus(ch) {
 
         case STATES.ERROR_TYPE_MISMATCH: {
             const expected = ch.testResults.length > 0 ? ch.testResults[0].cassetteType : '?';
-            statusHtml = `<span class="status-text status-error">Wrong type &mdash; expected ${expected}</span>`;
+            statusHtml = `<span class="status-text status-error">Wrong cassette type</span>
+                          <span class="status-text status-error" style="font-size:var(--font-xs)">Expected ${expected} &mdash; remove and replace</span>`;
             break;
         }
     }
@@ -430,7 +438,7 @@ function showConfigModal(ch) {
     modal.innerHTML = `
         <div class="modal-header">
             <h2>Configure Test</h2>
-            <span class="config-channel-display">Channel ${ch.id}</span>
+            <span class="config-channel-display">Channel ${ch.id} &middot; ${ch.cassetteType} cassette detected</span>
         </div>
         <div class="modal-body">
             <div class="form-field">
@@ -448,11 +456,11 @@ function showConfigModal(ch) {
                         `<option value="${t}"${t === ch.cassetteType ? ' selected' : ''}>${t}</option>`
                     ).join('')}
                 </select>
-                ${ch.cassetteType ? `<div style="font-size:11px;color:var(--gray-400);margin-top:4px">Auto-filled from QR scan</div>` : ''}
+                ${ch.cassetteType ? `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Auto-detected from cassette QR code</div>` : ''}
             </div>
             <div class="form-field">
-                <label>Route</label>
-                <input type="text" class="form-input" id="cfg-route" placeholder="Enter route...">
+                <label>Route / Sample ID</label>
+                <input type="text" class="form-input" id="cfg-route" placeholder="Enter route or sample identifier...">
                 <div class="recent-chips" id="cfg-route-chips">
                     ${RECENT_ROUTES.map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
                 </div>
@@ -465,7 +473,7 @@ function showConfigModal(ch) {
                 </div>
             </div>
             <div class="form-field">
-                <label>Processing</label>
+                <label>Processing Mode</label>
                 <div class="segmented-control" id="cfg-processing">
                     ${processingOpts.map(o =>
                         `<button class="seg-option${o.value === 'read_incubate' ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
@@ -546,15 +554,17 @@ function showDecisionModal(ch, variant) {
         // After T1 positive
         resultTitle = 'Test 1 Result: POSITIVE';
         resultClass = 'result-positive';
-        messageHtml = `<p>Confirmation required.</p>
-                       <p>Insert a new cassette to confirm this result (Test 2 of 3).</p>`;
+        messageHtml = `<p><strong>Confirmation test required.</strong></p>
+                       <p>The initial test detected a positive result. To confirm, please remove this cassette and insert a new ${ch.cassetteType} cassette for Test 2.</p>
+                       <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">If you abort, the result will be marked as <strong>Inconclusive</strong>.</p>`;
     } else {
         // After T2 negative (variant b)
         resultTitle = 'Test 2 Result: NEGATIVE';
         resultClass = 'result-negative';
-        messageHtml = `<p>Conflicts with Test 1 (Positive).</p>
-                       <p>Tiebreaker Test 3 needed.</p>
-                       <div class="prev-results">Previous: Test 1 &mdash; POSITIVE</div>`;
+        messageHtml = `<p><strong>Tiebreaker test required.</strong></p>
+                       <p>Test 2 is negative, which conflicts with the positive result from Test 1. A third test is needed to determine the final result.</p>
+                       <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">Remove this cassette and insert a new ${ch.cassetteType} cassette for the tiebreaker.</p>
+                       <div class="prev-results">Test 1: POSITIVE &rarr; Test 2: NEGATIVE &rarr; Test 3 needed</div>`;
     }
 
     const substancesHtml = lastResult.substances.map(s => {
@@ -568,15 +578,15 @@ function showDecisionModal(ch, variant) {
     modal.innerHTML = `
         <div class="modal-header">
             <span class="result-title ${resultClass}">${resultTitle}</span>
-            <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; Test</span>
+            <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; ${ch.route || 'Test'}</span>
         </div>
         <div class="modal-body">
             <div class="substance-results">${substancesHtml}</div>
             <div class="decision-message">${messageHtml}</div>
         </div>
         <div class="modal-footer">
-            <button class="modal-btn btn-secondary" id="decision-abort">Abort (Inconclusive)</button>
-            <button class="modal-btn btn-success" id="decision-continue">Continue &rarr;</button>
+            <button class="modal-btn btn-secondary" id="decision-abort">Abort &mdash; Inconclusive</button>
+            <button class="modal-btn btn-success" id="decision-continue">Continue Testing &rarr;</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -609,19 +619,20 @@ function showStopConfirmationModal(ch) {
 
     modal.innerHTML = `
         <div class="modal-header">
-            <span class="result-title" style="color:var(--warning)">Stop Confirmation?</span>
-            <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; Test</span>
+            <span class="result-title" style="color:var(--warning)">Stop Confirmation Flow?</span>
+            <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; Confirmation in progress</span>
         </div>
         <div class="modal-body">
             <div class="decision-message">
-                <p>Stopping now will end the confirmation flow.</p>
-                <p>The group result will be marked as <strong>INCONCLUSIVE</strong>.</p>
-                ${completedTests > 0 ? `<div class="prev-results" style="margin-top:8px">Completed: ${testsHtml}</div>` : ''}
+                <p><strong>Are you sure you want to stop?</strong></p>
+                <p>The confirmation flow is still in progress. Stopping now means the test group result will be marked as <strong>INCONCLUSIVE</strong>.</p>
+                <p style="margin-top:8px">You will still be able to view this result in the test history.</p>
+                ${completedTests > 0 ? `<div class="prev-results" style="margin-top:10px">Completed tests: ${testsHtml}</div>` : ''}
             </div>
         </div>
         <div class="modal-footer">
-            <button class="modal-btn btn-secondary" id="stop-cancel">Cancel</button>
-            <button class="modal-btn btn-warning" id="stop-confirm">Stop &mdash; Inconclusive</button>
+            <button class="modal-btn btn-secondary" id="stop-cancel">Go Back</button>
+            <button class="modal-btn btn-warning" id="stop-confirm">Stop &mdash; Mark Inconclusive</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -701,6 +712,9 @@ function showDetailModal(ch) {
         'read_incubate': 'Read + Incubate'
     };
 
+    const totalTests = ch.testResults.length;
+    const completedAt = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+
     modal.innerHTML = `
         <div class="modal-header">
             <div class="header-info">
@@ -712,16 +726,16 @@ function showDetailModal(ch) {
         <div class="modal-body">
             ${groupResultHtml}
             <div class="test-history" style="margin-top:16px">
-                <h4 style="font-size:var(--font-sm);font-weight:700;color:var(--gray-600);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Test History</h4>
+                <h4 style="font-size:var(--font-base);font-weight:700;color:var(--gray-600);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Test History (${totalTests} test${totalTests > 1 ? 's' : ''} completed)</h4>
                 ${testsHtml}
             </div>
             <div class="config-summary">
-                <h4>Configuration</h4>
+                <h4>Test Configuration</h4>
                 <div class="config-summary-grid">
                     <div class="config-summary-item"><span class="cs-label">Route: </span><span class="cs-value">${ch.route}</span></div>
                     <div class="config-summary-item"><span class="cs-label">Operator: </span><span class="cs-value">${ch.operatorId}</span></div>
                     <div class="config-summary-item"><span class="cs-label">Processing: </span><span class="cs-value">${processingLabels[ch.processing] || ch.processing}</span></div>
-                    <div class="config-summary-item"><span class="cs-label">Type: </span><span class="cs-value">${ch.cassetteType}</span></div>
+                    <div class="config-summary-item"><span class="cs-label">Cassette type: </span><span class="cs-value">${ch.cassetteType}</span></div>
                 </div>
             </div>
         </div>

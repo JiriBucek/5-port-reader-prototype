@@ -9,10 +9,10 @@
     --screen-height: 800px;
 
     /* Layout measurements */
-    --status-bar-height: 40px;
-    --bottom-nav-height: 50px;
-    --screen-padding: 10px;
-    --card-gap: 8px;
+    --status-bar-height: 44px;
+    --bottom-nav-height: 54px;
+    --screen-padding: 12px;
+    --card-gap: 10px;
 
     /* Colors - Primary */
     --primary: #2563eb;
@@ -66,17 +66,17 @@
 
     /* Typography */
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-xs: 10px;
-    --font-sm: 11px;
-    --font-base: 13px;
-    --font-lg: 15px;
-    --font-xl: 18px;
-    --font-2xl: 22px;
+    --font-xs: 12px;
+    --font-sm: 14px;
+    --font-base: 16px;
+    --font-lg: 18px;
+    --font-xl: 22px;
+    --font-2xl: 28px;
 
     /* Border radius */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
 
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -182,14 +182,14 @@ body {
 .sim-channel .sim-type-select {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: var(--font-sm);
     color: var(--gray-500);
 }
 
 .sim-channel .sim-type-select select {
     flex: 1;
-    padding: 4px 6px;
+    padding: 6px 8px;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-sm);
     font-size: var(--font-sm);
