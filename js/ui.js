@@ -54,7 +54,7 @@ function renderCardHeader(ch) {
 
     return `<div class="card-header">
         <span class="ch-label">CH ${ch.id}</span>
-        ${badges}
+        ${badges ? `<div class="card-badges">${badges}</div>` : ''}
     </div>`;
 }
 
@@ -260,8 +260,12 @@ function renderCardStatus(ch) {
                           <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Tap Start to begin</span>`;
             break;
 
-        case STATES.COMPLETE:
-            if (ch.groupResult === 'inconclusive') {
+        case STATES.COMPLETE: {
+            const isCtrl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
+            if (isCtrl) {
+                const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
+                statusHtml = `<span class="status-text" style="color:var(--gray-500)">${controlLabel}</span>`;
+            } else if (ch.groupResult === 'inconclusive') {
                 statusHtml = `<span class="status-text" style="color:var(--warning)">Test stopped</span>`;
             } else if (ch.groupResult === 'positive') {
                 statusHtml = `<span class="status-text status-error">Flow result POSITIVE</span>`;
@@ -269,6 +273,7 @@ function renderCardStatus(ch) {
                 statusHtml = `<span class="status-text" style="color:var(--success)">Flow result NEGATIVE</span>`;
             }
             break;
+        }
 
         case STATES.ERROR:
             statusHtml = `<span class="status-text status-error">${ch.errorMessage || 'Test error'}</span>`;
@@ -298,10 +303,8 @@ function renderCardGroupResult(ch) {
         const isPos = isTestPositive(lastResult.substances);
         label = isPos ? 'POSITIVE' : 'NEGATIVE';
         badgeClass = isPos ? 'group-badge-positive' : 'group-badge-negative';
-        const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
         return `<div class="card-group-result">
-            <span class="group-badge group-badge-control">${controlLabel}</span>
-            <div class="control-label">${label}</div>
+            <span class="group-badge ${badgeClass}">${label}</span>
         </div>`;
     }
 
@@ -338,7 +341,7 @@ function renderCardAction(ch) {
 
         case STATES.WAITING_FOR_SWAP:
             return `<div class="card-action">
-                <button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Stop</button>
+                <button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort flow</button>
             </div>`;
 
         case STATES.READY_FOR_TEST_N:
@@ -434,8 +437,13 @@ function showConfigModal(ch) {
 
     modal.innerHTML = `
         <div class="modal-header">
-            <h2>Configure Test</h2>
-            <span class="config-channel-display">Channel ${ch.id} &middot; ${ch.cassetteType} cassette detected</span>
+            <div class="modal-header-row">
+                <div class="modal-channel-badge">${ch.id}</div>
+                <div class="header-text">
+                    <h2>Configure Test</h2>
+                    <span class="modal-subtitle">${ch.cassetteType} cassette detected</span>
+                </div>
+            </div>
         </div>
         <div class="modal-body">
             <div class="form-field">
@@ -545,23 +553,19 @@ function showDecisionModal(ch, variant) {
     const isPos = isTestPositive(lastResult.substances);
     const testNum = lastResult.testNumber;
 
-    let resultTitle, resultClass, messageHtml;
+    let resultLabel, resultValue, messageHtml;
 
     if (variant === 'a') {
         // After T1 positive
-        resultTitle = 'Test 1 Result: POSITIVE';
-        resultClass = 'result-positive';
-        messageHtml = `<p><strong>Confirmation test required.</strong></p>
-                       <p>The initial test detected a positive result. To confirm, please remove this cassette and insert a new ${ch.cassetteType} cassette for Test 2.</p>
-                       <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">If you abort, the flow result will be marked as <strong>Inconclusive</strong>.</p>`;
+        resultLabel = 'Test 1';
+        resultValue = 'POSITIVE';
+        messageHtml = `<p>Confirmation required. Remove cassette, insert new ${ch.cassetteType} for Test 2.</p>
+                       <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
     } else {
         // After T2 negative (variant b)
-        resultTitle = 'Test 2 Result: NEGATIVE';
-        resultClass = 'result-negative';
-        messageHtml = `<p><strong>Tiebreaker test required.</strong></p>
-                       <p>Test 2 is negative, which conflicts with the positive result from Test 1. A third test is needed to determine the final flow result.</p>
-                       <p style="margin-top:8px;font-size:var(--font-base);color:var(--gray-500)">Remove this cassette and insert a new ${ch.cassetteType} cassette for the tiebreaker.</p>
-                       <div class="prev-results">Test 1: POSITIVE &rarr; Test 2: NEGATIVE &rarr; Test 3 needed</div>`;
+        resultLabel = 'Test 2';
+        resultValue = 'NEGATIVE';
+        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert new ${ch.cassetteType} for Test 3.</p>`;
     }
 
     const substancesHtml = lastResult.substances.map(s => {
@@ -572,10 +576,21 @@ function showDecisionModal(ch, variant) {
         </div>`;
     }).join('');
 
+    const titleColor = isPos ? 'var(--danger)' : 'var(--success)';
+
     modal.innerHTML = `
         <div class="modal-header">
-            <span class="result-title ${resultClass}">${resultTitle}</span>
-            <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; ${ch.route || 'Test'}</span>
+            <div class="modal-header-row">
+                <div class="modal-channel-badge">${ch.id}</div>
+                <div class="header-text">
+                    <h2 style="color:${titleColor}">${resultLabel}: ${resultValue}</h2>
+                    <div class="modal-meta">
+                        <span class="meta-item"><span class="meta-value">${ch.cassetteType}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.route || 'Test'}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.operatorId || ''}</span></span>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="modal-body">
             <div class="substance-results">${substancesHtml}</div>
@@ -616,20 +631,26 @@ function showStopConfirmationModal(ch) {
 
     modal.innerHTML = `
         <div class="modal-header">
-            <span class="result-title" style="color:var(--warning)">Stop Confirmation Flow?</span>
-            <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; Confirmation in progress</span>
+            <div class="modal-header-row">
+                <div class="modal-channel-badge">${ch.id}</div>
+                <div class="header-text">
+                    <h2 style="color:var(--warning)">Abort Flow?</h2>
+                    <div class="modal-meta">
+                        <span class="meta-item"><span class="meta-value">${ch.cassetteType}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.route || 'Test'}</span></span>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="modal-body">
             <div class="decision-message">
-                <p><strong>Are you sure you want to stop?</strong></p>
-                <p>The confirmation flow is still in progress. Stopping now means the flow result will be marked as <strong>INCONCLUSIVE</strong>.</p>
-                <p style="margin-top:8px">You will still be able to view this result in the test history.</p>
-                ${completedTests > 0 ? `<div class="prev-results" style="margin-top:10px">Completed tests: ${testsHtml}</div>` : ''}
+                <p>Flow result will be marked <strong>INCONCLUSIVE</strong>.</p>
+                ${completedTests > 0 ? `<div class="prev-results">Completed: ${testsHtml}</div>` : ''}
             </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="stop-cancel">Go Back</button>
-            <button class="modal-btn btn-secondary" id="stop-confirm">Stop &mdash; Mark Inconclusive</button>
+            <button class="modal-btn btn-secondary" id="stop-confirm">Abort &mdash; Inconclusive</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -669,7 +690,7 @@ function showDetailModal(ch) {
         const color = isPos ? 'var(--danger)' : 'var(--success)';
         const bgColor = isPos ? 'var(--danger-bg)' : 'var(--success-bg)';
         groupResultHtml = `<div class="detail-group-result" style="background:${bgColor}">
-            <div class="detail-result-label">${scenarioLabels[ch.scenario]}</div>
+            <div class="detail-result-label">Result</div>
             <div class="detail-result-value" style="color:${color}">${label}</div>
         </div>`;
     } else if (ch.groupResult) {
@@ -714,26 +735,25 @@ function showDetailModal(ch) {
 
     modal.innerHTML = `
         <div class="modal-header">
-            <div class="header-info">
-                <h2>Test Details</h2>
-                <span class="modal-subtitle">Channel ${ch.id} &middot; ${ch.cassetteType} &middot; ${scenarioLabels[ch.scenario] || 'Test'}</span>
+            <div class="modal-header-row">
+                <div class="modal-channel-badge">${ch.id}</div>
+                <div class="header-text">
+                    <h2>${scenarioLabels[ch.scenario] || 'Test'} Details</h2>
+                    <div class="modal-meta">
+                        <span class="meta-item"><span class="meta-value">${ch.cassetteType}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.route}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.operatorId}</span></span>
+                        <span class="meta-item"><span class="meta-value">${processingLabels[ch.processing] || ch.processing}</span></span>
+                    </div>
+                </div>
+                <button class="close-btn" id="detail-close">&times;</button>
             </div>
-            <button class="close-btn" id="detail-close">&times;</button>
         </div>
         <div class="modal-body">
             ${groupResultHtml}
             <div class="test-history" style="margin-top:16px">
-                <h4 style="font-size:var(--font-base);font-weight:700;color:var(--gray-600);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Test History (${totalTests} test${totalTests > 1 ? 's' : ''} completed)</h4>
+                <h4 style="font-size:var(--font-base);font-weight:700;color:var(--gray-600);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Test History (${totalTests} test${totalTests > 1 ? 's' : ''})</h4>
                 ${testsHtml}
-            </div>
-            <div class="config-summary">
-                <h4>Test Configuration</h4>
-                <div class="config-summary-grid">
-                    <div class="config-summary-item"><span class="cs-label">Route: </span><span class="cs-value">${ch.route}</span></div>
-                    <div class="config-summary-item"><span class="cs-label">Operator: </span><span class="cs-value">${ch.operatorId}</span></div>
-                    <div class="config-summary-item"><span class="cs-label">Processing: </span><span class="cs-value">${processingLabels[ch.processing] || ch.processing}</span></div>
-                    <div class="config-summary-item"><span class="cs-label">Cassette type: </span><span class="cs-value">${ch.cassetteType}</span></div>
-                </div>
             </div>
         </div>
         <div class="modal-footer">

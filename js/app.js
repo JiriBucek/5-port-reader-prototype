@@ -61,7 +61,7 @@ function handleInsert(channelId, outcome) {
                 : ch.cassetteType;
 
             if (selectedType !== expectedType) {
-                ch.cassetteType = selectedType;
+                // Keep ch.cassetteType as the original/expected type
                 ch.state = STATES.ERROR_TYPE_MISMATCH;
             } else {
                 ch.cassetteType = selectedType;

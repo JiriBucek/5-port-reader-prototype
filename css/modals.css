@@ -98,6 +98,10 @@
     width: 580px;
 }
 
+.config-modal .modal-header {
+    text-align: left;
+}
+
 /* Form field */
 .form-field {
     margin-bottom: 18px;
@@ -211,10 +215,62 @@
     color: var(--primary-dark);
 }
 
-/* Channel display in config header */
-.config-channel-display {
-    font-size: var(--font-lg);
+/* Channel badge — prominent channel identifier */
+.modal-channel-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--primary);
+    color: var(--white);
+    font-size: var(--font-xl);
+    font-weight: 800;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Modal header with channel badge */
+.modal-header-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.modal-header-row .header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.modal-header-row .header-text h2 {
+    font-size: var(--font-2xl);
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0;
+}
+
+.modal-header-row .header-text .modal-subtitle {
+    font-size: var(--font-base);
     color: var(--gray-500);
+}
+
+/* Compact metadata bar */
+.modal-meta {
+    display: flex;
+    gap: 16px;
+    padding: 8px 0;
+    font-size: var(--font-sm);
+    color: var(--gray-500);
+    flex-wrap: wrap;
+}
+
+.modal-meta .meta-item {
+    display: flex;
+    gap: 4px;
+}
+
+.modal-meta .meta-value {
+    color: var(--gray-700);
     font-weight: 500;
 }
 
@@ -225,19 +281,7 @@
 
 .decision-modal .modal-header {
     padding: 20px 24px 16px;
-}
-
-.decision-modal .result-title {
-    font-size: var(--font-2xl);
-    font-weight: 700;
-}
-
-.decision-modal .result-title.result-positive {
-    color: var(--danger);
-}
-
-.decision-modal .result-title.result-negative {
-    color: var(--success);
+    text-align: left;
 }
 
 /* Substance results list in modal */
@@ -317,14 +361,7 @@
 }
 
 .detail-modal .modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     text-align: left;
-}
-
-.detail-modal .modal-header .header-info {
-    flex: 1;
 }
 
 .detail-modal .close-btn {
