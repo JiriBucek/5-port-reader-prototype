@@ -1,0 +1,51 @@
+%% Channel Card States - State Machine
+%% Shows all possible states a channel card can be in and transitions between them.
+%% Colors aligned with the flowchart diagrams.
+%% View in VS Code with "Markdown Preview Mermaid Support" or paste into mermaid.live
+
+stateDiagram-v2
+    classDef emptyStyle fill:#f8f9fa,color:#6c757d
+    classDef activeStyle fill:#cce5ff,color:#004085
+    classDef modalStyle fill:#e8daef,color:#4a235a
+    classDef waitingStyle fill:#e2e3e5,color:#383d41
+    classDef errorStyle fill:#f5c6cb,color:#721c24
+    classDef negStyle fill:#d4edda,color:#155724
+    classDef posStyle fill:#f8d7da,color:#721c24
+    classDef incStyle fill:#fff3cd,color:#856404
+
+    [*] --> Empty
+    Empty --> Detected: Cassette inserted
+    Detected --> Empty: Cassette removed
+    Detected --> Configuring: User taps card
+
+    Configuring --> Processing: Start test
+    Configuring --> Detected: Cancel
+
+    state Processing {
+        [*] --> WaitingTemp: Need temp
+        WaitingTemp --> Incubating: Temp OK
+        [*] --> Incubating: Temp OK
+        [*] --> Reading: Read Only
+        Incubating --> Reading: Done
+    }
+
+    Processing --> Result: Complete
+
+    state Result {
+        [*] --> GroupNegative: T1 neg / T2-neg T3-neg
+        [*] --> GroupPositive: T2 pos / T3 pos
+        [*] --> AwaitingConfirmation: T1 pos / T2 neg
+    }
+
+    AwaitingConfirmation --> WaitingForSwap: Cassette removed
+    AwaitingConfirmation --> Inconclusive: User stops
+    WaitingForSwap --> Detected: New cassette inserted
+    WaitingForSwap --> Inconclusive: User stops
+
+    GroupNegative --> Empty: Cassette removed
+    GroupPositive --> Empty: Cassette removed
+    Inconclusive --> Empty: Cassette removed
+
+    Processing --> Error: Cassette removed or interrupted
+    Error --> Empty: Abort
+    Error --> Detected: Retry

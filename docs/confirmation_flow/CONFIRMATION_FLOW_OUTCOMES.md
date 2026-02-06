@@ -232,13 +232,15 @@ The user selects the control test type at the start when configuring the test on
 
 ### Control Test Flow
 
+The user selects the specific control type **upfront** in the config modal (Test / Positive Control / Animal Control).
+
 ```
-Select "Control Test" → Choose type (Positive Control / Animal Control) → Run single test → Result
+Insert cassette → Tap to configure → Select "Positive Control" or "Animal Control" → Start test → Result
 ```
 
 - There is **no confirmation flow** for control tests
 - The test runs once and produces a result
-- After the test completes, the result is labeled with the control type
+- No post-test labeling needed (type was chosen upfront)
 
 ### Control Test Outcomes
 
@@ -247,7 +249,7 @@ Select "Control Test" → Choose type (Positive Control / Animal Control) → Ru
 | **Positive** | Expected result for Positive Control (device is working correctly) |
 | **Negative** | Unexpected for Positive Control (may indicate device issue) |
 
-> **Note on mobile app difference:** In the mobile app, the user labels the test as Positive Control or Animal Control *after* the test completes. On the reader device, the user chooses the test type *before* starting the test.
+> **Note on mobile app difference:** In the mobile app, the user labels the test as Positive Control or Animal Control *after* the test completes. On the reader device, the user chooses the specific type *before* starting the test in the config modal.
 
 ---
 

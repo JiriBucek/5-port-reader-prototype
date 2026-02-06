@@ -1,0 +1,56 @@
+%% Control Test Flow
+%% Single test, no confirmation. Type chosen upfront (Positive Control or Animal Control).
+%% Shares the same insertion, config, and processing phases as the normal test flow.
+%% View in VS Code with "Markdown Preview Mermaid Support" or paste into mermaid.live
+
+flowchart TD
+    classDef empty fill:#f8f9fa,stroke:#6c757d,stroke-width:2px,color:#495057
+    classDef active fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085
+    classDef modal fill:#e8daef,stroke:#6c3483,stroke-width:2px,color:#4a235a
+    classDef waiting fill:#e2e3e5,stroke:#6c757d,stroke-width:2px,color:#383d41
+    classDef errState fill:#f5c6cb,stroke:#dc3545,stroke-width:2px,color:#721c24
+    classDef result fill:#d1ecf1,stroke:#0c5460,stroke-width:3px,color:#0c5460
+
+    %% ===== PHASE 1: INSERTION =====
+    EMPTY([EMPTY<br/>No cassette in slot]):::empty
+
+    EMPTY -->|Cassette physically inserted| QR{QR auto-scan<br/>enabled?}
+    QR -->|Yes| SCAN[Device reads QR code]:::active
+    QR -->|No, disabled in settings| DETECTED_M[DETECTED<br/>Tap to configure<br/>Select type manually]:::active
+    SCAN --> USED{Cassette<br/>used before?}
+    USED -->|Yes| ERR_USED[ERROR: Already used<br/>Remove and use new cassette]:::errState
+    USED -->|No| DETECTED[DETECTED<br/>Tap to configure<br/>Type auto-filled from QR]:::active
+    ERR_USED -->|Cassette removed| EMPTY
+
+    %% ===== PHASE 2: CONFIGURATION =====
+    DETECTED -->|User taps channel card| CONFIG
+    DETECTED_M -->|User taps channel card| CONFIG
+    CONFIG[CONFIG MODAL<br/>Channel locked to slot<br/>Scenario: Test / Pos Control / Animal Control<br/>Test Type - Route - Operator ID<br/>Processing: Read vs Incubate]:::modal
+    CONFIG -->|Cancel| DETECTED
+    CONFIG -->|Start - Scenario: Control| PROC{Processing<br/>option?}
+
+    %% ===== PHASE 3A: READ ONLY =====
+    PROC -->|Read Only| READING[READING<br/>Loading... few seconds]:::active
+
+    %% ===== PHASE 3B: READ + INCUBATE =====
+    PROC -->|Read + Incubate| TEMP{Device at<br/>target temp?}
+    TEMP -->|No| WAIT_TEMP[WAITING FOR<br/>TEMPERATURE<br/>Blocks until reached]:::waiting
+    WAIT_TEMP -->|Temperature reached| INCUBATE
+    TEMP -->|Yes| INCUBATE
+
+    INCUBATE[INCUBATING<br/>Countdown ~2 min]:::active
+    INCUBATE -->|Cassette removed mid-incubation| ALERT[ALERT!<br/>Reinsert cassette<br/>within 20 seconds]:::errState
+    ALERT -->|Cassette reinserted in time| INCUBATE
+    ALERT -->|20 seconds expired| ERR_INT[TEST INTERRUPTED<br/>Cassette not reinserted]:::errState
+    ERR_INT -->|Abort| EMPTY
+    ERR_INT -->|Retry| DETECTED
+    INCUBATE -->|Countdown complete| READING
+
+    %% ===== READING COMPLETE =====
+    READING -->|Cassette removed during read| ERR_READ[READING INTERRUPTED<br/>Result invalid]:::errState
+    ERR_READ -->|Abort| EMPTY
+    ERR_READ -->|Retry| DETECTED
+    READING -->|Read complete| RESULT[CONTROL RESULT<br/>Shows test outcome<br/>Labeled as chosen control type]:::result
+
+    %% ===== CLEAR ON REMOVAL =====
+    RESULT -->|Cassette removed| EMPTY

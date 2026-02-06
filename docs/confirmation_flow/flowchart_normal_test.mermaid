@@ -1,0 +1,127 @@
+%% Normal Test - Complete Flow
+%% Covers insertion → QR scan → config → processing → result → confirmation loop
+%% Decision modals auto-open (blocking) when user must choose Continue or Abort
+%% Confirmation tests (Test 2/3) skip the config modal - settings carry over from Test 1
+%% View in VS Code with "Markdown Preview Mermaid Support" or paste into mermaid.live
+
+flowchart TD
+    classDef empty fill:#f8f9fa,stroke:#6c757d,stroke-width:2px,color:#495057
+    classDef active fill:#cce5ff,stroke:#004085,stroke-width:2px,color:#004085
+    classDef modal fill:#e8daef,stroke:#6c3483,stroke-width:2px,color:#4a235a
+    classDef waiting fill:#e2e3e5,stroke:#6c757d,stroke-width:2px,color:#383d41
+    classDef errState fill:#f5c6cb,stroke:#dc3545,stroke-width:2px,color:#721c24
+    classDef neg fill:#d4edda,stroke:#28a745,stroke-width:3px,color:#155724
+    classDef pos fill:#f8d7da,stroke:#dc3545,stroke-width:3px,color:#721c24
+    classDef inc fill:#fff3cd,stroke:#ffc107,stroke-width:3px,color:#856404
+
+    %% ===== PHASE 1: INSERTION =====
+    EMPTY([EMPTY<br/>No cassette in slot]):::empty
+
+    EMPTY -->|Cassette physically inserted| QR{QR auto-scan<br/>enabled?}
+    QR -->|Yes| SCAN[Device reads QR code]:::active
+    QR -->|No, disabled in settings| DETECTED_M[DETECTED<br/>Tap to configure<br/>Select type manually]:::active
+    SCAN --> USED{Cassette<br/>used before?}
+    USED -->|Yes| ERR_USED[ERROR: Already used<br/>Remove and use new cassette]:::errState
+    USED -->|No| DETECTED[DETECTED<br/>Tap to configure<br/>Type auto-filled from QR]:::active
+    ERR_USED -->|Cassette removed| EMPTY
+
+    %% ===== PHASE 2: CONFIGURATION (Test 1 only) =====
+    DETECTED -->|User taps channel card| CONFIG
+    DETECTED_M -->|User taps channel card| CONFIG
+    CONFIG[CONFIG MODAL<br/>Channel locked to slot<br/>Scenario: Test / Pos Control / Animal Control<br/>Test Type - Route - Operator ID<br/>Processing: Read vs Incubate]:::modal
+    CONFIG -->|Cancel| DETECTED
+    CONFIG -->|Start - Scenario: Test| PROC{Processing<br/>option?}
+
+    %% ===== PHASE 3A: READ ONLY =====
+    PROC -->|Read Only| READING[READING<br/>Loading... few seconds]:::active
+
+    %% ===== PHASE 3B: READ + INCUBATE =====
+    PROC -->|Read + Incubate| TEMP{Device at<br/>target temp?}
+    TEMP -->|No| WAIT_TEMP[WAITING FOR<br/>TEMPERATURE<br/>Blocks until reached]:::waiting
+    WAIT_TEMP -->|Temperature reached| INCUBATE
+    TEMP -->|Yes| INCUBATE
+
+    INCUBATE[INCUBATING<br/>Countdown ~2 min]:::active
+    INCUBATE -->|Cassette removed mid-incubation| ALERT[ALERT!<br/>Reinsert cassette<br/>within 20 seconds]:::errState
+    ALERT -->|Cassette reinserted in time| INCUBATE
+    ALERT -->|20 seconds expired| ERR_INT[TEST INTERRUPTED<br/>Cassette not reinserted]:::errState
+    ERR_INT -->|Abort| EMPTY
+    ERR_INT -->|Retry| DETECTED
+    INCUBATE -->|Countdown complete| READING
+
+    %% ===== READING COMPLETE =====
+    READING -->|Cassette removed during read| ERR_READ[READING INTERRUPTED<br/>Result invalid]:::errState
+    ERR_READ -->|Abort| EMPTY
+    ERR_READ -->|Retry| DETECTED
+    READING -->|Read complete| WHICH{Which test<br/>number?}
+
+    %% ========================================
+    %% PHASE 4: RESULTS & CONFIRMATION
+    %% ========================================
+
+    %% ----- TEST 1 -----
+    WHICH -->|Test 1| T1{Test 1<br/>result?}
+    T1 -->|All substances NEGATIVE| GN1[GROUP RESULT:<br/>NEGATIVE]:::neg
+    T1 -->|Any substance POSITIVE| DM1
+
+    DM1[DECISION MODAL auto-opens<br/>Test 1: POSITIVE<br/>Shows substance results<br/>Confirmation required]:::modal
+    DM1 -->|Continue Confirmation| AW2[AWAITING CONFIRMATION<br/>Card: Remove cassette<br/>insert new for Test 2]:::waiting
+    DM1 -->|Abort| GI1[GROUP RESULT:<br/>INCONCLUSIVE]:::inc
+
+    AW2 -->|User removes cassette| SW2[WAITING FOR SWAP<br/>No cassette in slot<br/>Waiting for Test 2 cassette<br/>Stop button visible]:::waiting
+    SW2 -->|User taps Stop| GI1
+    SW2 -->|New cassette inserted| QR_C2
+
+    %% ----- CONFIRMATION CASSETTE CHECK (Test 2) -----
+    QR_C2{QR scan<br/>enabled?}
+    QR_C2 -->|Yes| SCAN_C2[Device reads QR]:::active
+    QR_C2 -->|No| READY_C2
+    SCAN_C2 --> USED_C2{Already<br/>used?}
+    USED_C2 -->|Yes| ERR_USED_C2[ERROR: Already used]:::errState
+    ERR_USED_C2 -->|Cassette removed| SW2
+    USED_C2 -->|No| TYPE_C2{Type matches<br/>Test 1?}
+    TYPE_C2 -->|No| ERR_TYPE_C2[WARNING:<br/>Type mismatch]:::errState
+    ERR_TYPE_C2 -->|Cassette removed| SW2
+    TYPE_C2 -->|Yes| READY_C2
+    READY_C2[READY FOR TEST 2<br/>Tap to start<br/>Config from Test 1:<br/>Same type, route,<br/>operator, processing]:::active
+    READY_C2 -->|User taps Start| PROC
+
+    %% ----- TEST 2 -----
+    WHICH -->|Test 2| T2{Test 2<br/>result?}
+    T2 -->|Any substance POSITIVE| GP2[GROUP RESULT:<br/>POSITIVE<br/>Confirmed]:::pos
+    T2 -->|All substances NEGATIVE| DM2
+
+    DM2[DECISION MODAL auto-opens<br/>Test 2: NEGATIVE<br/>Conflicts with Test 1<br/>Tiebreaker Test 3 needed]:::modal
+    DM2 -->|Continue to Test 3| AW3[AWAITING CONFIRMATION<br/>Card: Remove cassette<br/>insert new for Test 3]:::waiting
+    DM2 -->|Abort| GI2[GROUP RESULT:<br/>INCONCLUSIVE]:::inc
+
+    AW3 -->|User removes cassette| SW3[WAITING FOR SWAP<br/>No cassette in slot<br/>Waiting for Test 3 cassette<br/>Stop button visible]:::waiting
+    SW3 -->|User taps Stop| GI2
+    SW3 -->|New cassette inserted| QR_C3
+
+    %% ----- CONFIRMATION CASSETTE CHECK (Test 3) -----
+    QR_C3{QR scan<br/>enabled?}
+    QR_C3 -->|Yes| SCAN_C3[Device reads QR]:::active
+    QR_C3 -->|No| READY_C3
+    SCAN_C3 --> USED_C3{Already<br/>used?}
+    USED_C3 -->|Yes| ERR_USED_C3[ERROR: Already used]:::errState
+    ERR_USED_C3 -->|Cassette removed| SW3
+    USED_C3 -->|No| TYPE_C3{Type matches<br/>Test 1?}
+    TYPE_C3 -->|No| ERR_TYPE_C3[WARNING:<br/>Type mismatch]:::errState
+    ERR_TYPE_C3 -->|Cassette removed| SW3
+    TYPE_C3 -->|Yes| READY_C3
+    READY_C3[READY FOR TEST 3<br/>Tap to start<br/>Config from Test 1:<br/>Same type, route,<br/>operator, processing]:::active
+    READY_C3 -->|User taps Start| PROC
+
+    %% ----- TEST 3 -----
+    WHICH -->|Test 3| T3{Test 3<br/>result?}
+    T3 -->|Any substance POSITIVE| GP3[GROUP RESULT:<br/>POSITIVE]:::pos
+    T3 -->|All substances NEGATIVE| GN3[GROUP RESULT:<br/>NEGATIVE<br/>Test 1 was false positive]:::neg
+
+    %% ===== FINAL: CLEAR ON REMOVAL =====
+    GN1 -->|Cassette removed| EMPTY
+    GP2 -->|Cassette removed| EMPTY
+    GP3 -->|Cassette removed| EMPTY
+    GN3 -->|Cassette removed| EMPTY
+    GI1 -.->|Cassette removed| EMPTY
+    GI2 -.->|Cassette removed| EMPTY
