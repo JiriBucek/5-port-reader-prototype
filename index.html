@@ -3,301 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Milk Testing Device - Prototype</title>
-
-    <!-- Stylesheets -->
+    <title>5-Port Milk Testing Device — Prototype</title>
     <link rel="stylesheet" href="css/tablet.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/channel-card.css">
     <link rel="stylesheet" href="css/modals.css">
-    <link rel="stylesheet" href="css/navigation.css">
 </head>
 <body>
-    <!-- Tablet Container -->
-    <div id="tablet-container">
 
-        <!-- Home Screen -->
-        <div id="home-screen" class="screen active">
+<div class="device-container">
+
+    <!-- ===== Device Frame ===== -->
+    <div class="device-frame">
+        <div class="device-screen">
+
             <!-- Status Bar -->
-            <header>
-                <div class="status-bar-left">
-                    <div class="status-item">
-                        <span class="icon">🕐</span>
-                        <span id="current-time">14:23</span>
-                    </div>
-                    <div class="status-item">
-                        <span class="icon">🌡️</span>
-                        <span id="device-temp">35.0°C</span>
-                    </div>
-                    <div class="status-item" id="wifi-status">
-                        <span class="icon">📶</span>
-                    </div>
+            <div class="status-bar">
+                <div class="sb-left">
+                    <span class="sb-time" id="status-bar-time">--:--</span>
                 </div>
-                <div class="status-bar-right">
-                    <button class="menu-button" onclick="openMenu()">
-                        <span>☰</span>
-                    </button>
+                <div class="sb-center">MilkSafe Reader</div>
+                <div class="sb-right">
+                    <span class="sb-temp">
+                        <span class="temp-icon">&#x1F321;</span>
+                        <span>37.0&deg;C</span>
+                    </span>
+                    <span class="sb-wifi">&#x1F4F6;</span>
                 </div>
-            </header>
+            </div>
 
-            <!-- Main Content -->
-            <main>
-                <!-- Verification Alert (shown when >250 tests) -->
-                <div class="alert-banner" id="verification-alert" style="display: none;">
-                    <span class="icon">⚠️</span>
-                    <span><strong>Verification Required:</strong> 248 tests completed since last verification</span>
-                </div>
+            <!-- Channel Cards Row -->
+            <div class="channels-container">
+                <div class="channel-card state-empty" id="card-1"></div>
+                <div class="channel-card state-empty" id="card-2"></div>
+                <div class="channel-card state-empty" id="card-3"></div>
+                <div class="channel-card state-empty" id="card-4"></div>
+                <div class="channel-card state-empty" id="card-5"></div>
+            </div>
 
-                <!-- 5 Channel Grid -->
-                <div class="channels-grid" id="channels-grid">
-                    <!-- Channels will be dynamically populated by JavaScript -->
-                </div>
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <button class="nav-btn"><span class="nav-icon">&#x1F4CB;</span> History</button>
+                <button class="nav-btn"><span class="nav-icon">&#x2699;</span> Settings</button>
+                <button class="nav-btn"><span class="nav-icon">&#x2714;</span> Verify</button>
+            </div>
 
-                <!-- Bottom Navigation -->
-                <div class="bottom-nav">
-                    <button class="nav-button" onclick="navigateTo('history')">
-                        Test History
-                    </button>
-                    <button class="nav-button" onclick="navigateTo('settings')">
-                        Settings
-                    </button>
-                    <button class="nav-button" onclick="navigateTo('verification')">
-                        Run Verification
-                    </button>
-                </div>
-            </main>
-        </div>
+            <!-- Modal Overlay -->
+            <div class="modal-overlay" id="modal-overlay">
+                <div class="modal config-modal" id="config-modal"></div>
+                <div class="modal decision-modal" id="decision-modal"></div>
+                <div class="modal detail-modal" id="detail-modal"></div>
+            </div>
 
-        <!-- History Screen -->
-        <div id="history" class="screen">
-            <header>
-                <button class="btn-text" onclick="navigateTo('home-screen')">
-                    <span>←</span> Back
-                </button>
-                <h1>Test History</h1>
-            </header>
-            <main>
-                <p>Test history will be implemented here</p>
-            </main>
-        </div>
-
-        <!-- Settings Screen -->
-        <div id="settings" class="screen">
-            <header>
-                <button class="btn-text" onclick="navigateTo('home-screen')">
-                    <span>←</span> Back
-                </button>
-                <h1>Settings</h1>
-            </header>
-            <main>
-                <p>Settings will be implemented here</p>
-            </main>
-        </div>
-
-        <!-- Verification Screen -->
-        <div id="verification" class="screen">
-            <header>
-                <button class="btn-text" onclick="navigateTo('home-screen')">
-                    <span>←</span> Back
-                </button>
-                <h1>Run Verification</h1>
-            </header>
-            <main>
-                <p>Verification workflow will be implemented here</p>
-            </main>
-        </div>
-
-    </div>
-
-    <!-- Control Panel (Outside Device Frame) -->
-    <div class="external-control-panel">
-        <div class="control-buttons">
-            <button class="btn-primary" onclick="insertCassette(1, 'positive')">CH1 Insert Positive</button>
-            <button class="btn-secondary" onclick="insertCassette(1, 'negative')">CH1 Insert Negative</button>
-            <button class="btn-primary" onclick="insertCassette(2, 'positive')">CH2 Insert Positive</button>
-            <button class="btn-secondary" onclick="insertCassette(2, 'negative')">CH2 Insert Negative</button>
-            <button class="btn-primary" onclick="insertCassette(3, 'positive')">CH3 Insert Positive</button>
-            <button class="btn-secondary" onclick="insertCassette(3, 'negative')">CH3 Insert Negative</button>
-            <button class="btn-primary" onclick="insertCassette(4, 'positive')">CH4 Insert Positive</button>
-            <button class="btn-secondary" onclick="insertCassette(4, 'negative')">CH4 Insert Negative</button>
-            <button class="btn-primary" onclick="insertCassette(5, 'positive')">CH5 Insert Positive</button>
-            <button class="btn-secondary" onclick="insertCassette(5, 'negative')">CH5 Insert Negative</button>
         </div>
     </div>
 
-    <!-- Start Test Modal -->
-    <div class="modal-overlay" id="start-test-modal">
-        <div class="modal large">
-            <div class="modal-header">
-                <h2 class="modal-title">Start New Test</h2>
-                <button class="modal-close" onclick="closeModal('start-test-modal')">✕</button>
+    <!-- ===== Simulation Control Panel ===== -->
+    <div class="simulation-panel">
+        <h2>Simulation Controls</h2>
+        <div class="sim-subtitle">Simulate cassette insertion and removal for each channel</div>
+
+        <div class="sim-channels">
+            <!-- CH 1 -->
+            <div class="sim-channel" id="sim-1">
+                <h3>CH 1</h3>
+                <div class="sim-type-select">
+                    <span>Type:</span>
+                    <select>
+                        <option value="2BC">2BC</option>
+                        <option value="3BTC" selected>3BTC</option>
+                        <option value="4BTCS">4BTCS</option>
+                    </select>
+                </div>
+                <div class="sim-buttons">
+                    <button class="sim-btn sim-btn-positive">Insert Positive</button>
+                    <button class="sim-btn sim-btn-negative">Insert Negative</button>
+                    <button class="sim-btn sim-btn-remove" disabled>Remove Cassette</button>
+                </div>
+                <div class="sim-state">EMPTY</div>
             </div>
-            <div class="modal-body">
-                <form id="start-test-form" onsubmit="startTest(event)">
-                    <!-- Channel Selection -->
-                    <div class="form-field">
-                        <label class="field-label">Selected Channel</label>
-                        <select class="field-input" id="test-channel" required>
-                            <option value="1">Channel 1</option>
-                            <option value="2">Channel 2</option>
-                            <option value="3">Channel 3</option>
-                            <option value="4">Channel 4</option>
-                            <option value="5">Channel 5</option>
-                        </select>
-                    </div>
-
-                    <div class="section-divider"></div>
-
-                    <!-- Test Type -->
-                    <div class="form-field">
-                        <label class="field-label">Test Type</label>
-                        <select class="field-input" id="test-type" required>
-                            <option value="3BTC">MilkSafe™ 3BTC</option>
-                            <option value="4BTCS">MilkSafe™ 4BTCS</option>
-                            <option value="2BC">MilkSafe™ 2BC</option>
-                        </select>
-                        <div class="field-hint">✓ Auto-filled from QR code</div>
-                    </div>
-
-                    <div class="section-divider"></div>
-
-                    <!-- Test Scenario -->
-                    <div class="form-field">
-                        <label class="field-label">Test Scenario</label>
-                        <div class="radio-group">
-                            <label class="radio-option selected">
-                                <input type="radio" name="scenario" value="test" checked>
-                                <span>Test (Regular)</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="scenario" value="control">
-                                <span>Positive Control</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="section-divider"></div>
-
-                    <!-- Route -->
-                    <div class="form-field">
-                        <label class="field-label">Route</label>
-                        <input type="text" class="field-input" id="test-route" placeholder="Enter route" required>
-                        <div class="recent-values">
-                            <span class="recent-chip" onclick="fillRoute('Daws')">Daws</span>
-                            <span class="recent-chip" onclick="fillRoute('Route A')">Route A</span>
-                            <span class="recent-chip" onclick="fillRoute('Route B')">Route B</span>
-                        </div>
-                    </div>
-
-                    <!-- Operator ID -->
-                    <div class="form-field">
-                        <label class="field-label">Operator ID</label>
-                        <input type="text" class="field-input" id="test-operator" placeholder="Enter operator ID" required>
-                        <div class="recent-values">
-                            <span class="recent-chip" onclick="fillOperator('KAYU')">KAYU</span>
-                            <span class="recent-chip" onclick="fillOperator('ALW')">ALW</span>
-                            <span class="recent-chip" onclick="fillOperator('JDoe')">JDoe</span>
-                        </div>
-                    </div>
-
-                    <div class="section-divider"></div>
-
-                    <!-- Processing Options -->
-                    <div class="form-field">
-                        <label class="field-label">Processing Options</label>
-                        <div class="radio-group">
-                            <label class="radio-option selected">
-                                <input type="radio" name="processing" value="incubate" checked>
-                                <span>Read and Incubate</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="processing" value="read-only">
-                                <span>Read Only</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Optional Fields -->
-                    <div class="form-field">
-                        <label class="field-label">Sample ID (Optional)</label>
-                        <input type="text" class="field-input" id="sample-id" placeholder="Enter sample ID">
-                    </div>
-
-                    <div class="form-field">
-                        <label class="field-label">Notes (Optional)</label>
-                        <input type="text" class="field-input" id="test-notes" placeholder="Enter notes">
-                    </div>
-
-                    <!-- Reserved Space -->
-                    <div class="reserved-space">
-                        [ Reserved for future fields ]
-                    </div>
-                </form>
+            <!-- CH 2 -->
+            <div class="sim-channel" id="sim-2">
+                <h3>CH 2</h3>
+                <div class="sim-type-select">
+                    <span>Type:</span>
+                    <select>
+                        <option value="2BC">2BC</option>
+                        <option value="3BTC" selected>3BTC</option>
+                        <option value="4BTCS">4BTCS</option>
+                    </select>
+                </div>
+                <div class="sim-buttons">
+                    <button class="sim-btn sim-btn-positive">Insert Positive</button>
+                    <button class="sim-btn sim-btn-negative">Insert Negative</button>
+                    <button class="sim-btn sim-btn-remove" disabled>Remove Cassette</button>
+                </div>
+                <div class="sim-state">EMPTY</div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeModal('start-test-modal')">Cancel</button>
-                <button type="submit" form="start-test-form" class="btn-primary btn-large">
-                    Start Test →
-                </button>
+            <!-- CH 3 -->
+            <div class="sim-channel" id="sim-3">
+                <h3>CH 3</h3>
+                <div class="sim-type-select">
+                    <span>Type:</span>
+                    <select>
+                        <option value="2BC">2BC</option>
+                        <option value="3BTC" selected>3BTC</option>
+                        <option value="4BTCS">4BTCS</option>
+                    </select>
+                </div>
+                <div class="sim-buttons">
+                    <button class="sim-btn sim-btn-positive">Insert Positive</button>
+                    <button class="sim-btn sim-btn-negative">Insert Negative</button>
+                    <button class="sim-btn sim-btn-remove" disabled>Remove Cassette</button>
+                </div>
+                <div class="sim-state">EMPTY</div>
+            </div>
+            <!-- CH 4 -->
+            <div class="sim-channel" id="sim-4">
+                <h3>CH 4</h3>
+                <div class="sim-type-select">
+                    <span>Type:</span>
+                    <select>
+                        <option value="2BC">2BC</option>
+                        <option value="3BTC" selected>3BTC</option>
+                        <option value="4BTCS">4BTCS</option>
+                    </select>
+                </div>
+                <div class="sim-buttons">
+                    <button class="sim-btn sim-btn-positive">Insert Positive</button>
+                    <button class="sim-btn sim-btn-negative">Insert Negative</button>
+                    <button class="sim-btn sim-btn-remove" disabled>Remove Cassette</button>
+                </div>
+                <div class="sim-state">EMPTY</div>
+            </div>
+            <!-- CH 5 -->
+            <div class="sim-channel" id="sim-5">
+                <h3>CH 5</h3>
+                <div class="sim-type-select">
+                    <span>Type:</span>
+                    <select>
+                        <option value="2BC">2BC</option>
+                        <option value="3BTC" selected>3BTC</option>
+                        <option value="4BTCS">4BTCS</option>
+                    </select>
+                </div>
+                <div class="sim-buttons">
+                    <button class="sim-btn sim-btn-positive">Insert Positive</button>
+                    <button class="sim-btn sim-btn-negative">Insert Negative</button>
+                    <button class="sim-btn sim-btn-remove" disabled>Remove Cassette</button>
+                </div>
+                <div class="sim-state">EMPTY</div>
             </div>
         </div>
     </div>
 
-    <!-- Detail View Modal -->
-    <div class="modal-overlay" id="detail-modal">
-        <div class="modal medium">
-            <div class="modal-header">
-                <h2 class="modal-title" id="detail-modal-title">Channel Details</h2>
-                <button class="modal-close" onclick="closeModal('detail-modal')">✕</button>
-            </div>
-            <div class="modal-body" id="detail-modal-body">
-                <!-- Content populated dynamically -->
-            </div>
-            <div class="modal-footer">
-                <button class="btn-text" onclick="closeModal('detail-modal')">Close</button>
-            </div>
-        </div>
-    </div>
+</div>
 
-    <!-- Control Labeling Modal -->
-    <div class="modal-overlay" id="control-label-modal">
-        <div class="modal medium blocking">
-            <div class="modal-header">
-                <h2 class="modal-title">Label Control Test</h2>
-            </div>
-            <div class="modal-body">
-                <div id="control-label-content">
-                    <p class="text-center mb-md">Positive Control Test Complete</p>
-                    <p class="text-center text-secondary mb-lg">Result: POSITIVE ✓ (Expected)</p>
+<!-- Scripts: state first, then UI, then app controller -->
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
 
-                    <div class="section-divider"></div>
-
-                    <div class="form-field">
-                        <label class="field-label">Label this control as:</label>
-                        <div class="radio-group">
-                            <label class="radio-option selected">
-                                <input type="radio" name="control-label" value="positive" checked>
-                                <span>Positive Control</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="control-label" value="animal">
-                                <span>Animal Control</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-primary btn-block btn-large" onclick="confirmControlLabel()">
-                    Confirm Label →
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="js/navigation.js"></script>
-    <script src="js/workflows.js"></script>
-    <script src="js/channels.js"></script>
 </body>
 </html>

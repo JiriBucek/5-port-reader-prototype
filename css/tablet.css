@@ -1,196 +1,261 @@
-/* Tablet Display Layout */
+/* ==========================================================================
+   Tablet Device Frame & Layout Variables
+   5-Port Milk Testing Device Prototype
+   ========================================================================== */
 
 :root {
-    /* Tablet dimensions - 7 inch display */
-    --tablet-width: 1280px;
-    --tablet-height: 800px;
+    /* Device screen dimensions */
+    --screen-width: 1280px;
+    --screen-height: 800px;
 
-    /* Brand Colors */
-    --primary-color: #0066FF;
-    --primary-hover: #0052CC;
+    /* Layout measurements */
+    --status-bar-height: 40px;
+    --bottom-nav-height: 50px;
+    --screen-padding: 10px;
+    --card-gap: 8px;
 
-    /* Status Colors */
-    --status-negative: #22c55e;
-    --status-positive: #ef4444;
-    --status-pending: #f59e0b;
-    --status-testing: #3b82f6;
-    --status-empty: #94a3b8;
+    /* Colors - Primary */
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #dbeafe;
 
-    /* UI Colors */
-    --background-color: #f8fafc;
-    --surface-color: #ffffff;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --border-color: #e2e8f0;
-    --border-dark: #cbd5e1;
+    /* Colors - Semantic */
+    --success: #16a34a;
+    --success-light: #bbf7d0;
+    --success-bg: #f0fdf4;
+    --danger: #dc2626;
+    --danger-light: #fecaca;
+    --danger-bg: #fef2f2;
+    --warning: #d97706;
+    --warning-light: #fde68a;
+    --warning-bg: #fffbeb;
+    --info: #0891b2;
+    --info-light: #a5f3fc;
+    --info-bg: #ecfeff;
 
-    /* Cassette Line Colors */
-    --line-positive: #ef4444;
-    --line-negative: #22c55e;
-    --line-testing: #3b82f6;
-    --line-empty: #d1d5db;
+    /* Colors - Neutral */
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    --white: #ffffff;
 
-    /* Spacing */
-    --spacing-xs: 8px;
-    --spacing-sm: 12px;
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
+    /* Colors - State backgrounds (from mermaid diagrams) */
+    --state-empty-bg: #f8f9fa;
+    --state-empty-border: #6c757d;
+    --state-active-bg: #cce5ff;
+    --state-active-border: #004085;
+    --state-waiting-bg: #e2e3e5;
+    --state-waiting-border: #6c757d;
+    --state-error-bg: #f5c6cb;
+    --state-error-border: #dc3545;
+    --state-negative-bg: #d4edda;
+    --state-negative-border: #28a745;
+    --state-positive-bg: #f8d7da;
+    --state-positive-border: #dc3545;
+    --state-inconclusive-bg: #fff3cd;
+    --state-inconclusive-border: #ffc107;
+    --state-control-bg: #d1ecf1;
+    --state-control-border: #0c5460;
 
-    /* Border Radius */
-    --radius-sm: 6px;
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-xs: 10px;
+    --font-sm: 11px;
+    --font-base: 13px;
+    --font-lg: 15px;
+    --font-xl: 18px;
+    --font-2xl: 22px;
+
+    /* Border radius */
+    --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+    --shadow-xl: 0 20px 25px rgba(0,0,0,0.12), 0 8px 10px rgba(0,0,0,0.06);
 }
 
-* {
+/* Reset */
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background-color: #333;
+    font-family: var(--font-family);
+    background: #d1d5db;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
-    gap: 0;
+    padding: 24px 16px;
+    color: var(--gray-800);
+    line-height: 1.4;
 }
 
-#tablet-container {
-    width: var(--tablet-width);
-    height: var(--tablet-height);
-    background-color: var(--background-color);
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+/* ---- Device Container ---- */
+.device-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+/* Device bezel */
+.device-frame {
+    background: var(--gray-800);
+    border-radius: 24px;
+    padding: 14px;
+    box-shadow: var(--shadow-xl),
+                inset 0 1px 0 rgba(255,255,255,0.05),
+                0 0 0 1px var(--gray-900);
+}
+
+/* The actual device screen area */
+.device-screen {
+    width: var(--screen-width);
+    height: var(--screen-height);
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
     overflow: hidden;
     position: relative;
-}
-
-/* Screen Management */
-.screen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
+    display: flex;
     flex-direction: column;
-    background-color: var(--background-color);
 }
 
-.screen.active {
+/* ---- Simulation Panel (below device) ---- */
+.simulation-panel {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 20px 24px;
+    width: calc(var(--screen-width) + 28px);
+}
+
+.simulation-panel h2 {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 4px;
+}
+
+.simulation-panel .sim-subtitle {
+    font-size: var(--font-sm);
+    color: var(--gray-400);
+    margin-bottom: 16px;
+}
+
+.sim-channels {
     display: flex;
+    gap: 12px;
 }
 
-/* Header / Status Bar */
-header {
-    background-color: var(--surface-color);
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border-color);
+.sim-channel {
+    flex: 1;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sim-channel h3 {
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--gray-600);
+    text-align: center;
+}
+
+.sim-channel .sim-type-select {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    min-height: 64px;
+    gap: 4px;
+    font-size: var(--font-sm);
+    color: var(--gray-500);
 }
 
-.status-bar-left {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    font-size: 16px;
-    color: var(--text-secondary);
+.sim-channel .sim-type-select select {
+    flex: 1;
+    padding: 4px 6px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    background: var(--white);
+    color: var(--gray-700);
+    cursor: pointer;
 }
 
-.status-bar-right {
+.sim-channel .sim-buttons {
     display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.status-item {
-    display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 6px;
 }
 
-.menu-button {
-    background: none;
+.sim-btn {
+    padding: 8px 10px;
     border: none;
-    font-size: 24px;
-    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    font-weight: 600;
     cursor: pointer;
-    padding: 8px;
+    transition: opacity 0.15s, transform 0.1s;
+    text-align: center;
 }
 
-.menu-button:hover {
-    color: var(--text-primary);
+.sim-btn:active {
+    transform: scale(0.97);
 }
 
-/* Main Content Area */
-main {
-    flex: 1;
-    padding: var(--spacing-lg);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+.sim-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
 }
 
-/* Channel Grid Layout */
-.channels-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: 1fr;
-    gap: var(--spacing-sm);
-    flex: 1;
-    width: 100%;
-    align-items: stretch;
+.sim-btn-positive {
+    background: #fecaca;
+    color: #991b1b;
+}
+.sim-btn-positive:hover:not(:disabled) {
+    background: #fca5a5;
 }
 
-/* Alert Banner */
-.alert-banner {
-    background-color: #fef3c7;
-    border: 1px solid #f59e0b;
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    color: #92400e;
+.sim-btn-negative {
+    background: #bbf7d0;
+    color: #166534;
+}
+.sim-btn-negative:hover:not(:disabled) {
+    background: #86efac;
 }
 
-.alert-banner .icon {
-    font-size: 20px;
+.sim-btn-remove {
+    background: var(--gray-200);
+    color: var(--gray-600);
+}
+.sim-btn-remove:hover:not(:disabled) {
+    background: var(--gray-300);
 }
 
-/* Bottom Navigation */
-.bottom-nav {
-    display: flex;
-    gap: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--border-color);
-    margin-top: auto;
-}
-
-/* Responsive scaling for smaller displays */
-@media (max-width: 1300px) {
-    #tablet-container {
-        transform: scale(0.9);
-    }
-}
-
-@media (max-width: 1180px) {
-    #tablet-container {
-        transform: scale(0.8);
-    }
-}
-
-@media (max-width: 1050px) {
-    #tablet-container {
-        transform: scale(0.7);
-    }
+/* Simulation status indicator */
+.sim-channel .sim-state {
+    font-size: var(--font-xs);
+    color: var(--gray-400);
+    text-align: center;
+    padding-top: 2px;
+    border-top: 1px solid var(--gray-200);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
