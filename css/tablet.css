@@ -108,7 +108,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 0;
 }
 
 /* Device bezel */
@@ -133,6 +133,131 @@ body {
     flex-direction: column;
 }
 
+/* ---- Physical Slot Visualization ---- */
+.slot-panel {
+    width: calc(var(--screen-width) + 20px);
+    background: linear-gradient(180deg, #2d3748 0%, #3d4a5c 100%);
+    border-radius: 0 0 6px 6px;
+    padding: 14px 20px 18px;
+    margin-top: 0;
+    box-shadow: var(--shadow-lg),
+                inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.slot-row {
+    display: flex;
+    gap: 16px;
+}
+
+.slot-unit {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.slot-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.slot-housing {
+    width: 100%;
+    aspect-ratio: 3 / 1;
+    background: #1a202c;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5),
+                inset 0 0 0 1px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+    perspective: 300px;
+}
+
+/* The dark slot opening / groove */
+.slot-opening {
+    position: absolute;
+    inset: 6px 8px;
+    background: #0d1117;
+    border-radius: 3px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+}
+
+/* ---- Cassette Body (physical) ---- */
+.cassette-body {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 10px;
+    right: 10px;
+    background: linear-gradient(180deg, #f7f7f5 0%, #ebe9e4 100%);
+    border-radius: 3px;
+    border: 1px solid #c8c4bc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    z-index: 1;
+
+    /* Front-to-back slide: starts in front of slot, pushed into device */
+    transform-origin: center bottom;
+    transform: translateY(110%) rotateX(-30deg) scale(1.1);
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.cassette-body.inserted {
+    transform: translateY(0) rotateX(0deg) scale(1);
+    opacity: 1;
+}
+
+.cassette-body.removing {
+    transform: translateY(110%) rotateX(-30deg) scale(1.1);
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53),
+                opacity 0.35s ease 0.15s;
+}
+
+/* Side-view: hide internal details, just show the plastic edge */
+.cassette-top-tab,
+.cassette-window,
+.cassette-well {
+    display: none;
+}
+
+/* Subtle surface detail — a thin seam line across the cassette edge */
+.cassette-body::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 50%;
+    height: 1px;
+    background: rgba(0,0,0,0.06);
+}
+
+/* Small grip notch at the exposed (front) end */
+.cassette-body::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: #d4d0c8;
+    border-radius: 2px 2px 0 0;
+    box-shadow: inset 0 1px 0 rgba(0,0,0,0.08);
+}
+
 /* ---- Simulation Panel (below device) ---- */
 .simulation-panel {
     background: var(--white);
@@ -140,6 +265,7 @@ body {
     box-shadow: var(--shadow-lg);
     padding: 20px 24px;
     width: calc(var(--screen-width) + 20px);
+    margin-top: 24px;
 }
 
 .simulation-panel h2 {

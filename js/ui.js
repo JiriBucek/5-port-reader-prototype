@@ -7,6 +7,7 @@
 
 function renderAllCards() {
     channels.forEach(ch => renderCard(ch));
+    channels.forEach(ch => renderSlot(ch));
     renderSimulationButtons();
 }
 
@@ -399,6 +400,61 @@ function renderStatusBar() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const el = document.getElementById('status-bar-time');
     if (el) el.textContent = timeStr;
+}
+
+// ---- Physical Slot Visualization ----
+
+function renderSlot(ch) {
+    const cassette = document.getElementById(`cassette-${ch.id}`);
+    const linesEl = document.getElementById(`cassette-lines-${ch.id}`);
+    if (!cassette || !linesEl) return;
+
+    const shouldBeInserted = ch.cassettePresent;
+    const isInserted = cassette.classList.contains('inserted');
+
+    if (shouldBeInserted && !isInserted) {
+        // Insert animation
+        cassette.classList.remove('removing');
+        // Force reflow to restart animation
+        void cassette.offsetWidth;
+        cassette.classList.add('inserted');
+    } else if (!shouldBeInserted && isInserted) {
+        // Remove animation
+        cassette.classList.remove('inserted');
+        cassette.classList.add('removing');
+        // Clean up removing class after animation
+        setTimeout(() => cassette.classList.remove('removing'), 600);
+    }
+
+    // Update cassette lines to reflect test state
+    updateSlotLines(ch, linesEl);
+}
+
+function updateSlotLines(ch, linesEl) {
+    if (!ch.cassetteType) {
+        linesEl.innerHTML = '';
+        return;
+    }
+
+    const subs = SUBSTANCES[ch.cassetteType];
+
+    // Determine line states (mirror the card cassette logic)
+    let currentResults = null;
+    if (ch.testResults.length > 0 &&
+        (ch.state === STATES.RESULT || ch.state === STATES.COMPLETE ||
+         ch.state === STATES.AWAITING_CONFIRMATION)) {
+        currentResults = ch.testResults[ch.testResults.length - 1].substances;
+    }
+
+    linesEl.innerHTML = subs.map((sub, i) => {
+        let lineClass = 'cassette-line-mark';
+        if (ch.state === STATES.READING) {
+            lineClass += ' line-reading';
+        } else if (currentResults) {
+            lineClass += currentResults[i].result === 'positive' ? ' line-positive' : ' line-negative';
+        }
+        return `<div class="${lineClass}"></div>`;
+    }).join('');
 }
 
 // ---- Simulation Panel ----

@@ -80,6 +80,7 @@ function handleInsert(channelId, outcome) {
     }
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
 }
 
@@ -163,6 +164,7 @@ function handleRemove(channelId) {
     }
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
 }
 
@@ -214,11 +216,13 @@ function startProcessing(ch) {
     if (ch.processing === 'read_only') {
         ch.state = STATES.READING;
         renderCard(ch);
+        renderSlot(ch);
         startReadingTimer(ch);
     } else {
         // Read + Incubate
         ch.state = STATES.WAITING_TEMP;
         renderCard(ch);
+        renderSlot(ch);
         startTempWaitTimer(ch);
     }
 }
@@ -232,6 +236,7 @@ function handleStartTestN(channelId) {
     ch.currentTestNumber++;
     startProcessing(ch);
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
 }
 
@@ -267,6 +272,7 @@ function startIncubationTimer(ch) {
             // Move to reading
             ch.state = STATES.READING;
             renderCard(ch);
+            renderSlot(ch);
             startReadingTimer(ch);
             return;
         }
@@ -295,6 +301,7 @@ function startAlertTimer(ch) {
             ch.state = STATES.ERROR;
             ch.errorMessage = 'Test interrupted — cassette not reinserted';
             renderCard(ch);
+            renderSlot(ch);
             renderSimulationButtons();
             return;
         }
@@ -363,6 +370,7 @@ function completeReading(ch) {
     }
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
 }
 
@@ -408,6 +416,7 @@ function handleDecisionAbort(channelId) {
     }
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
     processModalQueue();
 }
@@ -427,6 +436,7 @@ function handleDecisionContinue(channelId) {
     }
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
     processModalQueue();
 }
@@ -446,6 +456,7 @@ function handleStopConfirm(channelId) {
     hideModal();
     resetChannel(ch);
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
     processModalQueue();
 }
@@ -484,6 +495,7 @@ function handleRetry(channelId) {
     ch.state = STATES.WAITING_FOR_SWAP;
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
 }
 
@@ -497,5 +509,6 @@ function handleAbort(channelId) {
     resetChannel(ch);
 
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
 }
