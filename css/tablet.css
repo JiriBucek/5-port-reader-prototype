@@ -168,32 +168,53 @@ body {
 .slot-housing {
     width: 100%;
     aspect-ratio: 3 / 1;
-    background: #1a202c;
+    /* Device body surface */
+    background: linear-gradient(180deg, #3d4a5c 0%, #4a566a 50%, #3d4a5c 100%);
     border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5),
-                inset 0 0 0 1px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06),
+                0 1px 2px rgba(0,0,0,0.3);
     position: relative;
     overflow: hidden;
     perspective: 300px;
 }
 
-/* The dark slot opening / groove */
+/* Narrow slit opening — the actual slot where cassette goes in */
 .slot-opening {
     position: absolute;
-    inset: 6px 8px;
-    background: #0d1117;
-    border-radius: 3px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 70%;
+    background: #0a0e14;
+    border-radius: 2px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8),
+                inset 0 -1px 2px rgba(0,0,0,0.4),
+                0 1px 0 rgba(255,255,255,0.05);
 }
+
+/* Guide rail marks on the sides of the slit */
+.slot-opening::before,
+.slot-opening::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    background: linear-gradient(180deg, #1a1f2a, #252b38, #1a1f2a);
+    border-radius: 1px;
+}
+.slot-opening::before { left: 3px; }
+.slot-opening::after { right: 3px; }
 
 /* ---- Cassette Body (physical) ---- */
 .cassette-body {
     position: absolute;
-    top: 4px;
-    bottom: 4px;
-    left: 10px;
-    right: 10px;
+    top: 15%;
+    bottom: 15%;
+    left: 12px;
+    right: 12px;
     background: linear-gradient(180deg, #f7f7f5 0%, #ebe9e4 100%);
     border-radius: 3px;
     border: 1px solid #c8c4bc;

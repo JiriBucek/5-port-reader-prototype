@@ -69,10 +69,10 @@ function renderCardCassette(ch) {
                       ch.state === STATES.ERROR;
 
     if (showEmpty && ch.state === STATES.EMPTY) {
-        content = `<div class="cassette-empty">&#9649;</div>`;
+        content = renderCassetteSlotPlaceholder();
     } else if (showEmpty) {
         // Empty slot but with context (waiting for swap, alert, error)
-        content = `<div class="cassette-empty">&#9649;</div>`;
+        content = renderCassetteSlotPlaceholder();
     } else {
         content = renderCassetteGraphic(ch);
     }
@@ -83,6 +83,20 @@ function renderCardCassette(ch) {
     return `<div class="card-cassette-area">
         ${content}
         ${miniHistory}
+    </div>`;
+}
+
+function renderCassetteSlotPlaceholder() {
+    return `<div class="cassette-empty">
+        <div class="cassette-ghost">
+            <div class="ghost-sample-well"></div>
+            <div class="ghost-window">
+                <div class="ghost-line"></div>
+                <div class="ghost-line"></div>
+                <div class="ghost-line"></div>
+            </div>
+            <div class="ghost-qr"></div>
+        </div>
     </div>`;
 }
 
