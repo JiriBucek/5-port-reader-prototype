@@ -395,13 +395,3 @@ body {
     background: var(--gray-300);
 }
 
-/* Simulation status indicator */
-.sim-channel .sim-state {
-    font-size: var(--font-xs);
-    color: var(--gray-400);
-    text-align: center;
-    padding-top: 2px;
-    border-top: 1px solid var(--gray-200);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}

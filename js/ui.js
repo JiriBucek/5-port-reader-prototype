@@ -484,12 +484,9 @@ function renderSimulationButtons() {
         const posBtn = panel.querySelector('.sim-btn-positive');
         const negBtn = panel.querySelector('.sim-btn-negative');
         const removeBtn = panel.querySelector('.sim-btn-remove');
-        const stateLabel = panel.querySelector('.sim-state');
-
         if (posBtn) posBtn.disabled = !insertable;
         if (negBtn) negBtn.disabled = !insertable;
         if (removeBtn) removeBtn.disabled = !removable;
-        if (stateLabel) stateLabel.textContent = ch.state.replace(/_/g, ' ');
     });
 }
 
