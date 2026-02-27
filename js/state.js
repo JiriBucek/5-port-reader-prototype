@@ -61,7 +61,9 @@ let usedCassetteIds = new Set();
 let cassetteIdCounter = 1;
 let sessionHistory = [];
 let deviceSettings = {
-    microswitchEnabled: true
+    microswitchEnabled: true,
+    qrScanningEnabled: true,
+    incubationEnabled: true
 };
 
 // ---- Channel Data Factory ----

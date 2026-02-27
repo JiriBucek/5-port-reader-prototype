@@ -220,21 +220,38 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: var(--primary);
+    position: relative;
+    width: 72px;
+    height: 72px;
+    padding-top: 14px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+    border: 2px solid #1e40af;
     color: var(--white);
-    font-size: var(--font-xl);
-    font-weight: 800;
+    font-size: 34px;
+    font-weight: 900;
     border-radius: 2px;
     flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.modal-channel-badge::before {
+    content: 'CH';
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.88);
 }
 
 /* Modal header with channel badge */
 .modal-header-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
 }
 
 .modal-header-row .header-text {

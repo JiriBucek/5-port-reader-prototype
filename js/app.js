@@ -19,25 +19,58 @@ document.addEventListener('DOMContentLoaded', init);
 // ---- Status Bar ----
 
 function bindStatusBarEvents() {
-    const settingsBtn = document.getElementById('settings-toggle-btn');
+    const settingsBtn = document.getElementById('settings-open-btn');
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             if (activeModal) return;
-            deviceSettings.microswitchEnabled = !deviceSettings.microswitchEnabled;
-
-            // If the switch is re-enabled, any physically present cassette can become detectable.
-            if (deviceSettings.microswitchEnabled) {
-                channels.forEach(ch => {
-                    if (ch.state === STATES.EMPTY && ch.cassettePresent) {
-                        ch.state = STATES.DETECTED;
-                    }
-                });
-            }
-
-            renderAllCards();
-            renderStatusBar();
+            showSettingsScreen();
         });
     }
+}
+
+function handleSettingsCancel() {
+    hideSettingsScreen();
+    processModalQueue();
+}
+
+function handleSettingsApply(nextSettings) {
+    hideSettingsScreen();
+
+    const prevMicroswitch = deviceSettings.microswitchEnabled;
+    const prevQr = deviceSettings.qrScanningEnabled;
+
+    deviceSettings.microswitchEnabled = !!nextSettings.microswitchEnabled;
+    deviceSettings.qrScanningEnabled = !!nextSettings.qrScanningEnabled;
+    deviceSettings.incubationEnabled = !!nextSettings.incubationEnabled;
+
+    // If microswitch turns ON, physically present cassettes can immediately become detected.
+    if (!prevMicroswitch && deviceSettings.microswitchEnabled) {
+        channels.forEach(ch => {
+            if (ch.state === STATES.EMPTY && ch.physicalCassettePresent) {
+                ch.cassettePresent = true;
+                ch.state = STATES.DETECTED;
+                if (deviceSettings.qrScanningEnabled && ch.loadedCassetteType) {
+                    ch.cassetteType = ch.loadedCassetteType;
+                }
+            }
+        });
+    }
+
+    // QR mode affects whether DETECTED channels show locked cassette type.
+    if (prevQr !== deviceSettings.qrScanningEnabled) {
+        channels.forEach(ch => {
+            if (ch.state !== STATES.DETECTED) return;
+            if (deviceSettings.qrScanningEnabled) {
+                ch.cassetteType = ch.loadedCassetteType || ch.cassetteType;
+            } else {
+                ch.cassetteType = null;
+            }
+        });
+    }
+
+    renderAllCards();
+    renderStatusBar();
+    processModalQueue();
 }
 
 // ---- Simulation Event Handlers ----
@@ -87,8 +120,9 @@ function handleInsert(channelId, outcome) {
     ch.loadedCassetteType = selectedType;
     ch.simulatedOutcome = outcome;
 
-    // Initial default type when first cassette is inserted.
-    if (!ch.cassetteType) {
+    // QR-enabled mode auto-loads cassette type from inserted cassette.
+    if (deviceSettings.qrScanningEnabled &&
+        (ch.state === STATES.EMPTY || ch.state === STATES.DETECTED || ch.currentTestNumber === 0)) {
         ch.cassetteType = selectedType;
     }
 
@@ -158,7 +192,9 @@ function handleConfigStart(channelId, config) {
     ch.cassetteType = config.testType;
     ch.route = config.route;
     ch.operatorId = config.operatorId;
-    ch.processing = config.processing;
+    ch.processing = (config.processing === 'read_incubate' && !deviceSettings.incubationEnabled)
+        ? 'read_only'
+        : config.processing;
     ch.currentTestNumber = 1;
 
     const started = attemptStartCurrentTest(ch);
@@ -208,7 +244,7 @@ function validateCassetteForCurrentTest(ch) {
         };
     }
 
-    if (usedCassetteIds.has(ch.loadedCassetteId)) {
+    if (deviceSettings.qrScanningEnabled && usedCassetteIds.has(ch.loadedCassetteId)) {
         return {
             ok: false,
             message: 'Cassette already used. Insert a new cassette and retry.'
@@ -221,7 +257,10 @@ function validateCassetteForCurrentTest(ch) {
 
     const loadedType = ch.loadedCassetteType || ch.cassetteType;
 
-    if (expectedType && loadedType && expectedType !== loadedType) {
+    // Type mismatch is only enforceable when QR scanning is enabled, and only for confirmation tests.
+    if (deviceSettings.qrScanningEnabled &&
+        ch.currentTestNumber > 1 &&
+        expectedType && loadedType && expectedType !== loadedType) {
         return {
             ok: false,
             message: `Wrong cassette type. Expected ${expectedType}.`
@@ -244,7 +283,7 @@ function attemptStartCurrentTest(ch) {
         return false;
     }
 
-    if (ch.loadedCassetteType && ch.currentTestNumber === 1) {
+    if (deviceSettings.qrScanningEnabled && ch.loadedCassetteType && ch.currentTestNumber === 1) {
         // Align configured type with what is currently inserted.
         ch.cassetteType = ch.loadedCassetteType;
     }

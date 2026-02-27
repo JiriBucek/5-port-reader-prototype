@@ -26,12 +26,12 @@
                         <span class="temp-icon">&#x1F321;</span>
                         <span>40.0&deg;C</span>
                     </span>
-                    <span class="sb-sensor-mode" id="status-bar-sensor-mode">Sensor ON</span>
+                    <span class="sb-sensor-mode" id="status-bar-microswitch-mode">Micro Switch ON</span>
                     <span class="sb-time" id="status-bar-time">--:--</span>
                 </div>
                 <div class="sb-right">
                     <button class="sb-nav-btn" id="history-btn">History</button>
-                    <button class="sb-nav-btn" id="settings-toggle-btn">Sensor ON</button>
+                    <button class="sb-nav-btn" id="settings-open-btn">Settings</button>
                 </div>
             </div>
 
@@ -43,6 +43,9 @@
                 <div class="channel-card state-empty" id="card-4"></div>
                 <div class="channel-card state-empty" id="card-5"></div>
             </div>
+
+            <!-- Full Screen Settings -->
+            <div class="settings-screen" id="settings-screen"></div>
 
             <!-- Modal Overlay -->
             <div class="modal-overlay" id="modal-overlay">

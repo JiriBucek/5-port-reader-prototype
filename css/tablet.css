@@ -65,12 +65,12 @@
 
     /* Typography */
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-xs: 12px;
-    --font-sm: 14px;
-    --font-base: 16px;
-    --font-lg: 18px;
-    --font-xl: 22px;
-    --font-2xl: 28px;
+    --font-xs: 13px;
+    --font-sm: 15px;
+    --font-base: 17px;
+    --font-lg: 20px;
+    --font-xl: 24px;
+    --font-2xl: 30px;
 
     /* Border radius — square/minimal per device UI style */
     --radius-sm: 2px;
@@ -394,4 +394,3 @@ body {
 .sim-btn-remove:hover:not(:disabled) {
     background: var(--gray-300);
 }
-

@@ -85,12 +85,12 @@ function renderCardCassette(ch) {
 function renderCassetteSlotPlaceholder() {
     return `<div class="cassette-empty">
         <div class="cassette-ghost">
-            <div class="ghost-sample-well"></div>
             <div class="ghost-window">
                 <div class="ghost-line"></div>
                 <div class="ghost-line"></div>
                 <div class="ghost-line"></div>
             </div>
+            <div class="ghost-sample-well"></div>
             <div class="ghost-qr"></div>
         </div>
     </div>`;
@@ -402,12 +402,9 @@ function renderStatusBar() {
     const el = document.getElementById('status-bar-time');
     if (el) el.textContent = timeStr;
 
-    const modeText = deviceSettings.microswitchEnabled ? 'Sensor ON' : 'Sensor OFF';
-    const modeEl = document.getElementById('status-bar-sensor-mode');
+    const modeText = deviceSettings.microswitchEnabled ? 'Micro Switch ON' : 'Micro Switch OFF';
+    const modeEl = document.getElementById('status-bar-microswitch-mode');
     if (modeEl) modeEl.textContent = modeText;
-
-    const settingsBtn = document.getElementById('settings-toggle-btn');
-    if (settingsBtn) settingsBtn.textContent = modeText;
 }
 
 // ---- Physical Slot Visualization ----
@@ -499,8 +496,11 @@ function showConfigModal(ch) {
         { value: 'animal_control', label: 'Animal Control' }
     ];
 
+    const qrLocked = deviceSettings.qrScanningEnabled;
+    const loadedType = ch.loadedCassetteType || ch.cassetteType || CASSETTE_TYPES[0];
+    const selectedType = qrLocked ? loadedType : (ch.cassetteType || loadedType);
     const subtitle = ch.cassettePresent
-        ? `${ch.cassetteType || 'Cassette'} loaded`
+        ? `${loadedType} loaded`
         : 'Manual mode: configure without cassette detection';
 
     modal.innerHTML = `
@@ -524,14 +524,14 @@ function showConfigModal(ch) {
             </div>
             <div class="form-field">
                 <label>Test Type</label>
-                <select class="form-select" id="cfg-type">
+                <select class="form-select" id="cfg-type" ${qrLocked ? 'disabled' : ''}>
                     ${CASSETTE_TYPES.map(t =>
-                        `<option value="${t}"${t === ch.cassetteType ? ' selected' : ''}>${t}</option>`
+                        `<option value="${t}"${t === selectedType ? ' selected' : ''}>${t}</option>`
                     ).join('')}
                 </select>
-                ${(ch.cassettePresent && ch.cassetteType)
-                    ? `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Type can be assisted by cassette detection</div>`
-                    : ''}
+                ${qrLocked
+                    ? `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Loaded automatically from cassette QR</div>`
+                    : `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Select manually (QR scanning OFF)</div>`}
             </div>
             <div class="form-field">
                 <label>Route / Sample ID</label>
@@ -551,7 +551,7 @@ function showConfigModal(ch) {
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="cfg-cancel">Cancel</button>
             <button class="modal-btn btn-primary" id="cfg-read-only">Read</button>
-            <button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>
+            ${deviceSettings.incubationEnabled ? `<button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>` : ''}
         </div>`;
 
     overlay.classList.add('active');
@@ -596,9 +596,12 @@ function showConfigModal(ch) {
         collectConfigAndStart('read_only');
     });
 
-    document.getElementById('cfg-read-incubate').addEventListener('click', () => {
-        collectConfigAndStart('read_incubate');
-    });
+    const incubateBtn = document.getElementById('cfg-read-incubate');
+    if (incubateBtn) {
+        incubateBtn.addEventListener('click', () => {
+            collectConfigAndStart('read_incubate');
+        });
+    }
 }
 
 function hideModal() {
@@ -608,6 +611,97 @@ function hideModal() {
     overlay.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
     overlay.classList.remove('active');
     activeModal = null;
+}
+
+// ---- Settings Screen ----
+
+function showSettingsScreen() {
+    const screen = document.getElementById('settings-screen');
+    if (!screen) return;
+
+    activeModal = { type: 'settings' };
+
+    function toggleControl(id, value, onLabel = 'On', offLabel = 'Off') {
+        return `
+            <div class="segmented-control settings-toggle" id="${id}">
+                <button class="seg-option${value ? ' selected' : ''}" data-value="on">${onLabel}</button>
+                <button class="seg-option${!value ? ' selected' : ''}" data-value="off">${offLabel}</button>
+            </div>`;
+    }
+
+    screen.innerHTML = `
+        <div class="settings-screen-header">
+            <div class="settings-screen-title-wrap">
+                <h1>Settings</h1>
+                <p>Device behavior controls</p>
+            </div>
+        </div>
+        <div class="settings-screen-body">
+            <div class="settings-item">
+                <div class="settings-item-copy">
+                    <h3>Micro Switch</h3>
+                    <p>ON uses cassette insertion detection. OFF enables full manual workflow.</p>
+                </div>
+                ${toggleControl('set-microswitch', deviceSettings.microswitchEnabled)}
+            </div>
+            <div class="settings-item">
+                <div class="settings-item-copy">
+                    <h3>QR Scanning</h3>
+                    <p>ON locks test type to cassette QR. OFF allows manual test type selection.</p>
+                </div>
+                ${toggleControl('set-qr', deviceSettings.qrScanningEnabled)}
+            </div>
+            <div class="settings-item">
+                <div class="settings-item-copy">
+                    <h3>Incubation</h3>
+                    <p>ON shows Read + Incubate. OFF uses Read only.</p>
+                </div>
+                ${toggleControl('set-incubation', deviceSettings.incubationEnabled)}
+            </div>
+        </div>
+        <div class="settings-screen-footer">
+            <button class="modal-btn btn-secondary" id="settings-screen-cancel">Cancel</button>
+            <button class="modal-btn btn-primary" id="settings-screen-save">Save</button>
+        </div>`;
+
+    screen.classList.add('active');
+
+    screen.querySelectorAll('.settings-toggle').forEach(sc => {
+        sc.querySelectorAll('.seg-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                sc.querySelectorAll('.seg-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+            });
+        });
+    });
+
+    document.getElementById('settings-screen-cancel').addEventListener('click', () => {
+        handleSettingsCancel();
+    });
+
+    document.getElementById('settings-screen-save').addEventListener('click', () => {
+        const microswitchEnabled = screen.querySelector('#set-microswitch .seg-option.selected')?.dataset.value === 'on';
+        const qrScanningEnabled = screen.querySelector('#set-qr .seg-option.selected')?.dataset.value === 'on';
+        const incubationEnabled = screen.querySelector('#set-incubation .seg-option.selected')?.dataset.value === 'on';
+
+        handleSettingsApply({
+            microswitchEnabled,
+            qrScanningEnabled,
+            incubationEnabled
+        });
+    });
+}
+
+function hideSettingsScreen() {
+    const screen = document.getElementById('settings-screen');
+    if (!screen) return;
+
+    screen.classList.remove('active');
+    screen.innerHTML = '';
+
+    if (activeModal && activeModal.type === 'settings') {
+        activeModal = null;
+    }
 }
 
 // ---- Decision Modal ----
