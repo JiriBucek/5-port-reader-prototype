@@ -1,5 +1,7 @@
 # Complete Device Flow - All States & Transitions
 
+> **Prototype update (no-removal detection mode):** The current interactive prototype no longer depends on removal events. Confirmation now advances through `READY_FOR_TEST_N` with explicit user actions (`Start`, `Abort`, `Clear`), and incomplete flows can be manually cleared with inconclusive recording.
+
 ## UX Decisions Made
 
 | Decision | Choice |

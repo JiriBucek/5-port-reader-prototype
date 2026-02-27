@@ -19,7 +19,7 @@ You will see the device screen with 5 channel slots (like the real device).
 Below the device screen, there is a SIMULATION PANEL with buttons:
   - "Insert Positive" = simulate inserting a cassette with positive result
   - "Insert Negative" = simulate inserting a cassette with negative result
-  - "Remove" = simulate removing the cassette from the slot
+  - "Remove Cassette" = simulate physically removing the cassette from the slot
 
 Try this:
   1. Click "Insert Negative" on Channel 1
@@ -28,19 +28,19 @@ Try this:
   4. Watch the test run (temperature wait -> incubation -> reading -> result)
   5. Try "Insert Positive" on another channel to see the confirmation flow
   6. Try clicking on cards to see detail modals
-  7. Try removing cassettes and inserting new ones
+  7. Try removing cassettes mid-test and use Retry/Abort/Clear to recover
 
 The UI has one main screen with 5 slot cards. Everything happens through popup modals (configure, results, details). The user does not navigate to other screens.
 
 
 === QUESTION 1: Cassette Detection (Micro Switch) ===
 
-IMPORTANT: This UI depends on the device knowing if a cassette is INSIDE or OUTSIDE each slot.
+IMPORTANT: This UI now supports a removal-independent fallback mode.
 
 For example:
-  - "Configure" button only appears AFTER cassette is inserted
-  - When cassette is removed, the UI automatically resets
-  - The user has NO button to manually reset a slot
+  - If Sensor ON: insertion detection can still assist the user
+  - If Sensor OFF: user can configure/start without insertion detection
+  - The user can manually clear a channel in non-running states
 
 We know the micro switch in the DRC sometimes breaks.
 We know there is an option to turn off the micro switch in that device.

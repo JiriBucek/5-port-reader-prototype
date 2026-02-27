@@ -73,6 +73,11 @@
     color: var(--gray-500);
 }
 
+.sb-sensor-mode {
+    font-size: var(--font-sm);
+    color: var(--gray-500);
+}
+
 /* ---- Channels Container ---- */
 .channels-container {
     flex: 1;
@@ -586,12 +591,13 @@
 .card-action {
     padding: 8px 10px 10px;
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     flex-shrink: 0;
 }
 
 .card-action .action-btn {
-    flex: 1;
+    flex: 1 1 calc(50% - 3px);
     padding: 10px 8px;
     border: none;
     border-radius: var(--radius-sm);
@@ -601,6 +607,10 @@
     transition: background-color 0.15s, transform 0.1s;
     min-height: 48px;
     text-align: center;
+}
+
+.card-action .action-btn.btn-full {
+    flex-basis: 100%;
 }
 
 .card-action .action-btn:active {
@@ -618,6 +628,16 @@
     color: var(--white);
 }
 .btn-success:hover { background: #15803d; }
+
+.btn-ghost {
+    background: transparent;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-300) !important;
+}
+
+.btn-ghost:hover {
+    background: var(--gray-100);
+}
 
 .btn-danger {
     background: var(--danger);

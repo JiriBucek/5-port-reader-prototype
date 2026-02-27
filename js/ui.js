@@ -62,11 +62,7 @@ function renderCardHeader(ch) {
 function renderCardCassette(ch) {
     let content = '';
 
-    const showEmpty = !ch.cassettePresent ||
-                      ch.state === STATES.EMPTY ||
-                      ch.state === STATES.WAITING_FOR_SWAP ||
-                      ch.state === STATES.INCUBATION_ALERT ||
-                      ch.state === STATES.ERROR;
+    const showEmpty = !ch.cassettePresent || ch.state === STATES.EMPTY;
 
     if (showEmpty && ch.state === STATES.EMPTY) {
         content = renderCassetteSlotPlaceholder();
@@ -154,10 +150,10 @@ function renderMiniHistory(ch) {
     // States where main cassette is NOT showing a completed result
     // (empty slot, blank cassette, or processing) — show ALL test history
     const mainNotShowingResult = [
-        STATES.WAITING_FOR_SWAP, STATES.READY_FOR_TEST_N,
+        STATES.READY_FOR_TEST_N,
         STATES.ERROR_TYPE_MISMATCH, STATES.ERROR_USED_CONFIRMATION,
         STATES.WAITING_TEMP, STATES.INCUBATING, STATES.READING,
-        STATES.INCUBATION_ALERT, STATES.ERROR
+        STATES.ERROR
     ];
 
     let testsToShow;
@@ -193,7 +189,12 @@ function renderCardStatus(ch) {
 
     switch (ch.state) {
         case STATES.EMPTY:
-            statusHtml = `<span class="status-text status-waiting">No cassette inserted</span>`;
+            if (deviceSettings.microswitchEnabled) {
+                statusHtml = `<span class="status-text status-waiting">No cassette inserted</span>`;
+            } else {
+                statusHtml = `<span class="status-text status-waiting">Manual mode</span>
+                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure to start without detection</span>`;
+            }
             break;
 
         case STATES.DETECTED:
@@ -204,7 +205,7 @@ function renderCardStatus(ch) {
         case STATES.ERROR_USED:
         case STATES.ERROR_USED_CONFIRMATION:
             statusHtml = `<span class="status-text status-error">Used cassette detected</span>
-                          <span class="status-text status-error" style="font-size:var(--font-xs)">Remove and insert new</span>`;
+                          <span class="status-text status-error" style="font-size:var(--font-xs)">Insert a new cassette and retry</span>`;
             break;
 
         case STATES.CONFIGURING:
@@ -229,12 +230,6 @@ function renderCardStatus(ch) {
             break;
         }
 
-        case STATES.INCUBATION_ALERT:
-            statusHtml = `<span class="status-text status-alert">Reinsert cassette now!</span>
-                          <span class="countdown-text countdown-alert">${ch.alertRemaining}s</span>
-                          <div class="progress-bar"><div class="progress-fill progress-alert" style="width:${ch.alertRemaining / TIMING.ALERT_TIMEOUT * 100}%"></div></div>`;
-            break;
-
         case STATES.READING:
             statusHtml = `<div class="spinner"></div>
                           <span class="status-text status-processing">Reading cassette...</span>`;
@@ -254,24 +249,12 @@ function renderCardStatus(ch) {
             break;
         }
 
-        case STATES.AWAITING_CONFIRMATION: {
+        case STATES.READY_FOR_TEST_N: {
             const nextTest = ch.currentTestNumber + 1;
-            statusHtml = `<span class="status-text status-waiting">Remove cassette</span>
-                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert new cassette for Test ${nextTest}</span>`;
+            statusHtml = `<span class="status-text">Ready for Test ${nextTest}</span>
+                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert cassette if needed, then tap Start</span>`;
             break;
         }
-
-        case STATES.WAITING_FOR_SWAP: {
-            const nextTest = ch.currentTestNumber + 1;
-            statusHtml = `<span class="status-text status-waiting">Insert new cassette</span>
-                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Waiting for Test ${nextTest} cassette</span>`;
-            break;
-        }
-
-        case STATES.READY_FOR_TEST_N:
-            statusHtml = `<span class="status-text">Ready for Test ${ch.currentTestNumber + 1}</span>
-                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Tap Start to begin</span>`;
-            break;
 
         case STATES.COMPLETE: {
             const isCtrl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
@@ -279,7 +262,7 @@ function renderCardStatus(ch) {
                 const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
                 statusHtml = `<span class="status-text" style="color:var(--gray-500)">${controlLabel}</span>`;
             } else if (ch.groupResult === 'inconclusive') {
-                statusHtml = `<span class="status-text" style="color:var(--warning)">Flow aborted</span>`;
+                statusHtml = `<span class="status-text" style="color:var(--warning)">Flow result INCONCLUSIVE</span>`;
             } else if (ch.groupResult === 'positive') {
                 statusHtml = `<span class="status-text status-error">Flow result POSITIVE</span>`;
             } else {
@@ -295,7 +278,7 @@ function renderCardStatus(ch) {
         case STATES.ERROR_TYPE_MISMATCH: {
             const expected = ch.testResults.length > 0 ? ch.testResults[0].cassetteType : '?';
             statusHtml = `<span class="status-text status-error">Wrong cassette type</span>
-                          <span class="status-text status-error" style="font-size:var(--font-xs)">Expected ${expected} &mdash; remove and replace</span>`;
+                          <span class="status-text status-error" style="font-size:var(--font-xs)">Expected ${expected} &mdash; insert correct type and retry</span>`;
             break;
         }
     }
@@ -346,40 +329,43 @@ function renderCardGroupResult(ch) {
 // ---- Card Action Button ----
 
 function renderCardAction(ch) {
+    const clearBtn = `<button class="action-btn btn-ghost" data-action="clear" data-ch="${ch.id}">Clear</button>`;
+
     switch (ch.state) {
-        case STATES.DETECTED:
+        case STATES.EMPTY:
+            if (!canConfigureChannel(ch)) return '';
             return `<div class="card-action">
                 <button class="action-btn btn-primary" data-action="configure" data-ch="${ch.id}">Configure</button>
             </div>`;
 
-        case STATES.WAITING_FOR_SWAP:
+        case STATES.DETECTED:
             return `<div class="card-action">
-                <button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort flow</button>
+                <button class="action-btn btn-primary" data-action="configure" data-ch="${ch.id}">Configure</button>
+                ${clearBtn}
             </div>`;
 
         case STATES.READY_FOR_TEST_N:
             return `<div class="card-action">
-                <button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}">Start Test ${ch.currentTestNumber + 1}</button>
+                <button class="action-btn btn-primary btn-full" data-action="start-test-n" data-ch="${ch.id}">Start Test ${ch.currentTestNumber + 1}</button>
+                <button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort Flow</button>
             </div>`;
 
         case STATES.COMPLETE:
             return `<div class="card-action">
                 <button class="action-btn btn-secondary" data-action="view-details" data-ch="${ch.id}">View Details</button>
+                ${clearBtn}
             </div>`;
 
         case STATES.ERROR:
-            if (ch.currentTestNumber > 1) {
-                return `<div class="card-action">
-                    <button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>
-                    <button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>
-                </div>`;
-            }
             return `<div class="card-action">
-                <button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>
+                <button class="action-btn btn-primary btn-full" data-action="retry" data-ch="${ch.id}">Retry</button>
+                <button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>
+                ${clearBtn}
             </div>`;
 
         default:
-            return '';
+            if (!canClearChannel(ch)) return '';
+            return `<div class="card-action">${clearBtn}</div>`;
     }
 }
 
@@ -402,6 +388,7 @@ function bindCardEvents(ch) {
                 case 'view-details': handleViewDetails(chId); break;
                 case 'retry': handleRetry(chId); break;
                 case 'abort': handleAbort(chId); break;
+                case 'clear': handleClear(chId); break;
             }
         });
     });
@@ -414,6 +401,13 @@ function renderStatusBar() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const el = document.getElementById('status-bar-time');
     if (el) el.textContent = timeStr;
+
+    const modeText = deviceSettings.microswitchEnabled ? 'Sensor ON' : 'Sensor OFF';
+    const modeEl = document.getElementById('status-bar-sensor-mode');
+    if (modeEl) modeEl.textContent = modeText;
+
+    const settingsBtn = document.getElementById('settings-toggle-btn');
+    if (settingsBtn) settingsBtn.textContent = modeText;
 }
 
 // ---- Physical Slot Visualization ----
@@ -423,7 +417,7 @@ function renderSlot(ch) {
     const linesEl = document.getElementById(`cassette-lines-${ch.id}`);
     if (!cassette || !linesEl) return;
 
-    const shouldBeInserted = ch.cassettePresent;
+    const shouldBeInserted = ch.physicalCassettePresent;
     const isInserted = cassette.classList.contains('inserted');
 
     if (shouldBeInserted && !isInserted) {
@@ -505,13 +499,17 @@ function showConfigModal(ch) {
         { value: 'animal_control', label: 'Animal Control' }
     ];
 
+    const subtitle = ch.cassettePresent
+        ? `${ch.cassetteType || 'Cassette'} loaded`
+        : 'Manual mode: configure without cassette detection';
+
     modal.innerHTML = `
         <div class="modal-header">
             <div class="modal-header-row">
                 <div class="modal-channel-badge">${ch.id}</div>
                 <div class="header-text">
                     <h2>Configure Test</h2>
-                    <span class="modal-subtitle">${ch.cassetteType} cassette detected</span>
+                    <span class="modal-subtitle">${subtitle}</span>
                 </div>
             </div>
         </div>
@@ -531,7 +529,9 @@ function showConfigModal(ch) {
                         `<option value="${t}"${t === ch.cassetteType ? ' selected' : ''}>${t}</option>`
                     ).join('')}
                 </select>
-                ${ch.cassetteType ? `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Auto-detected from cassette QR code</div>` : ''}
+                ${(ch.cassettePresent && ch.cassetteType)
+                    ? `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Type can be assisted by cassette detection</div>`
+                    : ''}
             </div>
             <div class="form-field">
                 <label>Route / Sample ID</label>
@@ -628,13 +628,13 @@ function showDecisionModal(ch, variant) {
         // After T1 positive
         resultLabel = 'Test 1';
         resultValue = 'POSITIVE';
-        messageHtml = `<p>Confirmation required. Remove cassette, insert new ${ch.cassetteType} for Test 2.</p>
+        messageHtml = `<p>Confirmation required. Insert a new ${ch.cassetteType} cassette, then start Test 2.</p>
                        <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
     } else {
         // After T2 negative (variant b)
         resultLabel = 'Test 2';
         resultValue = 'NEGATIVE';
-        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert new ${ch.cassetteType} for Test 3.</p>
+        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert a new ${ch.cassetteType} cassette, then start Test 3.</p>
                        <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
     }
 

@@ -26,11 +26,12 @@
                         <span class="temp-icon">&#x1F321;</span>
                         <span>40.0&deg;C</span>
                     </span>
+                    <span class="sb-sensor-mode" id="status-bar-sensor-mode">Sensor ON</span>
                     <span class="sb-time" id="status-bar-time">--:--</span>
                 </div>
                 <div class="sb-right">
-                    <button class="sb-nav-btn">History</button>
-                    <button class="sb-nav-btn">Settings</button>
+                    <button class="sb-nav-btn" id="history-btn">History</button>
+                    <button class="sb-nav-btn" id="settings-toggle-btn">Sensor ON</button>
                 </div>
             </div>
 
@@ -127,7 +128,7 @@
     <!-- ===== Simulation Control Panel ===== -->
     <div class="simulation-panel">
         <h2>Simulation Controls</h2>
-        <div class="sim-subtitle">Simulate cassette insertion and removal for each channel</div>
+        <div class="sim-subtitle">Simulate cassette insertion and physical removal</div>
 
         <div class="sim-channels">
             <!-- CH 1 -->

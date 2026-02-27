@@ -45,7 +45,7 @@ const TIMING = {
     TEMP_WAIT: 3,       // seconds to reach temperature
     INCUBATION: 10,     // seconds for incubation (real: ~120)
     READING: 2,         // seconds for reading
-    ALERT_TIMEOUT: 20   // seconds to reinsert cassette
+    ALERT_TIMEOUT: 20   // legacy: no longer used in primary flow
 };
 
 // Recent values for config form
@@ -57,6 +57,12 @@ const RECENT_OPERATORS = ['OP-001', 'OP-042', 'OP-103'];
 let channels = [];
 let activeModal = null;   // {type: 'config'|'decision'|'detail', channelId, data}
 let modalQueue = [];       // Queued modal events
+let usedCassetteIds = new Set();
+let cassetteIdCounter = 1;
+let sessionHistory = [];
+let deviceSettings = {
+    microswitchEnabled: true
+};
 
 // ---- Channel Data Factory ----
 
@@ -64,7 +70,10 @@ function createChannel(id) {
     return {
         id: id,
         state: STATES.EMPTY,
+        physicalCassettePresent: false, // physical slot occupancy (simulated)
         cassettePresent: false,
+        loadedCassetteId: null,   // currently inserted cassette instance
+        loadedCassetteType: null, // type read/known for currently inserted cassette
         cassetteType: null,
         scenario: null,         // 'test', 'pos_control', 'animal_control'
         processing: null,       // 'read_only', 'read_incubate'
@@ -85,6 +94,9 @@ function createChannel(id) {
 
 function initChannels() {
     channels = [];
+    usedCassetteIds = new Set();
+    sessionHistory = [];
+    cassetteIdCounter = 1;
     for (let i = 1; i <= 5; i++) {
         channels.push(createChannel(i));
     }
@@ -123,6 +135,8 @@ function resetChannel(ch) {
     clearTimer(ch);
     ch.state = STATES.EMPTY;
     ch.cassettePresent = false;
+    ch.loadedCassetteId = null;
+    ch.loadedCassetteType = null;
     ch.cassetteType = null;
     ch.scenario = null;
     ch.processing = null;
@@ -151,12 +165,63 @@ function clearTimer(ch) {
 
 function canInsertCassette(ch) {
     return ch.state === STATES.EMPTY ||
-           ch.state === STATES.WAITING_FOR_SWAP ||
-           ch.state === STATES.INCUBATION_ALERT;
+           ch.state === STATES.DETECTED ||
+           ch.state === STATES.READY_FOR_TEST_N ||
+           ch.state === STATES.ERROR;
 }
 
 function canRemoveCassette(ch) {
-    return ch.cassettePresent && ch.state !== STATES.EMPTY;
+    return ch.physicalCassettePresent;
+}
+
+function canConfigureChannel(ch) {
+    return ch.state === STATES.DETECTED ||
+           (!deviceSettings.microswitchEnabled && ch.state === STATES.EMPTY);
+}
+
+function isRunningState(state) {
+    return state === STATES.WAITING_TEMP ||
+           state === STATES.INCUBATING ||
+           state === STATES.READING;
+}
+
+function canClearChannel(ch) {
+    if (ch.state === STATES.EMPTY || ch.state === STATES.CONFIGURING) return false;
+    return !isRunningState(ch.state);
+}
+
+function shouldRecordInconclusiveOnClear(ch) {
+    if (ch.state === STATES.COMPLETE) return false;
+    if (ch.scenario !== 'test') return false;
+    return ch.testResults.length > 0 || ch.currentTestNumber > 0;
+}
+
+function archiveSession(ch, reason, forcedGroupResult = null) {
+    const hasData = ch.scenario || ch.testResults.length > 0 || ch.groupResult;
+    if (!hasData) return;
+
+    const finalResult = forcedGroupResult || ch.groupResult || null;
+    sessionHistory.push({
+        channelId: ch.id,
+        reason,
+        scenario: ch.scenario,
+        cassetteType: ch.cassetteType,
+        route: ch.route,
+        operatorId: ch.operatorId,
+        result: finalResult,
+        testCount: ch.testResults.length,
+        tests: ch.testResults.map(tr => ({
+            testNumber: tr.testNumber,
+            overall: tr.overall,
+            cassetteType: tr.cassetteType,
+            substances: tr.substances.map(s => ({ name: s.name, result: s.result }))
+        })),
+        timestamp: new Date().toISOString()
+    });
+}
+
+function nextCassetteId() {
+    return cassetteIdCounter++;
 }
 
 function getCardStateClass(ch) {

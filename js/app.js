@@ -11,9 +11,34 @@ function init() {
     renderStatusBar();
     setInterval(renderStatusBar, 30000);
     bindSimulationEvents();
+    bindStatusBarEvents();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ---- Status Bar ----
+
+function bindStatusBarEvents() {
+    const settingsBtn = document.getElementById('settings-toggle-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            if (activeModal) return;
+            deviceSettings.microswitchEnabled = !deviceSettings.microswitchEnabled;
+
+            // If the switch is re-enabled, any physically present cassette can become detectable.
+            if (deviceSettings.microswitchEnabled) {
+                channels.forEach(ch => {
+                    if (ch.state === STATES.EMPTY && ch.cassettePresent) {
+                        ch.state = STATES.DETECTED;
+                    }
+                });
+            }
+
+            renderAllCards();
+            renderStatusBar();
+        });
+    }
+}
 
 // ---- Simulation Event Handlers ----
 
@@ -22,61 +47,54 @@ function bindSimulationEvents() {
         const panel = document.getElementById(`sim-${i}`);
         if (!panel) continue;
 
-        panel.querySelector('.sim-btn-positive').addEventListener('click', () => {
-            handleInsert(i, 'positive');
-        });
-        panel.querySelector('.sim-btn-negative').addEventListener('click', () => {
-            handleInsert(i, 'negative');
-        });
-        panel.querySelector('.sim-btn-remove').addEventListener('click', () => {
-            handleRemove(i);
-        });
+        const posBtn = panel.querySelector('.sim-btn-positive');
+        const negBtn = panel.querySelector('.sim-btn-negative');
+        const removeBtn = panel.querySelector('.sim-btn-remove');
+
+        if (posBtn) {
+            posBtn.addEventListener('click', () => {
+                handleInsert(i, 'positive');
+            });
+        }
+
+        if (negBtn) {
+            negBtn.addEventListener('click', () => {
+                handleInsert(i, 'negative');
+            });
+        }
+
+        // Kept as compatibility no-op if older HTML still has this button.
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                handleRemove(i);
+            });
+        }
     }
 }
 
-// ---- Insert Cassette ----
+// ---- Cassette Insert / Replace ----
 
 function handleInsert(channelId, outcome) {
     const ch = getChannel(channelId);
     if (!canInsertCassette(ch)) return;
 
-    // Determine cassette type from simulation panel selector
     const typeSelect = document.querySelector(`#sim-${channelId} .sim-type-select select`);
     const selectedType = typeSelect ? typeSelect.value : '3BTC';
 
-    switch (ch.state) {
-        case STATES.EMPTY:
-            ch.cassettePresent = true;
-            ch.cassetteType = selectedType;
-            ch.simulatedOutcome = outcome;
-            ch.state = STATES.DETECTED;
-            ch.currentTestNumber = 0;
-            break;
+    ch.physicalCassettePresent = true;
+    ch.cassettePresent = true;
+    ch.loadedCassetteId = nextCassetteId();
+    ch.loadedCassetteType = selectedType;
+    ch.simulatedOutcome = outcome;
 
-        case STATES.WAITING_FOR_SWAP:
-            ch.cassettePresent = true;
-            ch.simulatedOutcome = outcome;
-            const expectedType = ch.testResults[0]
-                ? ch.testResults[0].cassetteType
-                : ch.cassetteType;
+    // Initial default type when first cassette is inserted.
+    if (!ch.cassetteType) {
+        ch.cassetteType = selectedType;
+    }
 
-            if (selectedType !== expectedType) {
-                // Keep ch.cassetteType as the original/expected type
-                ch.state = STATES.ERROR_TYPE_MISMATCH;
-            } else {
-                ch.cassetteType = selectedType;
-                ch.state = STATES.READY_FOR_TEST_N;
-            }
-            break;
-
-        case STATES.INCUBATION_ALERT:
-            // Reinserting cassette during alert — resume incubation
-            ch.cassettePresent = true;
-            clearTimer(ch);
-            ch.alertRemaining = 0;
-            ch.state = STATES.INCUBATING;
-            startIncubationTimer(ch);
-            break;
+    // Detection is assistive. In manual mode, user can still configure from EMPTY.
+    if (deviceSettings.microswitchEnabled && ch.state === STATES.EMPTY) {
+        ch.state = STATES.DETECTED;
     }
 
     renderCard(ch);
@@ -84,96 +102,28 @@ function handleInsert(channelId, outcome) {
     renderSimulationButtons();
 }
 
-// ---- Remove Cassette ----
-
+// Physical removal simulation (debug/testing aid).
 function handleRemove(channelId) {
     const ch = getChannel(channelId);
+    if (!ch) return;
     if (!canRemoveCassette(ch)) return;
 
-    // Clean up any queued modals for this channel
-    modalQueue = modalQueue.filter(m => m.channelId !== channelId);
-
-    switch (ch.state) {
-        case STATES.DETECTED:
-        case STATES.WAITING_TEMP:
-            resetChannel(ch);
-            break;
-
-        case STATES.CONFIGURING:
-            // Close config modal if open for this channel
-            if (activeModal && activeModal.type === 'config' && activeModal.channelId === channelId) {
-                hideModal();
-            }
-            resetChannel(ch);
-            break;
-
-        case STATES.ERROR_USED:
-            resetChannel(ch);
-            break;
-
-        case STATES.INCUBATING:
-            clearTimer(ch);
-            ch.cassettePresent = false;
-            ch.state = STATES.INCUBATION_ALERT;
-            ch.alertRemaining = TIMING.ALERT_TIMEOUT;
-            startAlertTimer(ch);
-            break;
-
-        case STATES.READING:
-            clearTimer(ch);
-            ch.cassettePresent = false;
-            ch.state = STATES.ERROR;
-            ch.errorMessage = 'Reading interrupted — result invalid';
-            break;
-
-        case STATES.RESULT:
-            if (activeModal && activeModal.type === 'decision' && activeModal.channelId === channelId) {
-                // Decision modal is open — keep it open, user must still choose.
-                // Just mark cassette as physically removed; card updates behind modal.
-                ch.cassettePresent = false;
-            } else {
-                resetChannel(ch);
-            }
-            break;
-
-        case STATES.COMPLETE:
-            if (activeModal && activeModal.channelId === channelId) {
-                hideModal();
-            }
-            resetChannel(ch);
-            break;
-
-        case STATES.AWAITING_CONFIRMATION:
-            ch.cassettePresent = false;
-            ch.state = STATES.WAITING_FOR_SWAP;
-            break;
-
-        case STATES.READY_FOR_TEST_N:
-            ch.cassettePresent = false;
-            ch.state = STATES.WAITING_FOR_SWAP;
-            break;
-
-        case STATES.ERROR_TYPE_MISMATCH:
-        case STATES.ERROR_USED_CONFIRMATION:
-            ch.cassettePresent = false;
-            ch.state = STATES.WAITING_FOR_SWAP;
-            break;
-
-        default:
-            break;
-    }
+    // Removal is independent from UI clear/workflow.
+    // We only update the physical slot state; workflow state remains unchanged.
+    ch.physicalCassettePresent = false;
 
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
+    processModalQueue();
 }
 
 // ---- Configure Button ----
 
 function handleConfigure(channelId) {
     const ch = getChannel(channelId);
-    if (ch.state !== STATES.DETECTED) return;
-    if (activeModal) return; // Another modal is open
+    if (!canConfigureChannel(ch)) return;
+    if (activeModal) return;
 
     ch.state = STATES.CONFIGURING;
     renderCard(ch);
@@ -185,10 +135,17 @@ function handleConfigure(channelId) {
 function handleConfigCancel(channelId) {
     const ch = getChannel(channelId);
     hideModal();
+
     if (ch.state === STATES.CONFIGURING) {
-        ch.state = STATES.DETECTED;
+        if (deviceSettings.microswitchEnabled && ch.cassettePresent) {
+            ch.state = STATES.DETECTED;
+        } else {
+            ch.state = STATES.EMPTY;
+        }
     }
+
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
     processModalQueue();
 }
@@ -204,8 +161,18 @@ function handleConfigStart(channelId, config) {
     ch.processing = config.processing;
     ch.currentTestNumber = 1;
 
-    startProcessing(ch);
+    const started = attemptStartCurrentTest(ch);
+
+    if (!started) {
+        renderCard(ch);
+        renderSlot(ch);
+        renderSimulationButtons();
+        processModalQueue();
+        return;
+    }
+
     renderCard(ch);
+    renderSlot(ch);
     renderSimulationButtons();
     processModalQueue();
 }
@@ -227,6 +194,65 @@ function startProcessing(ch) {
     }
 }
 
+function hasReadableCassette(ch) {
+    return ch.cassettePresent &&
+           ch.physicalCassettePresent &&
+           ch.loadedCassetteId !== null;
+}
+
+function validateCassetteForCurrentTest(ch) {
+    if (!hasReadableCassette(ch)) {
+        return {
+            ok: false,
+            message: 'Cassette could not be read. Insert cassette and retry.'
+        };
+    }
+
+    if (usedCassetteIds.has(ch.loadedCassetteId)) {
+        return {
+            ok: false,
+            message: 'Cassette already used. Insert a new cassette and retry.'
+        };
+    }
+
+    const expectedType = ch.currentTestNumber > 1
+        ? (ch.testResults[0] ? ch.testResults[0].cassetteType : ch.cassetteType)
+        : ch.cassetteType;
+
+    const loadedType = ch.loadedCassetteType || ch.cassetteType;
+
+    if (expectedType && loadedType && expectedType !== loadedType) {
+        return {
+            ok: false,
+            message: `Wrong cassette type. Expected ${expectedType}.`
+        };
+    }
+
+    return { ok: true };
+}
+
+function setChannelError(ch, message) {
+    clearTimer(ch);
+    ch.state = STATES.ERROR;
+    ch.errorMessage = message;
+}
+
+function attemptStartCurrentTest(ch) {
+    const validation = validateCassetteForCurrentTest(ch);
+    if (!validation.ok) {
+        setChannelError(ch, validation.message);
+        return false;
+    }
+
+    if (ch.loadedCassetteType && ch.currentTestNumber === 1) {
+        // Align configured type with what is currently inserted.
+        ch.cassetteType = ch.loadedCassetteType;
+    }
+
+    startProcessing(ch);
+    return true;
+}
+
 // ---- Start Test N (Confirmation) ----
 
 function handleStartTestN(channelId) {
@@ -234,10 +260,13 @@ function handleStartTestN(channelId) {
     if (ch.state !== STATES.READY_FOR_TEST_N) return;
 
     ch.currentTestNumber++;
-    startProcessing(ch);
+    const started = attemptStartCurrentTest(ch);
+
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
+
+    if (!started) return;
 }
 
 // ---- Timers ----
@@ -245,12 +274,15 @@ function handleStartTestN(channelId) {
 function startTempWaitTimer(ch) {
     clearTimer(ch);
     let remaining = TIMING.TEMP_WAIT;
+
     ch.timerId = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
             clearTimer(ch);
+
             ch.state = STATES.INCUBATING;
             ch.incubationRemaining = ch.incubationTotal - ch.incubationElapsed;
+
             renderCard(ch);
             startIncubationTimer(ch);
         }
@@ -259,23 +291,35 @@ function startTempWaitTimer(ch) {
 
 function startIncubationTimer(ch) {
     clearTimer(ch);
+
     if (ch.incubationRemaining <= 0) {
         ch.incubationRemaining = ch.incubationTotal - ch.incubationElapsed;
     }
+
     ch.timerId = setInterval(() => {
         ch.incubationRemaining--;
         ch.incubationElapsed++;
+
         if (ch.incubationRemaining <= 0) {
             clearTimer(ch);
             ch.incubationRemaining = 0;
             ch.incubationElapsed = 0;
-            // Move to reading
+
+            if (!hasReadableCassette(ch)) {
+                setChannelError(ch, 'Cassette read failed after incubation. Retry or abort.');
+                renderCard(ch);
+                renderSlot(ch);
+                renderSimulationButtons();
+                return;
+            }
+
             ch.state = STATES.READING;
             renderCard(ch);
             renderSlot(ch);
             startReadingTimer(ch);
             return;
         }
+
         renderCard(ch);
     }, 1000);
 }
@@ -283,87 +327,77 @@ function startIncubationTimer(ch) {
 function startReadingTimer(ch) {
     clearTimer(ch);
     let remaining = TIMING.READING;
+
     ch.timerId = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
             clearTimer(ch);
+
+            if (!hasReadableCassette(ch)) {
+                setChannelError(ch, 'Reading interrupted. Retry or abort.');
+                renderCard(ch);
+                renderSlot(ch);
+                renderSimulationButtons();
+                return;
+            }
+
             completeReading(ch);
         }
-    }, 1000);
-}
-
-function startAlertTimer(ch) {
-    clearTimer(ch);
-    ch.timerId = setInterval(() => {
-        ch.alertRemaining--;
-        if (ch.alertRemaining <= 0) {
-            clearTimer(ch);
-            ch.state = STATES.ERROR;
-            ch.errorMessage = 'Test interrupted — cassette not reinserted';
-            renderCard(ch);
-            renderSlot(ch);
-            renderSimulationButtons();
-            return;
-        }
-        renderCard(ch);
     }, 1000);
 }
 
 // ---- Complete Reading ----
 
 function completeReading(ch) {
-    // Generate substance results
-    const results = generateSubstanceResults(ch.cassetteType, ch.simulatedOutcome);
+    const outcome = ch.simulatedOutcome || 'negative';
+    const results = generateSubstanceResults(ch.cassetteType, outcome);
     const overall = isTestPositive(results) ? 'positive' : 'negative';
     const testNumber = ch.currentTestNumber;
 
     ch.testResults.push({
         substances: results,
-        overall: overall,
-        testNumber: testNumber,
+        overall,
+        testNumber,
         cassetteType: ch.cassetteType
     });
+
+    if (ch.loadedCassetteId !== null) {
+        usedCassetteIds.add(ch.loadedCassetteId);
+    }
 
     const isControl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
 
     if (isControl) {
-        // Control test — single test, no confirmation
         ch.state = STATES.COMPLETE;
         ch.groupResult = overall;
         renderCard(ch);
+        renderSlot(ch);
         renderSimulationButtons();
         return;
     }
 
-    // Normal test — evaluate based on test number and result
     switch (testNumber) {
         case 1:
             if (overall === 'negative') {
                 ch.state = STATES.COMPLETE;
                 ch.groupResult = 'negative';
             } else {
-                // Positive — need confirmation
                 ch.state = STATES.RESULT;
-                // Queue decision modal (Variant A)
                 queueDecisionModal(ch, 'a');
             }
             break;
 
         case 2:
             if (overall === 'positive') {
-                // Confirmed positive
                 ch.state = STATES.COMPLETE;
                 ch.groupResult = 'positive';
             } else {
-                // Conflicts with T1 — need tiebreaker
                 ch.state = STATES.RESULT;
-                // Queue decision modal (Variant B)
                 queueDecisionModal(ch, 'b');
             }
             break;
 
         case 3:
-            // Test 3 always completes the flow
             ch.state = STATES.COMPLETE;
             ch.groupResult = overall === 'positive' ? 'positive' : 'negative';
             break;
@@ -391,11 +425,10 @@ function processModalQueue() {
     const next = modalQueue.shift();
     if (next.type === 'decision') {
         const ch = getChannel(next.channelId);
-        // Only show if channel is still in RESULT state
         if (ch.state === STATES.RESULT) {
             showDecisionModal(ch, next.variant);
         } else {
-            processModalQueue(); // skip stale entry
+            processModalQueue();
         }
     }
 }
@@ -406,14 +439,8 @@ function handleDecisionAbort(channelId) {
     const ch = getChannel(channelId);
     hideModal();
 
-    if (ch.cassettePresent) {
-        // Cassette still in — show INCONCLUSIVE, user removes to clear
-        ch.state = STATES.COMPLETE;
-        ch.groupResult = 'inconclusive';
-    } else {
-        // Cassette already removed while modal was open — go straight to EMPTY
-        resetChannel(ch);
-    }
+    ch.state = STATES.COMPLETE;
+    ch.groupResult = 'inconclusive';
 
     renderCard(ch);
     renderSlot(ch);
@@ -425,15 +452,9 @@ function handleDecisionContinue(channelId) {
     const ch = getChannel(channelId);
     hideModal();
 
-    ch.incubationElapsed = 0; // Reset for next test
-
-    if (ch.cassettePresent) {
-        // Normal flow — user still needs to swap cassette
-        ch.state = STATES.AWAITING_CONFIRMATION;
-    } else {
-        // Cassette already removed while modal was open — skip ahead
-        ch.state = STATES.WAITING_FOR_SWAP;
-    }
+    ch.incubationElapsed = 0;
+    ch.errorMessage = '';
+    ch.state = STATES.READY_FOR_TEST_N;
 
     renderCard(ch);
     renderSlot(ch);
@@ -441,11 +462,11 @@ function handleDecisionContinue(channelId) {
     processModalQueue();
 }
 
-// ---- Stop Button (WAITING_FOR_SWAP) ----
+// ---- Abort Flow (READY_FOR_TEST_N) ----
 
 function handleStop(channelId) {
     const ch = getChannel(channelId);
-    if (ch.state !== STATES.WAITING_FOR_SWAP) return;
+    if (ch.state !== STATES.READY_FOR_TEST_N) return;
     if (activeModal) return;
 
     showStopConfirmationModal(ch);
@@ -454,7 +475,14 @@ function handleStop(channelId) {
 function handleStopConfirm(channelId) {
     const ch = getChannel(channelId);
     hideModal();
-    resetChannel(ch);
+
+    if (ch.scenario === 'test' && ch.testResults.length > 0) {
+        ch.state = STATES.COMPLETE;
+        ch.groupResult = 'inconclusive';
+    } else {
+        resetChannel(ch);
+    }
+
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
@@ -463,6 +491,27 @@ function handleStopConfirm(channelId) {
 
 function handleStopCancel(channelId) {
     hideModal();
+    processModalQueue();
+}
+
+// ---- Clear Channel ----
+
+function handleClear(channelId) {
+    const ch = getChannel(channelId);
+    if (!canClearChannel(ch)) return;
+    if (activeModal) return;
+
+    if (shouldRecordInconclusiveOnClear(ch)) {
+        archiveSession(ch, 'clear', 'inconclusive');
+    } else {
+        archiveSession(ch, 'clear', ch.groupResult || null);
+    }
+
+    resetChannel(ch);
+
+    renderCard(ch);
+    renderSlot(ch);
+    renderSimulationButtons();
     processModalQueue();
 }
 
@@ -487,12 +536,13 @@ function handleRetry(channelId) {
     const ch = getChannel(channelId);
     if (ch.state !== STATES.ERROR) return;
 
-    // Preserve config, go to WAITING_FOR_SWAP so user inserts cassette and retries
-    // Decrement test number so next start re-runs the same test
     ch.errorMessage = '';
-    ch.cassettePresent = false;
-    ch.currentTestNumber--;
-    ch.state = STATES.WAITING_FOR_SWAP;
+
+    if (ch.currentTestNumber > 0) {
+        ch.currentTestNumber--;
+    }
+
+    ch.state = STATES.READY_FOR_TEST_N;
 
     renderCard(ch);
     renderSlot(ch);
@@ -503,10 +553,12 @@ function handleAbort(channelId) {
     const ch = getChannel(channelId);
     if (ch.state !== STATES.ERROR) return;
 
-    // Both T1 and T2/T3 abort: reset to EMPTY
-    // No cassette is present in ERROR state, so going to COMPLETE
-    // would create a dead-end. Clear the slot entirely.
-    resetChannel(ch);
+    if (ch.scenario === 'test' && ch.testResults.length > 0) {
+        ch.state = STATES.COMPLETE;
+        ch.groupResult = 'inconclusive';
+    } else {
+        resetChannel(ch);
+    }
 
     renderCard(ch);
     renderSlot(ch);

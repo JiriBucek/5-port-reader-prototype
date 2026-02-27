@@ -2,6 +2,8 @@
 
 This folder contains the complete flow documentation for the 5-port milk testing reader device. It covers every state a channel can be in, every user interaction, every error case, and every possible outcome.
 
+> **Prototype update (no-removal detection mode):** The current prototype no longer relies on cassette removal detection. Confirmation flow now goes directly to a manual `READY_FOR_TEST_N` step (`Start`, `Abort`, `Clear`), and channels are cleared manually.
+
 > **How to view the diagrams:** Open the `.mermaid` files in VS Code with the "Markdown Preview Mermaid Support" extension, or paste their contents into [mermaid.live](https://mermaid.live).
 
 ---
