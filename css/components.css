@@ -10,7 +10,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 10px;
     font-size: var(--font-base);
     flex-shrink: 0;
     z-index: 1;
@@ -20,27 +20,27 @@
 .status-bar .sb-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
 }
 
 .status-bar .sb-center {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
     color: var(--gray-500);
-    font-size: var(--font-sm);
+    font-size: var(--font-xs);
 }
 
 .status-bar .sb-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 .sb-brand {
     font-weight: 800;
-    font-size: var(--font-xl);
-    letter-spacing: 2px;
+    font-size: var(--font-lg);
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--gray-800);
 }
@@ -49,10 +49,10 @@
     background: none;
     border: none;
     color: var(--primary);
-    font-size: var(--font-base);
+    font-size: var(--font-sm);
     font-weight: 600;
     cursor: pointer;
-    padding: 8px 14px;
+    padding: 6px 8px;
     transition: background-color 0.15s;
 }
 
@@ -74,7 +74,7 @@
 }
 
 .sb-sensor-mode {
-    font-size: var(--font-sm);
+    font-size: var(--font-xs);
     color: var(--gray-500);
 }
 
@@ -175,7 +175,7 @@
 
 /* Card sections */
 .card-header {
-    padding: 5px 8px;
+    padding: 4px 5px;
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -186,7 +186,7 @@
 
 .card-header .ch-label {
     font-weight: 700;
-    font-size: var(--font-lg);
+    font-size: var(--font-base);
     color: var(--gray-700);
     white-space: nowrap;
     width: 100%;
@@ -194,14 +194,14 @@
 
 .card-header .card-badges {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     flex-wrap: wrap;
 }
 
 .card-header .badge {
-    font-size: var(--font-sm);
+    font-size: var(--font-xs);
     font-weight: 600;
-    padding: 2px 6px;
+    padding: 1px 4px;
     border-radius: 2px;
     white-space: nowrap;
 }
@@ -234,16 +234,16 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 6px 8px;
-    gap: 6px;
+    padding: 3px 4px;
+    gap: 3px;
     min-height: 0;
     overflow: hidden;
 }
 
 /* Empty slot — cassette silhouette placeholder */
 .cassette-empty {
-    width: 80px;
-    height: 220px;
+    width: 54px;
+    height: 102px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -254,43 +254,43 @@
 .cassette-ghost {
     width: 100%;
     height: 100%;
-    border: 2px dashed var(--gray-300);
-    border-radius: 10px 10px 6px 6px;
+    border: 1.5px dashed var(--gray-300);
+    border-radius: 6px 6px 4px 4px;
     background: var(--gray-50);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 10px;
+    padding: 6px 5px;
     gap: 0;
     position: relative;
 }
 
 /* Sample well at lower part of cassette */
 .ghost-sample-well {
-    width: 20px;
-    height: 20px;
-    border: 1.5px dashed var(--gray-300);
+    width: 12px;
+    height: 12px;
+    border: 1px dashed var(--gray-300);
     border-radius: 50%;
     flex-shrink: 0;
-    margin-top: 12px;
+    margin-top: 5px;
 }
 
 /* Reading window — elongated center depression */
 .ghost-window {
     flex: 1;
     width: 60%;
-    border: 1.5px dashed var(--gray-300);
-    border-radius: 20px;
+    border: 1px dashed var(--gray-300);
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 12px;
-    padding: 16px 8px;
+    gap: 5px;
+    padding: 8px 4px;
 }
 
 /* Ghost test lines */
 .ghost-line {
-    height: 4px;
+    height: 2px;
     width: 100%;
     background: var(--gray-200);
     border-radius: 2px;
@@ -304,15 +304,15 @@
 
 /* Cassette graphic */
 .cassette-graphic {
-    width: 80px;
-    height: 220px;
+    width: 54px;
+    height: 102px;
     border: 1px solid var(--gray-400);
-    border-radius: 10px 10px 6px 6px;
+    border-radius: 6px 6px 4px 4px;
     background: var(--white);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 16px 10px;
+    padding: 9px 6px;
     gap: 0;
     position: relative;
 }
@@ -330,7 +330,7 @@
 .substance-line-container {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 6px;
     width: 100%;
 }
 
@@ -342,15 +342,15 @@
 
 .substance-line .line-bar {
     flex: 1;
-    height: 8px;
+    height: 4px;
     border-radius: 1px;
 }
 
 .substance-line .line-label {
-    font-size: 9px;
+    font-size: 7px;
     font-weight: 700;
     color: var(--gray-500);
-    width: 10px;
+    width: 8px;
     text-align: right;
 }
 
@@ -383,19 +383,19 @@
 /* Test number label on cassette */
 .cassette-test-label {
     position: absolute;
-    top: 6px;
-    right: 8px;
-    font-size: var(--font-xs);
+    top: 3px;
+    right: 4px;
+    font-size: 8px;
     font-weight: 700;
     color: var(--gray-500);
     background: var(--gray-100);
-    padding: 2px 6px;
+    padding: 1px 4px;
     border-radius: 2px;
 }
 
 /* Mini-cassette history */
 .mini-history {
-    display: flex;
+    display: none;
     gap: 6px;
     justify-content: center;
     flex-shrink: 0;
@@ -456,8 +456,8 @@
 
 /* ---- Status Area ---- */
 .card-status {
-    min-height: 64px;
-    padding: 6px 8px;
+    min-height: 56px;
+    padding: 4px 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -468,7 +468,7 @@
 }
 
 .status-text {
-    font-size: var(--font-base);
+    font-size: var(--font-sm);
     color: var(--gray-600);
     line-height: 1.2;
 }
@@ -496,10 +496,10 @@
 /* Progress bar */
 .progress-bar {
     width: 100%;
-    height: 8px;
+    height: 5px;
     background: var(--gray-200);
     border-radius: 1px;
-    margin-top: 6px;
+    margin-top: 4px;
     overflow: hidden;
 }
 
@@ -516,7 +516,7 @@
 
 /* Countdown text */
 .countdown-text {
-    font-size: var(--font-lg);
+    font-size: var(--font-base);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin-top: 2px;
@@ -524,19 +524,19 @@
 
 .countdown-text.countdown-alert {
     color: var(--danger);
-    font-size: var(--font-xl);
+    font-size: var(--font-lg);
 }
 
 /* Loading spinner */
 .spinner {
     display: inline-block;
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--primary-light);
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--primary-light);
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 @keyframes spin {
@@ -545,16 +545,16 @@
 
 /* ---- Group Result Badge ---- */
 .card-group-result {
-    padding: 6px 8px;
+    padding: 4px 5px;
     text-align: center;
     flex-shrink: 0;
 }
 
 .group-badge {
     display: inline-block;
-    padding: 5px 16px;
+    padding: 3px 8px;
     border-radius: 2px;
-    font-size: var(--font-base);
+    font-size: var(--font-sm);
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -589,25 +589,25 @@
 
 /* ---- Action Button Area ---- */
 .card-action {
-    padding: 6px 8px 8px;
+    padding: 4px 5px 5px;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
 }
 
 .card-action .action-btn {
     flex: 1 1 auto;
     width: 100%;
-    padding: 12px 8px;
+    padding: 8px 6px;
     border: none;
     border-radius: var(--radius-sm);
-    font-size: var(--font-lg);
+    font-size: var(--font-base);
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.15s, transform 0.1s;
-    min-height: 56px;
+    min-height: 40px;
     text-align: center;
 }
 
@@ -668,7 +668,7 @@
     display: none;
     flex-direction: column;
     background: linear-gradient(180deg, #eef2f7 0%, #f8fafc 100%);
-    padding: 22px 24px 20px;
+    padding: 12px;
 }
 
 .settings-screen.active {
@@ -676,19 +676,19 @@
 }
 
 .settings-screen-header {
-    margin-bottom: 18px;
+    margin-bottom: 10px;
 }
 
 .settings-screen-title-wrap h1 {
-    font-size: 40px;
+    font-size: 28px;
     line-height: 1;
     color: var(--gray-800);
     letter-spacing: 0.4px;
 }
 
 .settings-screen-title-wrap p {
-    margin-top: 8px;
-    font-size: var(--font-lg);
+    margin-top: 4px;
+    font-size: var(--font-base);
     color: var(--gray-500);
 }
 
@@ -697,16 +697,16 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding-right: 4px;
+    gap: 8px;
+    padding-right: 2px;
 }
 
 .settings-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
-    padding: 18px 20px;
+    gap: 10px;
+    padding: 10px 12px;
     border: 1px solid var(--gray-300);
     background: var(--white);
     border-radius: 2px;
@@ -718,41 +718,41 @@
 }
 
 .settings-item-copy h3 {
-    font-size: 28px;
+    font-size: 18px;
     line-height: 1.1;
     color: var(--gray-800);
 }
 
 .settings-item-copy p {
-    margin-top: 7px;
-    font-size: var(--font-base);
+    margin-top: 3px;
+    font-size: var(--font-sm);
     color: var(--gray-500);
 }
 
 .settings-screen .settings-toggle {
-    width: 280px;
+    width: 170px;
     flex-shrink: 0;
 }
 
 .settings-screen .segmented-control .seg-option {
-    min-height: 62px;
-    font-size: 22px;
+    min-height: 44px;
+    font-size: var(--font-lg);
     font-weight: 700;
 }
 
 .settings-screen-footer {
-    padding-top: 16px;
-    margin-top: 8px;
+    padding-top: 10px;
+    margin-top: 4px;
     border-top: 1px solid var(--gray-300);
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 8px;
 }
 
 .settings-screen-footer .modal-btn {
-    min-width: 200px;
-    min-height: 64px;
-    font-size: 24px;
+    min-width: 132px;
+    min-height: 48px;
+    font-size: var(--font-xl);
     font-weight: 700;
     border: 1px solid transparent;
     cursor: pointer;

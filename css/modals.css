@@ -95,11 +95,104 @@
 
 /* ---- Config Modal ---- */
 .config-modal {
-    width: 580px;
+    width: 760px;
+    max-height: 94%;
 }
 
 .config-modal .modal-header {
     text-align: left;
+    padding: 12px 16px 10px;
+}
+
+.config-modal .modal-header-row {
+    gap: 10px;
+}
+
+.config-modal .modal-channel-badge {
+    width: 64px;
+    height: 64px;
+    padding-top: 12px;
+    font-size: 30px;
+}
+
+.config-modal .modal-channel-badge::before {
+    top: 4px;
+    font-size: 10px;
+}
+
+.config-modal .modal-header-row .header-text h2 {
+    font-size: var(--font-xl);
+}
+
+.config-modal .modal-header-row .header-text .modal-subtitle {
+    font-size: var(--font-sm);
+}
+
+.config-modal .modal-body {
+    padding: 10px 16px;
+    overflow: hidden;
+}
+
+.config-modal .modal-footer {
+    padding: 10px 16px 12px;
+    gap: 8px;
+}
+
+.config-modal .modal-footer .modal-btn {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: var(--font-base);
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    align-items: start;
+}
+
+.config-grid .form-field {
+    margin-bottom: 0;
+}
+
+.config-grid .form-field label {
+    margin-bottom: 6px;
+    font-size: var(--font-xs);
+}
+
+.config-modal .segmented-control .seg-option {
+    min-height: 40px;
+    padding: 8px 6px;
+    font-size: var(--font-sm);
+}
+
+.config-modal .form-select,
+.config-modal .form-input {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: var(--font-base);
+}
+
+.config-note {
+    margin-top: 4px;
+    font-size: var(--font-xs);
+    color: var(--gray-500);
+    line-height: 1.2;
+}
+
+.config-modal .recent-chips {
+    margin-top: 5px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+.config-modal .recent-chip {
+    padding: 4px 8px;
+    font-size: var(--font-xs);
+    white-space: nowrap;
 }
 
 /* Form field */
@@ -293,41 +386,88 @@
 
 /* ---- Decision Modal ---- */
 .decision-modal {
-    width: 580px;
+    width: 760px;
+    max-height: 94%;
 }
 
 .decision-modal .modal-header {
-    padding: 20px 24px 16px;
+    padding: 12px 16px 10px;
     text-align: left;
+}
+
+.decision-modal .modal-header-row,
+.detail-modal .modal-header-row {
+    gap: 10px;
+}
+
+.decision-modal .modal-channel-badge,
+.detail-modal .modal-channel-badge {
+    width: 64px;
+    height: 64px;
+    padding-top: 12px;
+    font-size: 30px;
+}
+
+.decision-modal .modal-channel-badge::before,
+.detail-modal .modal-channel-badge::before {
+    top: 4px;
+    font-size: 10px;
+}
+
+.decision-modal .modal-header-row .header-text h2,
+.detail-modal .modal-header-row .header-text h2 {
+    font-size: var(--font-xl);
+}
+
+.decision-modal .modal-header-row .header-text .modal-subtitle,
+.detail-modal .modal-header-row .header-text .modal-subtitle {
+    font-size: var(--font-sm);
+}
+
+.decision-modal .modal-meta,
+.detail-modal .modal-meta {
+    gap: 8px;
+    padding: 4px 0;
+    font-size: var(--font-xs);
+}
+
+.decision-modal .modal-meta .meta-item,
+.detail-modal .modal-meta .meta-item {
+    white-space: nowrap;
+}
+
+.decision-modal .modal-body,
+.detail-modal .modal-body {
+    padding: 10px 16px;
 }
 
 /* Substance results list in modal */
 .substance-results {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 6px;
+    margin-bottom: 10px;
 }
 
 .substance-result-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: 8px 10px;
     border-radius: var(--radius-sm);
     background: var(--gray-50);
 }
 
 .substance-result-row .sub-name {
-    font-size: var(--font-lg);
+    font-size: var(--font-base);
     color: var(--gray-700);
     font-weight: 500;
 }
 
 .substance-result-row .sub-result {
-    font-size: var(--font-base);
+    font-size: var(--font-sm);
     font-weight: 700;
-    padding: 4px 12px;
+    padding: 2px 8px;
     border-radius: 2px;
 }
 
@@ -343,42 +483,61 @@
 
 /* Decision message */
 .decision-message {
-    padding: 16px 20px;
+    padding: 10px 12px;
     background: var(--gray-50);
     border-left: 4px solid var(--warning);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 }
 
 .decision-message p {
-    font-size: var(--font-lg);
+    font-size: var(--font-base);
     color: var(--gray-700);
-    line-height: 1.5;
+    line-height: 1.35;
 }
 
 .decision-message .prev-results {
-    margin-top: 10px;
-    font-size: var(--font-base);
+    margin-top: 6px;
+    font-size: var(--font-sm);
     color: var(--gray-500);
 }
 
 /* Decision modal buttons */
 .decision-modal .modal-footer {
+    padding: 10px 16px 12px;
+    gap: 8px;
     justify-content: space-between;
 }
 
 .decision-modal .modal-footer .modal-btn {
     flex: 1;
+    min-height: 44px;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: var(--font-base);
 }
 
 /* ---- Detail Modal ---- */
 .detail-modal {
-    width: 660px;
-    max-height: 680px;
+    width: 760px;
+    max-height: 94%;
 }
 
 .detail-modal .modal-header {
     text-align: left;
+    padding: 12px 16px 10px;
+}
+
+.detail-modal .modal-footer {
+    padding: 10px 16px 12px;
+    gap: 8px;
+}
+
+.detail-modal .modal-footer .modal-btn {
+    min-height: 44px;
+    min-width: 120px;
+    padding: 10px 8px;
+    font-size: var(--font-base);
 }
 
 .detail-modal .close-btn {
@@ -405,13 +564,23 @@
 .test-history {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.test-history-title {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--gray-600);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .test-entry {
     border: 1px solid var(--gray-200);
     border-radius: var(--radius-md);
-    padding: 14px;
+    padding: 10px;
 }
 
 .test-entry-header {
@@ -423,14 +592,14 @@
 
 .test-entry-header .test-num {
     font-weight: 700;
-    font-size: var(--font-lg);
+    font-size: var(--font-base);
     color: var(--gray-700);
 }
 
 .test-entry-header .test-overall {
-    font-size: var(--font-base);
+    font-size: var(--font-sm);
     font-weight: 700;
-    padding: 4px 12px;
+    padding: 2px 8px;
     border-radius: 2px;
 }
 
@@ -444,8 +613,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 0;
-    font-size: var(--font-base);
+    padding: 4px 0;
+    font-size: var(--font-sm);
 }
 
 .test-substance-row .ts-name {
@@ -498,7 +667,7 @@
 /* Final group result in detail */
 .detail-group-result {
     margin-top: 0;
-    padding: 20px;
+    padding: 12px;
     text-align: center;
     border-radius: var(--radius-md);
 }
@@ -512,6 +681,6 @@
 }
 
 .detail-group-result .detail-result-value {
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 800;
 }

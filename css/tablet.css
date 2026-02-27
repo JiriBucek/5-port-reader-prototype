@@ -5,13 +5,13 @@
 
 :root {
     /* Device screen dimensions */
-    --screen-width: 1280px;
-    --screen-height: 800px;
+    --screen-width: 800px;
+    --screen-height: 480px;
 
     /* Layout measurements */
-    --status-bar-height: 48px;
-    --screen-padding: 12px;
-    --card-gap: 10px;
+    --status-bar-height: 42px;
+    --screen-padding: 6px;
+    --card-gap: 6px;
 
     /* Colors - Primary */
     --primary: #2563eb;
@@ -65,12 +65,12 @@
 
     /* Typography */
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-xs: 13px;
-    --font-sm: 15px;
-    --font-base: 17px;
-    --font-lg: 20px;
-    --font-xl: 24px;
-    --font-2xl: 30px;
+    --font-xs: 10px;
+    --font-sm: 12px;
+    --font-base: 13px;
+    --font-lg: 15px;
+    --font-xl: 18px;
+    --font-2xl: 22px;
 
     /* Border radius — square/minimal per device UI style */
     --radius-sm: 2px;
@@ -98,7 +98,7 @@ body {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding: 24px 16px;
+    padding: 16px 12px;
     color: var(--gray-800);
     line-height: 1.4;
 }

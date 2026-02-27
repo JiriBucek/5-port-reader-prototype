@@ -514,37 +514,39 @@ function showConfigModal(ch) {
             </div>
         </div>
         <div class="modal-body">
-            <div class="form-field">
-                <label>Scenario</label>
-                <div class="segmented-control" id="cfg-scenario">
-                    ${scenarioOpts.map(o =>
-                        `<button class="seg-option${o.value === 'test' ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
-                    ).join('')}
+            <div class="config-grid">
+                <div class="form-field">
+                    <label>Scenario</label>
+                    <div class="segmented-control" id="cfg-scenario">
+                        ${scenarioOpts.map(o =>
+                            `<button class="seg-option${o.value === 'test' ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
+                        ).join('')}
+                    </div>
                 </div>
-            </div>
-            <div class="form-field">
-                <label>Test Type</label>
-                <select class="form-select" id="cfg-type" ${qrLocked ? 'disabled' : ''}>
-                    ${CASSETTE_TYPES.map(t =>
-                        `<option value="${t}"${t === selectedType ? ' selected' : ''}>${t}</option>`
-                    ).join('')}
-                </select>
-                ${qrLocked
-                    ? `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Loaded automatically from cassette QR</div>`
-                    : `<div style="font-size:var(--font-sm);color:var(--gray-400);margin-top:4px">Select manually (QR scanning OFF)</div>`}
-            </div>
-            <div class="form-field">
-                <label>Route / Sample ID</label>
-                <input type="text" class="form-input" id="cfg-route" placeholder="Enter route or sample identifier...">
-                <div class="recent-chips" id="cfg-route-chips">
-                    ${RECENT_ROUTES.map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
+                <div class="form-field">
+                    <label>Test Type</label>
+                    <select class="form-select" id="cfg-type" ${qrLocked ? 'disabled' : ''}>
+                        ${CASSETTE_TYPES.map(t =>
+                            `<option value="${t}"${t === selectedType ? ' selected' : ''}>${t}</option>`
+                        ).join('')}
+                    </select>
+                    ${qrLocked
+                        ? `<div class="config-note">Loaded automatically from cassette QR</div>`
+                        : `<div class="config-note">Select manually (QR scanning OFF)</div>`}
                 </div>
-            </div>
-            <div class="form-field">
-                <label>Operator ID</label>
-                <input type="text" class="form-input" id="cfg-operator" placeholder="Enter operator ID...">
-                <div class="recent-chips" id="cfg-operator-chips">
-                    ${RECENT_OPERATORS.map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
+                <div class="form-field">
+                    <label>Route / Sample ID</label>
+                    <input type="text" class="form-input" id="cfg-route" placeholder="Route or sample ID">
+                    <div class="recent-chips" id="cfg-route-chips">
+                        ${RECENT_ROUTES.slice(0, 2).map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label>Operator ID</label>
+                    <input type="text" class="form-input" id="cfg-operator" placeholder="Operator ID">
+                    <div class="recent-chips" id="cfg-operator-chips">
+                        ${RECENT_OPERATORS.slice(0, 2).map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
+                    </div>
                 </div>
             </div>
         </div>
@@ -837,6 +839,9 @@ function showDetailModal(ch) {
     if (!overlay || !modal) return;
 
     activeModal = { type: 'detail', channelId: ch.id };
+    const totalTests = ch.testResults.length;
+    const singleTest = totalTests <= 1;
+    modal.classList.toggle('single-test', singleTest);
 
     const isControl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
     const scenarioLabels = {
@@ -894,7 +899,9 @@ function showDetailModal(ch) {
         'read_incubate': 'Read + Incubate'
     };
 
-    const totalTests = ch.testResults.length;
+    const historyTitle = singleTest
+        ? 'Test Result'
+        : `Test History (${totalTests} test${totalTests > 1 ? 's' : ''})`;
 
     modal.innerHTML = `
         <div class="modal-header">
@@ -913,8 +920,8 @@ function showDetailModal(ch) {
         </div>
         <div class="modal-body">
             ${groupResultHtml}
-            <div class="test-history" style="margin-top:16px">
-                <h4 style="font-size:var(--font-base);font-weight:700;color:var(--gray-600);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Test History (${totalTests} test${totalTests > 1 ? 's' : ''})</h4>
+            <div class="test-history">
+                <h4 class="test-history-title">${historyTitle}</h4>
                 ${testsHtml}
             </div>
         </div>
