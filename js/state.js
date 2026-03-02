@@ -26,6 +26,13 @@ const STATES = {
 
 const CASSETTE_TYPES = ['2BC', '3BTC', '4BTCS'];
 
+// Prototype stand-in for test type cloud configuration.
+const TEST_TYPE_CONFIG = {
+    '2BC': { requiredTemperature: 40 },
+    '3BTC': { requiredTemperature: 50 },
+    '4BTCS': { requiredTemperature: 50 }
+};
+
 const SUBSTANCES = {
     '2BC':  ['Beta-lactams', 'Cephalosporins'],
     '3BTC': ['Beta-lactams', 'Tetracyclines', 'Cephalosporins'],
@@ -63,7 +70,8 @@ let sessionHistory = [];
 let deviceSettings = {
     microswitchEnabled: true,
     qrScanningEnabled: true,
-    incubationEnabled: true
+    incubationEnabled: true,
+    deviceTemperature: 50
 };
 
 // ---- Channel Data Factory ----
@@ -106,6 +114,28 @@ function initChannels() {
 
 function getChannel(id) {
     return channels[id - 1];
+}
+
+function getRequiredTemperature(testType) {
+    return TEST_TYPE_CONFIG[testType]?.requiredTemperature ?? null;
+}
+
+function getTemperatureValidation(testType) {
+    const requiredTemperature = getRequiredTemperature(testType);
+
+    if (requiredTemperature === null) {
+        return {
+            ok: true,
+            currentTemperature: deviceSettings.deviceTemperature,
+            requiredTemperature: null
+        };
+    }
+
+    return {
+        ok: deviceSettings.deviceTemperature === requiredTemperature,
+        currentTemperature: deviceSettings.deviceTemperature,
+        requiredTemperature
+    };
 }
 
 // ---- Result Generation ----

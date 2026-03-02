@@ -55,6 +55,7 @@ function handleSettingsApply(nextSettings) {
     deviceSettings.microswitchEnabled = !!nextSettings.microswitchEnabled;
     deviceSettings.qrScanningEnabled = !!nextSettings.qrScanningEnabled;
     deviceSettings.incubationEnabled = !!nextSettings.incubationEnabled;
+    deviceSettings.deviceTemperature = Number(nextSettings.deviceTemperature) || 50;
 
     // If microswitch turns ON, physically present cassettes can immediately become detected.
     if (!prevMicroswitch && deviceSettings.microswitchEnabled) {
@@ -235,11 +236,13 @@ function startProcessing(ch) {
         renderSlot(ch);
         startReadingTimer(ch);
     } else {
-        // Read + Incubate
-        ch.state = STATES.WAITING_TEMP;
+        // Temperature is validated before start; incubation can begin immediately.
+        ch.state = STATES.INCUBATING;
+        ch.incubationRemaining = ch.incubationTotal;
+        ch.incubationElapsed = 0;
         renderCard(ch);
         renderSlot(ch);
-        startTempWaitTimer(ch);
+        startIncubationTimer(ch);
     }
 }
 
@@ -250,6 +253,14 @@ function hasReadableCassette(ch) {
 }
 
 function validateCassetteForCurrentTest(ch) {
+    const temperatureValidation = getTemperatureValidation(ch.cassetteType);
+    if (!temperatureValidation.ok) {
+        return {
+            ok: false,
+            message: `Device is at ${temperatureValidation.currentTemperature} C. Heat reader to ${temperatureValidation.requiredTemperature} C for ${ch.cassetteType}.`
+        };
+    }
+
     if (!hasReadableCassette(ch)) {
         return {
             ok: false,

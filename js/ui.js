@@ -419,6 +419,9 @@ function renderStatusBar() {
     const el = document.getElementById('status-bar-time');
     if (el) el.textContent = timeStr;
 
+    const tempEl = document.getElementById('status-bar-temp-value');
+    if (tempEl) tempEl.innerHTML = `${deviceSettings.deviceTemperature}.0&deg;C`;
+
     const modeText = deviceSettings.microswitchEnabled ? 'Micro Switch ON' : 'Micro Switch OFF';
     const modeEl = document.getElementById('status-bar-microswitch-mode');
     if (modeEl) modeEl.textContent = modeText;
@@ -565,6 +568,10 @@ function showConfigModal(ch) {
                         ${RECENT_OPERATORS.slice(0, 2).map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
                     </div>
                 </div>
+                <div class="form-field form-field-temp-status">
+                    <label>Temperature Check</label>
+                    <div class="config-temp-status" id="cfg-temp-status"></div>
+                </div>
             </div>
         </div>
         <div class="modal-footer">
@@ -621,6 +628,47 @@ function showConfigModal(ch) {
             collectConfigAndStart('read_incubate');
         });
     }
+
+    function updateTemperatureGate() {
+        const testType = document.getElementById('cfg-type').value;
+        const validation = getTemperatureValidation(testType);
+        const statusEl = document.getElementById('cfg-temp-status');
+        const readBtn = document.getElementById('cfg-read-only');
+        const readIncubateBtn = document.getElementById('cfg-read-incubate');
+
+        if (!statusEl || !readBtn) return;
+
+        if (validation.ok) {
+            statusEl.className = 'config-temp-status is-valid';
+            statusEl.innerHTML = `
+                <div class="config-temp-title">Reader temperature ready</div>
+                <div class="config-temp-meta">
+                    Device ${validation.currentTemperature} C · Required ${validation.requiredTemperature ?? '-'} C
+                </div>`;
+        } else {
+            statusEl.className = 'config-temp-status is-invalid';
+            statusEl.innerHTML = `
+                <div class="config-temp-title">Incorrect reader temperature</div>
+                <div class="config-temp-meta">
+                    ${testType} requires ${validation.requiredTemperature} C. Device is set to ${validation.currentTemperature} C.
+                </div>
+                <div class="config-temp-action">
+                    Heat the reader to ${validation.requiredTemperature} C in Settings before starting this test.
+                </div>`;
+        }
+
+        readBtn.disabled = !validation.ok;
+        if (readIncubateBtn) {
+            readIncubateBtn.disabled = !validation.ok;
+        }
+    }
+
+    const typeSelect = document.getElementById('cfg-type');
+    if (typeSelect) {
+        typeSelect.addEventListener('change', updateTemperatureGate);
+    }
+
+    updateTemperatureGate();
 }
 
 function hideModal() {
@@ -721,6 +769,13 @@ function showSettingsScreen() {
         <div class="settings-screen-body">
             <div class="settings-item">
                 <div class="settings-item-copy">
+                    <h3>Reader Temperature</h3>
+                    <p>Set the heating plate to 40 C or 50 C. Tests can only start when this matches the selected test type.</p>
+                </div>
+                ${toggleControl('set-temperature', deviceSettings.deviceTemperature === 40, '40 C', '50 C')}
+            </div>
+            <div class="settings-item">
+                <div class="settings-item-copy">
                     <h3>Micro Switch</h3>
                     <p>ON uses cassette insertion detection. OFF enables full manual workflow.</p>
                 </div>
@@ -762,11 +817,13 @@ function showSettingsScreen() {
     });
 
     document.getElementById('settings-screen-save').addEventListener('click', () => {
+        const deviceTemperature = screen.querySelector('#set-temperature .seg-option.selected')?.dataset.value === 'on' ? 40 : 50;
         const microswitchEnabled = screen.querySelector('#set-microswitch .seg-option.selected')?.dataset.value === 'on';
         const qrScanningEnabled = screen.querySelector('#set-qr .seg-option.selected')?.dataset.value === 'on';
         const incubationEnabled = screen.querySelector('#set-incubation .seg-option.selected')?.dataset.value === 'on';
 
         handleSettingsApply({
+            deviceTemperature,
             microswitchEnabled,
             qrScanningEnabled,
             incubationEnabled
