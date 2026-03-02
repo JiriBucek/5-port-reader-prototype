@@ -818,6 +818,16 @@
     font-size: var(--font-base);
     color: var(--gray-700);
     font-weight: 500;
+    min-width: 0;
+    flex: 1;
+}
+
+.substance-result-row .sub-value {
+    font-size: var(--font-base);
+    color: var(--gray-700);
+    font-variant-numeric: tabular-nums;
+    margin-left: 10px;
+    white-space: nowrap;
 }
 
 .substance-result-row .sub-result {
@@ -825,6 +835,8 @@
     font-weight: 700;
     padding: 2px 8px;
     border-radius: 2px;
+    margin-left: 10px;
+    white-space: nowrap;
 }
 
 .sub-result-positive {

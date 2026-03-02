@@ -296,7 +296,9 @@ function renderCardStatus(ch) {
             break;
 
         case STATES.ERROR_TYPE_MISMATCH: {
-            const expected = ch.testResults.length > 0 ? ch.testResults[0].cassetteType : '?';
+            const expected = ch.testResults.length > 0
+                ? (ch.testResults[0].testTypeName || ch.testResults[0].cassetteType)
+                : (ch.testTypeName || '?');
             statusHtml = `<span class="status-text status-error">Wrong cassette type</span>
                           <span class="status-text status-error" style="font-size:var(--font-xs)">Expected ${expected} &mdash; insert correct type and retry</span>`;
             break;
@@ -1359,6 +1361,7 @@ function showDecisionModal(ch, variant) {
         const resClass = s.result === 'positive' ? 'sub-result-positive' : 'sub-result-negative';
         return `<div class="substance-result-row">
             <span class="sub-name">${s.name}</span>
+            <span class="sub-value">${escapeHtml(s.displayValue || '')}</span>
             <span class="sub-result ${resClass}">${s.result.toUpperCase()}</span>
         </div>`;
     }).join('');

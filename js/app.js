@@ -323,6 +323,10 @@ function validateCassetteForCurrentTest(ch) {
             ? (ch.testResults[0] ? ch.testResults[0].cassetteType : ch.cassetteType)
             : ch.cassetteType
     );
+    const expectedTypeLabel =
+        (ch.currentTestNumber > 1 ? ch.testResults[0]?.testTypeName : ch.testTypeName) ||
+        ch.testTypeName ||
+        expectedType;
 
     const loadedType = normalizeLoadedCassetteType(ch.loadedCassetteType || ch.cassetteType);
 
@@ -332,7 +336,7 @@ function validateCassetteForCurrentTest(ch) {
         expectedType && loadedType && expectedType !== loadedType) {
         return {
             ok: false,
-            message: `Wrong cassette type. Expected ${expectedType}.`
+            message: `Wrong cassette type. Expected ${expectedTypeLabel}.`
         };
     }
 
@@ -462,7 +466,8 @@ function completeReading(ch) {
         overall,
         testNumber,
         cassetteType: ch.cassetteType,
-        testTypeId: ch.testTypeId
+        testTypeId: ch.testTypeId,
+        testTypeName: ch.testTypeName
     });
 
     if (ch.loadedCassetteId !== null) {
