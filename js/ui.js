@@ -538,10 +538,11 @@ function buildConfigDraft(ch) {
         testTypeId: defaultManualTestType?.id || getDefaultManualTestType()?.id || null,
         route: ch.route || '',
         operatorId: ch.operatorId || '',
-        search: '',
         fallbackCassetteType,
         lockedToQr: Boolean(qrPrefillType),
         brandFilter: defaultBrandFilter,
+        categoryFilter: 'all',
+        measurementFilter: 'all',
         curveId: defaultCurve?.id || null,
         curveLoadSource: 'qr',
         curveLoadName: '',
@@ -559,6 +560,8 @@ function collectConfigDraft(modal, ch, previousDraft) {
         fallbackCassetteType: ch.loadedCassetteType || ch.cassetteType || previousDraft.fallbackCassetteType || CASSETTE_TYPES[0],
         lockedToQr: previousDraft.lockedToQr,
         brandFilter: previousDraft.brandFilter || 'MilkSafe',
+        categoryFilter: previousDraft.categoryFilter || 'all',
+        measurementFilter: previousDraft.measurementFilter || 'all',
         curveId: previousDraft.curveId || null,
         curveLoadSource: previousDraft.curveLoadSource || 'qr',
         curveLoadName: previousDraft.curveLoadName || '',
@@ -706,7 +709,7 @@ function renderCurvePickerRows(curves, selectedCurveId) {
 
 function renderTypePickerRows(testTypes, selectedTestTypeId) {
     if (testTypes.length === 0) {
-        return `<div class="type-picker-empty">No test types match this search.</div>`;
+        return `<div class="type-picker-empty">No test types match these filters.</div>`;
     }
 
     return testTypes.map(testType => `
@@ -718,16 +721,18 @@ function renderTypePickerRows(testTypes, selectedTestTypeId) {
 }
 
 function updateTypePickerList(draft) {
-    const recentsEl = document.getElementById('cfg-type-recents');
     const listEl = document.getElementById('cfg-type-list');
-    const filterEl = document.getElementById('cfg-type-brand-filter');
-    if (!recentsEl || !listEl) return;
+    const brandEl = document.getElementById('cfg-type-brand-filter');
+    const categoryEl = document.getElementById('cfg-type-category-filter');
+    const measurementEl = document.getElementById('cfg-type-measurement-filter');
+    if (!listEl) return;
 
-    const query = (draft.search || '').trim().toLowerCase();
     const brandFilter = draft.brandFilter || 'MilkSafe';
+    const categoryFilter = draft.categoryFilter || 'all';
+    const measurementFilter = draft.measurementFilter || 'all';
 
-    if (filterEl) {
-        filterEl.querySelectorAll('[data-brand-filter]').forEach(button => {
+    if (brandEl) {
+        brandEl.querySelectorAll('[data-brand-filter]').forEach(button => {
             button.classList.toggle('selected', button.dataset.brandFilter === brandFilter);
             button.onclick = () => {
                 if (draft.brandFilter === button.dataset.brandFilter) return;
@@ -738,33 +743,37 @@ function updateTypePickerList(draft) {
         });
     }
 
+    if (categoryEl) {
+        categoryEl.querySelectorAll('[data-category-filter]').forEach(button => {
+            button.classList.toggle('selected', button.dataset.categoryFilter === categoryFilter);
+            button.onclick = () => {
+                if (draft.categoryFilter === button.dataset.categoryFilter) return;
+                const nextDraft = { ...draft, categoryFilter: button.dataset.categoryFilter };
+                updateTypePickerList(nextDraft);
+                activeModal.draft = nextDraft;
+            };
+        });
+    }
+
+    if (measurementEl) {
+        measurementEl.querySelectorAll('[data-measurement-filter]').forEach(button => {
+            button.classList.toggle('selected', button.dataset.measurementFilter === measurementFilter);
+            button.onclick = () => {
+                if (draft.measurementFilter === button.dataset.measurementFilter) return;
+                const nextDraft = { ...draft, measurementFilter: button.dataset.measurementFilter };
+                updateTypePickerList(nextDraft);
+                activeModal.draft = nextDraft;
+            };
+        });
+    }
+
     const filteredTypes = TEST_TYPES.filter(testType => {
         if (brandFilter && testType.brand !== brandFilter) return false;
-        if (!query) return true;
-        return testType.name.toLowerCase().includes(query) ||
-               String(testType.id).includes(query) ||
-               testType.brand.toLowerCase().includes(query) ||
-               testType.category.toLowerCase().includes(query) ||
-               testType.substances.some(substance => substance.toLowerCase().includes(query));
+        if (categoryFilter !== 'all' && testType.category.toLowerCase() !== categoryFilter) return false;
+        if (measurementFilter === 'quant' && !testType.quantitative) return false;
+        if (measurementFilter === 'qual' && testType.quantitative) return false;
+        return true;
     });
-
-    const recentTypes = !query
-        ? getRecentTestTypes().filter(testType => testType.brand === brandFilter).slice(0, 3)
-        : [];
-
-    recentsEl.innerHTML = recentTypes.length > 0
-        ? `
-            <div class="type-picker-recents-block">
-                <div class="type-picker-section-title">Recent</div>
-                <div class="type-picker-recents">
-                    ${recentTypes.map(testType => `
-                        <button class="type-picker-chip${testType.id === draft.testTypeId ? ' selected' : ''}" data-test-type-id="${testType.id}">
-                            ${escapeHtml(testType.name)}
-                        </button>
-                    `).join('')}
-                </div>
-            </div>`
-        : '';
 
     listEl.innerHTML = `
         <div class="type-picker-results">
@@ -813,31 +822,28 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     <div class="modal-channel-badge">${ch.id}</div>
                     <div class="header-text">
                         <h2>Select Test Type</h2>
-                        <span class="modal-subtitle">Search or choose</span>
                     </div>
+                    <button class="type-picker-header-btn" id="cfg-type-back">Back</button>
                 </div>
             </div>
             <div class="modal-body type-picker-body">
-                <div class="type-picker-search-wrap">
-                    <input
-                        type="text"
-                        class="form-input type-picker-search"
-                        id="cfg-type-search"
-                        placeholder="Search test types"
-                        value="${escapeHtml(nextDraft.search)}"
-                    >
-                </div>
                 <div class="type-picker-brand-filter" id="cfg-type-brand-filter">
                     <button class="type-picker-brand-btn${nextDraft.brandFilter === 'MilkSafe' ? ' selected' : ''}" data-brand-filter="MilkSafe">MilkSafe</button>
                     <button class="type-picker-brand-btn${nextDraft.brandFilter === 'Bioeasy' ? ' selected' : ''}" data-brand-filter="Bioeasy">BioEasy</button>
                 </div>
+                <div class="type-picker-filter-row" id="cfg-type-category-filter">
+                    <button class="type-picker-filter-btn${nextDraft.categoryFilter === 'all' ? ' selected' : ''}" data-category-filter="all">All</button>
+                    <button class="type-picker-filter-btn${nextDraft.categoryFilter === 'cassette' ? ' selected' : ''}" data-category-filter="cassette">Cassette</button>
+                    <button class="type-picker-filter-btn${nextDraft.categoryFilter === 'strip' ? ' selected' : ''}" data-category-filter="strip">Strip</button>
+                </div>
+                <div class="type-picker-filter-row" id="cfg-type-measurement-filter">
+                    <button class="type-picker-filter-btn${nextDraft.measurementFilter === 'all' ? ' selected' : ''}" data-measurement-filter="all">All</button>
+                    <button class="type-picker-filter-btn${nextDraft.measurementFilter === 'qual' ? ' selected' : ''}" data-measurement-filter="qual">Qual</button>
+                    <button class="type-picker-filter-btn${nextDraft.measurementFilter === 'quant' ? ' selected' : ''}" data-measurement-filter="quant">Quant</button>
+                </div>
                 <div class="type-picker-sections">
-                    <div id="cfg-type-recents"></div>
                     <div class="type-picker-list-block" id="cfg-type-list"></div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-secondary" id="cfg-type-back">Back</button>
             </div>`;
 
         overlay.classList.add('active');
@@ -845,14 +851,6 @@ function showConfigModal(ch, draft = null, view = 'form') {
         document.getElementById('cfg-type-back').addEventListener('click', () => {
             showConfigModal(ch, nextDraft, 'form');
         });
-
-        const searchInput = document.getElementById('cfg-type-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                nextDraft.search = searchInput.value;
-                updateTypePickerList(nextDraft);
-            });
-        }
 
         updateTypePickerList(nextDraft);
         return;
