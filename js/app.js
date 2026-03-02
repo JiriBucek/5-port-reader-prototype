@@ -52,6 +52,11 @@ function handleVerificationClose() {
     showSettingsScreen();
 }
 
+function handleSettingsCurveClose() {
+    hideSettingsCurveScreen();
+    showSettingsScreen();
+}
+
 function handleSettingsApply(nextSettings) {
     const prevMicroswitch = deviceSettings.microswitchEnabled;
     const prevQr = deviceSettings.qrScanningEnabled;

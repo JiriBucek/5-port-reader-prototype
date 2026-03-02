@@ -545,8 +545,6 @@ function buildConfigDraft(ch) {
         measurementFilter: 'all',
         curveId: defaultCurve?.id || null,
         curveLoadSource: 'qr',
-        curveLoadName: '',
-        curveLoadReady: false,
         curveLoadError: ''
     };
 }
@@ -564,8 +562,6 @@ function collectConfigDraft(modal, ch, previousDraft) {
         measurementFilter: previousDraft.measurementFilter || 'all',
         curveId: previousDraft.curveId || null,
         curveLoadSource: previousDraft.curveLoadSource || 'qr',
-        curveLoadName: previousDraft.curveLoadName || '',
-        curveLoadReady: Boolean(previousDraft.curveLoadReady),
         curveLoadError: previousDraft.curveLoadError || ''
     };
 }
@@ -592,8 +588,6 @@ function syncDraftForTestType(draft, testTypeId) {
         ...draft,
         testTypeId: normalizedTestTypeId,
         lockedToQr: false,
-        curveLoadReady: false,
-        curveLoadName: '',
         curveLoadError: '',
         curveLoadSource: draft.curveLoadSource || 'qr'
     };
@@ -673,6 +667,113 @@ function bindConfigKeyboardPlaceholder(modal) {
     }
 }
 
+function buildSettingsCurveDraft() {
+    const selectedType = TEST_TYPES.find(testType => testType.quantitative) || getTestTypeById(20);
+    const defaultCurve = selectedType ? getDefaultCurveForTestType(selectedType.id) : null;
+
+    return {
+        scenario: 'test',
+        testTypeId: selectedType?.id || null,
+        route: '',
+        operatorId: '',
+        fallbackCassetteType: selectedType?.cassetteType || CASSETTE_TYPES[0],
+        lockedToQr: false,
+        brandFilter: selectedType?.brand || 'MilkSafe',
+        categoryFilter: 'all',
+        measurementFilter: 'quant',
+        curveId: defaultCurve?.id || null,
+        curveLoadSource: 'qr',
+        curveLoadError: '',
+        openedFromSettings: true
+    };
+}
+
+function showSettingsCurveScreen(draft = null) {
+    const screen = document.getElementById('settings-curve-screen');
+    if (!screen) return;
+
+    const nextDraft = draft || buildSettingsCurveDraft();
+    const selectedType = getDraftSelection(nextDraft, false);
+    const recentCurves = getRecentQuantCurves(selectedType?.id);
+    const loadError = nextDraft.curveLoadError || '';
+
+    activeModal = { type: 'settings_curve', draft: nextDraft };
+
+    screen.innerHTML = `
+        <div class="settings-curve-screen-header">
+            <div class="settings-screen-title-wrap">
+                <h1>Load Quant Curve</h1>
+                <p>Last five quantitative curves are stored on the device.</p>
+            </div>
+            <button class="history-close-btn" id="settings-curve-close">Back</button>
+        </div>
+        <div class="settings-curve-screen-body">
+            <section class="settings-section">
+                <div class="settings-section-header">
+                    <h2>Load New</h2>
+                </div>
+                <div class="settings-section-body">
+                    <div class="curve-loader-actions">
+                        <button class="curve-loader-action" id="settings-curve-import-qr" data-source="qr">Load From QR</button>
+                        <button class="curve-loader-action" id="settings-curve-import-card" data-source="card">Load From Card</button>
+                    </div>
+                    ${loadError ? `<div class="curve-loader-status is-error">${escapeHtml(loadError)}</div>` : ''}
+                </div>
+            </section>
+            <section class="settings-section settings-curve-list-section">
+                <div class="settings-section-header">
+                    <h2>Saved Curves</h2>
+                </div>
+                <div class="curve-picker-results settings-curve-results">
+                    ${renderSettingsCurveRows(recentCurves)}
+                </div>
+            </section>
+        </div>`;
+
+    screen.classList.add('active');
+
+    document.getElementById('settings-curve-close').addEventListener('click', () => {
+        handleSettingsCurveClose();
+    });
+
+    screen.querySelectorAll('[data-source]').forEach(button => {
+        button.addEventListener('click', () => {
+            const source = button.dataset.source;
+            const availability = getCurveSourceAvailability(source);
+
+            if (!availability.ok) {
+                showSettingsCurveScreen({
+                    ...nextDraft,
+                    curveLoadSource: source,
+                    curveLoadError: availability.message
+                });
+                return;
+            }
+
+            const savedCurve = saveQuantCurve({
+                testTypeId: selectedType.id,
+                name: buildImportedCurveBatchNumber(source),
+                source
+            });
+
+            if (!savedCurve) {
+                showSettingsCurveScreen({
+                    ...nextDraft,
+                    curveLoadSource: source,
+                    curveLoadError: 'Curve could not be saved.'
+                });
+                return;
+            }
+
+            showSettingsCurveScreen({
+                ...nextDraft,
+                curveLoadSource: source,
+                curveLoadError: ''
+            });
+        });
+    });
+}
+
 function formatCurveTimestamp(value) {
     if (!value) return '';
 
@@ -685,10 +786,14 @@ function formatCurveTimestamp(value) {
     });
 }
 
-function buildSuggestedCurveName(testType, source) {
-    const stamp = formatCurveTimestamp(new Date().toISOString());
-    const cleanName = String(testType?.name || 'Curve').replace(/\s+/g, ' ').trim();
-    return `${cleanName} ${getCurveSourceLabel(source)} ${stamp}`.trim();
+function buildImportedCurveBatchNumber(source) {
+    const now = new Date();
+    const yy = String(now.getUTCFullYear()).slice(-2);
+    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(now.getUTCDate()).padStart(2, '0');
+    const sourceDigit = source === 'card' ? '2' : '1';
+    const serial = String(quantCurveIdCounter % 100).padStart(2, '0');
+    return `${yy}${mm}${dd}${sourceDigit}${serial}`;
 }
 
 function getCurveSourceAvailability(source) {
@@ -766,6 +871,22 @@ function renderCurvePickerRows(curves, selectedCurveId) {
                 <span class="type-badge type-badge-time">${escapeHtml(formatCurveTimestamp(curve.createdAt))}</span>
             </span>
         </button>
+    `).join('');
+}
+
+function renderSettingsCurveRows(curves) {
+    if (curves.length === 0) {
+        return `<div class="type-picker-empty">No saved quantitative curves yet.</div>`;
+    }
+
+    return curves.map(curve => `
+        <div class="type-picker-row settings-curve-row">
+            <span class="type-picker-row-name">${escapeHtml(curve.name)}</span>
+            <span class="type-picker-row-meta">
+                <span class="type-badge type-badge-neutral">${escapeHtml(getCurveSourceLabel(curve.source))}</span>
+                <span class="type-badge type-badge-time">${escapeHtml(formatCurveTimestamp(curve.createdAt))}</span>
+            </span>
+        </div>
     `).join('');
 }
 
@@ -925,145 +1046,109 @@ function showConfigModal(ch, draft = null, view = 'form') {
         }
 
         const recentCurves = getRecentQuantCurves(selectedType.id);
-        const loadSource = nextDraft.curveLoadSource || 'qr';
-        const availability = getCurveSourceAvailability(loadSource);
-        const loadActionLabel = loadSource === 'qr' ? 'Load From QR' : 'Load From Card';
-        const saveDisabled = !nextDraft.curveLoadReady || !String(nextDraft.curveLoadName || '').trim();
-        const curveLoadHasError = Boolean(nextDraft.curveLoadError) || !availability.ok;
+        const launchedFromSettings = Boolean(nextDraft.openedFromSettings);
         modal.innerHTML = `
             <div class="modal-header">
                 <div class="modal-header-row">
-                    <div class="modal-channel-badge">${ch.id}</div>
+                    <div class="modal-channel-badge">${launchedFromSettings ? 'Q' : ch.id}</div>
                     <div class="header-text">
-                        <h2>Quant Curve</h2>
+                        <h2>${launchedFromSettings ? 'Load Quant Curve' : 'Quant Curve'}</h2>
                         <span class="modal-subtitle">${escapeHtml(selectedType.name)}</span>
                     </div>
+                    <button class="type-picker-header-btn" id="cfg-curve-back">Back</button>
                 </div>
             </div>
             <div class="modal-body type-picker-body">
                 <div class="type-picker-sections">
                     <div class="curve-loader-panel">
                         <div class="type-picker-section-title">Load New</div>
-                        <div class="segmented-control compact" id="cfg-curve-source">
-                            <button class="seg-option${loadSource === 'qr' ? ' selected' : ''}" data-value="qr">QR Scanner</button>
-                            <button class="seg-option${loadSource === 'card' ? ' selected' : ''}" data-value="card">Storage Card</button>
+                        <div class="curve-loader-actions">
+                            <button class="curve-loader-action" id="cfg-curve-import-qr" data-source="qr">Load From QR</button>
+                            <button class="curve-loader-action" id="cfg-curve-import-card" data-source="card">Load From Card</button>
                         </div>
-                        <div class="curve-loader-status${curveLoadHasError ? ' is-error' : ' is-ready'}">${escapeHtml(nextDraft.curveLoadError || availability.message)}</div>
-                        <button class="curve-loader-action" id="cfg-curve-import">${loadActionLabel}</button>
-                        ${nextDraft.curveLoadReady ? `
-                            <div class="form-field curve-name-field">
-                                <label>Curve Name</label>
-                                <input type="text" class="form-input" id="cfg-curve-name" value="${escapeHtml(nextDraft.curveLoadName)}" placeholder="Curve name">
-                            </div>
-                        ` : ''}
+                        ${nextDraft.curveLoadError ? `<div class="curve-loader-status is-error">${escapeHtml(nextDraft.curveLoadError)}</div>` : ''}
                     </div>
                     <div>
                         <div class="type-picker-section-title">Saved Curves</div>
-                        <div class="type-picker-results">
+                        <div class="type-picker-results curve-picker-results">
                             ${renderCurvePickerRows(recentCurves, selectedCurve?.id || null)}
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-secondary" id="cfg-curve-back">Back</button>
-                <button class="modal-btn btn-primary" id="cfg-curve-save" ${saveDisabled ? 'disabled' : ''}>Save Curve</button>
             </div>`;
 
         overlay.classList.add('active');
 
         document.getElementById('cfg-curve-back').addEventListener('click', () => {
+            if (launchedFromSettings) {
+                hideModal();
+                showSettingsScreen();
+                return;
+            }
+
             showConfigModal(ch, {
                 ...nextDraft,
-                curveLoadReady: false,
-                curveLoadName: '',
                 curveLoadError: ''
             }, 'form');
-        });
-
-        modal.querySelectorAll('#cfg-curve-source .seg-option').forEach(button => {
-            button.addEventListener('click', () => {
-                showConfigModal(ch, {
-                    ...nextDraft,
-                    curveLoadSource: button.dataset.value,
-                    curveLoadReady: false,
-                    curveLoadName: '',
-                    curveLoadError: ''
-                }, 'curve_picker');
-            });
         });
 
         modal.querySelectorAll('[data-curve-id]').forEach(button => {
             button.addEventListener('click', () => {
-                showConfigModal(ch, {
+                const nextCurveDraft = {
                     ...nextDraft,
                     curveId: Number(button.dataset.curveId),
-                    curveLoadName: '',
-                    curveLoadReady: false,
+                    curveLoadError: ''
+                };
+
+                showConfigModal(ch, nextCurveDraft, launchedFromSettings ? 'curve_picker' : 'form');
+            });
+        });
+
+        modal.querySelectorAll('[data-source]').forEach(button => {
+            button.addEventListener('click', () => {
+                const source = button.dataset.source;
+                const availability = getCurveSourceAvailability(source);
+                if (!availability.ok) {
+                    showConfigModal(ch, {
+                        ...nextDraft,
+                        curveLoadSource: source,
+                        curveLoadError: availability.message
+                    }, 'curve_picker');
+                    return;
+                }
+
+                const savedCurve = saveQuantCurve({
+                    testTypeId: selectedType.id,
+                    name: buildImportedCurveBatchNumber(source),
+                    source
+                });
+
+                if (!savedCurve) {
+                    showConfigModal(ch, {
+                        ...nextDraft,
+                        curveLoadSource: source,
+                        curveLoadError: 'Curve could not be saved.'
+                    }, 'curve_picker');
+                    return;
+                }
+
+                if (launchedFromSettings) {
+                    showConfigModal(ch, {
+                        ...nextDraft,
+                        curveId: savedCurve.id,
+                        curveLoadSource: source,
+                        curveLoadError: ''
+                    }, 'curve_picker');
+                    return;
+                }
+
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveId: savedCurve.id,
+                    curveLoadSource: source,
                     curveLoadError: ''
                 }, 'form');
             });
-        });
-
-        document.getElementById('cfg-curve-import').addEventListener('click', () => {
-            if (!availability.ok) {
-                showConfigModal(ch, {
-                    ...nextDraft,
-                    curveLoadReady: false,
-                    curveLoadError: availability.message
-                }, 'curve_picker');
-                return;
-            }
-
-            showConfigModal(ch, {
-                ...nextDraft,
-                curveLoadReady: true,
-                curveLoadError: '',
-                curveLoadName: nextDraft.curveLoadName || buildSuggestedCurveName(selectedType, loadSource)
-            }, 'curve_picker');
-        });
-
-        const curveNameInput = document.getElementById('cfg-curve-name');
-        const curveSaveBtn = document.getElementById('cfg-curve-save');
-        if (curveNameInput && curveSaveBtn) {
-            curveNameInput.addEventListener('input', () => {
-                curveSaveBtn.disabled = !curveNameInput.value.trim();
-            });
-        }
-
-        document.getElementById('cfg-curve-save').addEventListener('click', () => {
-            const curveName = document.getElementById('cfg-curve-name')?.value?.trim() || '';
-            if (!curveName) {
-                showConfigModal(ch, {
-                    ...nextDraft,
-                    curveLoadReady: true,
-                    curveLoadError: 'Enter a curve name before saving.'
-                }, 'curve_picker');
-                return;
-            }
-
-            const savedCurve = saveQuantCurve({
-                testTypeId: selectedType.id,
-                name: curveName,
-                source: loadSource
-            });
-
-            if (!savedCurve) {
-                showConfigModal(ch, {
-                    ...nextDraft,
-                    curveLoadReady: true,
-                    curveLoadError: 'Curve could not be saved.'
-                }, 'curve_picker');
-                return;
-            }
-
-            showConfigModal(ch, {
-                ...nextDraft,
-                curveId: savedCurve.id,
-                curveLoadReady: false,
-                curveLoadName: '',
-                curveLoadError: ''
-            }, 'form');
         });
         return;
     }
@@ -1410,6 +1495,13 @@ function showSettingsScreen() {
             mockRow({
                 title: 'Test Types',
                 detail: 'Cloud-managed for signed-in users, manual enablement for anonymous.'
+            }),
+            mockRow({
+                title: 'Load Quant Curve',
+                detail: 'Load a batch calibration curve before starting a quantitative test.',
+                buttonId: 'settings-open-curve-loader',
+                buttonLabel: 'Open',
+                badge: ''
             })
         ].join(''))}
         ${section('Connectivity', [
@@ -1492,6 +1584,14 @@ function showSettingsScreen() {
             showVerificationScreen();
         });
     }
+
+    const openCurveLoaderBtn = document.getElementById('settings-open-curve-loader');
+    if (openCurveLoaderBtn) {
+        openCurveLoaderBtn.addEventListener('click', () => {
+            hideSettingsScreen();
+            showSettingsCurveScreen();
+        });
+    }
 }
 
 function hideSettingsScreen() {
@@ -1502,6 +1602,18 @@ function hideSettingsScreen() {
     screen.innerHTML = '';
 
     if (activeModal && activeModal.type === 'settings') {
+        activeModal = null;
+    }
+}
+
+function hideSettingsCurveScreen() {
+    const screen = document.getElementById('settings-curve-screen');
+    if (!screen) return;
+
+    screen.classList.remove('active');
+    screen.innerHTML = '';
+
+    if (activeModal && activeModal.type === 'settings_curve') {
         activeModal = null;
     }
 }

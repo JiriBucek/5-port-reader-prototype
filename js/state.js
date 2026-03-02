@@ -148,11 +148,11 @@ const TIMING = {
 const RECENT_ROUTES = ['Farm A', 'Route 12', 'North Barn', 'South Field'];
 const RECENT_OPERATORS = ['OP-001', 'OP-042', 'OP-103'];
 const PRELOADED_QUANT_CURVES = [
-    { id: 501, testTypeId: 20, name: 'Afla M1 Baseline A', source: 'qr', createdAt: '2026-02-28T08:15:00.000Z' },
-    { id: 502, testTypeId: 20, name: 'Afla M1 North Tank', source: 'card', createdAt: '2026-02-25T09:40:00.000Z' },
-    { id: 503, testTypeId: 20, name: 'Afla M1 Shift 2', source: 'qr', createdAt: '2026-02-22T13:05:00.000Z' },
-    { id: 504, testTypeId: 20, name: 'Afla M1 Evening Run', source: 'card', createdAt: '2026-02-18T16:20:00.000Z' },
-    { id: 505, testTypeId: 20, name: 'Afla M1 Backup Curve', source: 'qr', createdAt: '2026-02-14T07:50:00.000Z' }
+    { id: 501, testTypeId: 20, name: '25022811', source: 'qr', createdAt: '2026-02-28T08:15:00.000Z' },
+    { id: 502, testTypeId: 20, name: '25022522', source: 'card', createdAt: '2026-02-25T09:40:00.000Z' },
+    { id: 503, testTypeId: 20, name: '25022213', source: 'qr', createdAt: '2026-02-22T13:05:00.000Z' },
+    { id: 504, testTypeId: 20, name: '25021824', source: 'card', createdAt: '2026-02-18T16:20:00.000Z' },
+    { id: 505, testTypeId: 20, name: '25021415', source: 'qr', createdAt: '2026-02-14T07:50:00.000Z' }
 ];
 const SIMULATION_TEST_TYPE_IDS = [43, 37, 8, 20, 57];
 

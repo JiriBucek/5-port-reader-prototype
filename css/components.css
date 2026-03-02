@@ -1089,4 +1089,44 @@
     gap: 10px;
 }
 
+.settings-curve-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 122;
+    display: none;
+    flex-direction: column;
+    background: linear-gradient(180deg, #eef2f7 0%, #f8fafc 100%);
+    padding: 12px;
+}
+
+.settings-curve-screen.active {
+    display: flex;
+}
+
+.settings-curve-screen-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.settings-curve-screen-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-curve-list-section {
+    flex: 1;
+    min-height: 0;
+}
+
+.settings-curve-results {
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* Bottom nav removed — navigation is in the status bar */
