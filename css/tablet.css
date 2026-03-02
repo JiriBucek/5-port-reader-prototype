@@ -111,12 +111,81 @@ body {
     line-height: 1.4;
 }
 
+/* ---- Page Layout ---- */
+.prototype-layout {
+    width: min(1420px, 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 18px;
+}
+
+.prototype-info-panel {
+    width: 320px;
+    flex: 0 0 320px;
+    position: sticky;
+    top: 16px;
+}
+
+.prototype-info-card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    padding: 16px 16px 14px;
+    box-shadow: var(--shadow-md);
+}
+
+.prototype-info-card h1 {
+    font-size: var(--font-xl);
+    line-height: 1.15;
+    color: var(--gray-900);
+    margin-bottom: 12px;
+}
+
+.prototype-info-section + .prototype-info-section {
+    margin-top: 12px;
+}
+
+.prototype-info-section h2 {
+    font-size: var(--font-base);
+    line-height: 1.2;
+    color: var(--gray-800);
+    margin-bottom: 5px;
+}
+
+.prototype-info-section ul {
+    padding-left: 18px;
+}
+
+.prototype-info-section li {
+    font-size: var(--font-sm);
+    line-height: 1.35;
+    color: var(--gray-700);
+}
+
+.prototype-info-section li + li {
+    margin-top: 4px;
+}
+
 /* ---- Device Container ---- */
 .device-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0;
+}
+
+@media (max-width: 1180px) {
+    .prototype-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .prototype-info-panel {
+        width: min(820px, 100%);
+        flex: none;
+        position: static;
+    }
 }
 
 /* Device bezel */
