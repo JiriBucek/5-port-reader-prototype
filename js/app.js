@@ -47,9 +47,12 @@ function handleSettingsCancel() {
     processModalQueue();
 }
 
-function handleSettingsApply(nextSettings) {
-    hideSettingsScreen();
+function handleVerificationClose() {
+    hideVerificationScreen();
+    showSettingsScreen();
+}
 
+function handleSettingsApply(nextSettings) {
     const prevMicroswitch = deviceSettings.microswitchEnabled;
     const prevQr = deviceSettings.qrScanningEnabled;
 
@@ -89,7 +92,6 @@ function handleSettingsApply(nextSettings) {
 
     renderAllCards();
     renderStatusBar();
-    processModalQueue();
 }
 
 // ---- Simulation Event Handlers ----

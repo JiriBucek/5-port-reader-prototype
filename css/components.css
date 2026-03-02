@@ -46,18 +46,24 @@
 }
 
 .sb-nav-btn {
+    min-height: var(--touch-target-compact);
+    min-width: 72px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
+    border-radius: 0;
     color: var(--primary);
-    font-size: var(--font-sm);
-    font-weight: 600;
+    font-size: var(--font-base);
+    font-weight: 700;
     cursor: pointer;
-    padding: 6px 8px;
+    padding: 8px 10px;
     transition: background-color 0.15s;
 }
 
 .sb-nav-btn:hover {
-    background: var(--primary-light);
+    background: none;
 }
 
 .sb-temp {
@@ -73,9 +79,14 @@
     color: var(--gray-500);
 }
 
-.sb-sensor-mode {
-    font-size: var(--font-xs);
-    color: var(--gray-500);
+.sb-internet {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sb-internet .internet-icon {
+    font-size: 14px;
 }
 
 /* ---- Channels Container ---- */
@@ -736,6 +747,10 @@
 }
 
 .settings-screen-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 10px;
 }
 
@@ -757,8 +772,41 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     padding-right: 2px;
+}
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 2px;
+}
+
+.settings-section-header h2 {
+    font-size: var(--font-sm);
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gray-600);
+}
+
+.settings-section-header p {
+    font-size: var(--font-xs);
+    color: var(--gray-500);
+}
+
+.settings-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .settings-item {
@@ -817,6 +865,54 @@
 .settings-screen .settings-toggle {
     width: 170px;
     flex-shrink: 0;
+}
+
+.settings-item-mock {
+    align-items: flex-start;
+}
+
+.settings-item-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.settings-inline-value {
+    min-height: 30px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    font-size: var(--font-sm);
+    font-weight: 700;
+}
+
+.settings-prototype-badge {
+    min-height: 30px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(30, 95, 173, 0.1);
+    color: var(--primary);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.settings-row-btn {
+    min-height: var(--touch-target-compact);
+    min-width: 88px;
+    padding: 8px 12px;
+    border-radius: 2px;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    color: var(--gray-700);
+    font-size: var(--font-base);
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .settings-screen .segmented-control .seg-option {
@@ -905,8 +1001,35 @@
 .history-screen-body {
     flex: 1;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-placeholder-panel {
     border: 1px solid var(--gray-300);
     background: var(--white);
+    border-radius: 2px;
+    padding: 14px 12px;
+}
+
+.history-placeholder-panel-simple {
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.history-placeholder-panel strong {
+    display: block;
+    font-size: var(--font-base);
+    color: var(--gray-800);
+}
+
+.history-placeholder-panel p {
+    margin-top: 4px;
+    font-size: var(--font-sm);
+    color: var(--gray-500);
 }
 
 .history-table {
@@ -934,6 +1057,36 @@
 
 .history-empty {
     color: var(--gray-500);
+}
+
+.verification-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 121;
+    display: none;
+    flex-direction: column;
+    background: linear-gradient(180deg, #eef2f7 0%, #f8fafc 100%);
+    padding: 12px;
+}
+
+.verification-screen.active {
+    display: flex;
+}
+
+.verification-screen-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.verification-screen-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 /* Bottom nav removed — navigation is in the status bar */

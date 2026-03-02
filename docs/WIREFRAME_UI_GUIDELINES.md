@@ -84,6 +84,16 @@ Rules:
   - load new curve
 - Do not bury loading behind another modal if it can fit in the same view
 
+### Settings And Placeholder Screens
+
+- Keep one settings row pattern for the whole prototype
+- Only settings that already affect the prototype should be interactive
+- Non-functional settings should still appear in their final layout position
+- Mark non-functional rows clearly with a short badge such as `Prototype`
+- Use dedicated full-screen placeholder views for major future workflows such as:
+  - History
+  - Verification
+
 ## Shared Component Rules
 
 ### Buttons

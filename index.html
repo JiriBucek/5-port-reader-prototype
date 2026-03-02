@@ -18,19 +18,19 @@
 
             <!-- Status Bar -->
             <div class="status-bar">
-                <div class="sb-left">
-                    <span class="sb-brand">MilkSafe&trade;</span>
-                </div>
                 <div class="sb-center">
+                    <span class="sb-time" id="status-bar-time">--:--</span>
                     <span class="sb-temp">
                         <span class="temp-icon">&#x1F321;</span>
                         <span id="status-bar-temp-value">50.0&deg;C</span>
                     </span>
-                    <span class="sb-sensor-mode" id="status-bar-microswitch-mode">Micro Switch ON</span>
-                    <span class="sb-time" id="status-bar-time">--:--</span>
+                    <span class="sb-internet">
+                        <span class="internet-icon">&#x1F4F6;</span>
+                        <span id="status-bar-internet-status">Offline</span>
+                    </span>
                 </div>
                 <div class="sb-right">
-                    <button class="sb-nav-btn" id="history-btn" hidden>History</button>
+                    <button class="sb-nav-btn" id="history-btn">History</button>
                     <button class="sb-nav-btn" id="settings-open-btn">Settings</button>
                 </div>
             </div>
@@ -47,6 +47,7 @@
             <!-- Full Screen Settings -->
             <div class="settings-screen" id="settings-screen"></div>
             <div class="history-screen" id="history-screen"></div>
+            <div class="verification-screen" id="verification-screen"></div>
 
             <!-- Modal Overlay -->
             <div class="modal-overlay" id="modal-overlay">

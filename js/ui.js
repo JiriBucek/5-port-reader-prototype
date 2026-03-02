@@ -427,9 +427,8 @@ function renderStatusBar() {
     const tempEl = document.getElementById('status-bar-temp-value');
     if (tempEl) tempEl.innerHTML = `${deviceSettings.deviceTemperature}.0&deg;C`;
 
-    const modeText = deviceSettings.microswitchEnabled ? 'Micro Switch ON' : 'Micro Switch OFF';
-    const modeEl = document.getElementById('status-bar-microswitch-mode');
-    if (modeEl) modeEl.textContent = modeText;
+    const internetEl = document.getElementById('status-bar-internet-status');
+    if (internetEl) internetEl.textContent = 'Offline';
 }
 
 // ---- Physical Slot Visualization ----
@@ -1033,6 +1032,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                         ? `
                             <div class="type-picker-trigger type-picker-trigger-inline is-locked">
                                 <span class="type-picker-trigger-main">${escapeHtml(selectedType?.name || 'Select test type')}</span>
+                                <span class="type-picker-trigger-icon type-picker-trigger-icon-qr" aria-hidden="true"></span>
                             </div>`
                         : `
                             <button class="type-picker-trigger type-picker-trigger-inline" id="cfg-type-picker">
@@ -1040,7 +1040,6 @@ function showConfigModal(ch, draft = null, view = 'form') {
                                 <span class="type-picker-trigger-action">Choose</span>
                             </button>`
                     }
-                    ${qrLocked ? `<div class="config-note">QR detected</div>` : ''}
                 </div>
                 <div class="form-field">
                     <label>Sample ID</label>
@@ -1175,40 +1174,19 @@ function showHistoryScreen() {
 
     activeModal = { type: 'history' };
 
-    const rows = sessionHistory.slice(-12).reverse();
-    const tableBody = rows.length > 0
-        ? rows.map(entry => `
-            <tr>
-                <td>${entry.channelId}</td>
-                <td>${entry.scenario || '-'}</td>
-                <td>${entry.testTypeName || entry.cassetteType || '-'}</td>
-                <td>${entry.result ? entry.result.toUpperCase() : '-'}</td>
-                <td>${entry.testCount || 0}</td>
-            </tr>
-        `).join('')
-        : `<tr><td colspan="5" class="history-empty">No recorded sessions yet.</td></tr>`;
-
     screen.innerHTML = `
         <div class="history-screen-header">
             <div>
                 <h1>History</h1>
-                <p>Prototype placeholder. Full history workflow coming later.</p>
+                <p>History is not implemented in this prototype.</p>
             </div>
             <button class="history-close-btn" id="history-screen-close">Close</button>
         </div>
         <div class="history-screen-body">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Channel</th>
-                        <th>Scenario</th>
-                        <th>Type</th>
-                        <th>Result</th>
-                        <th>Tests</th>
-                    </tr>
-                </thead>
-                <tbody>${tableBody}</tbody>
-            </table>
+            <div class="history-placeholder-panel history-placeholder-panel-simple">
+                <strong>History not implemented</strong>
+                <p>This screen is only here to reserve the navigation position in the prototype.</p>
+            </div>
         </div>`;
 
     screen.classList.add('active');
@@ -1246,46 +1224,156 @@ function showSettingsScreen() {
             </div>`;
     }
 
+    function section(title, rows, note = '') {
+        return `
+            <section class="settings-section">
+                <div class="settings-section-header">
+                    <h2>${title}</h2>
+                    ${note ? `<p>${note}</p>` : ''}
+                </div>
+                <div class="settings-section-body">${rows}</div>
+            </section>`;
+    }
+
+    function liveRow({ title, detail, id, value, onLabel = 'On', offLabel = 'Off', compact = false }) {
+        return `
+            <div class="settings-item${compact ? ' settings-item-temperature' : ''}">
+                <div class="settings-item-copy">
+                    <h3>${title}</h3>
+                    ${detail ? `<p>${detail}</p>` : ''}
+                </div>
+                ${toggleControl(id, value, onLabel, offLabel)}
+            </div>`;
+    }
+
+    function mockRow({ title, detail = '', value = '', badge = 'Prototype', buttonId = '', buttonLabel = '' }) {
+        return `
+            <div class="settings-item settings-item-mock">
+                <div class="settings-item-copy">
+                    <h3>${title}</h3>
+                    ${detail ? `<p>${detail}</p>` : ''}
+                </div>
+                <div class="settings-item-meta">
+                    ${value ? `<span class="settings-inline-value">${value}</span>` : ''}
+                    ${buttonId ? `<button class="settings-row-btn" id="${buttonId}">${buttonLabel}</button>` : ''}
+                    ${badge ? `<span class="settings-prototype-badge">${badge}</span>` : ''}
+                </div>
+            </div>`;
+    }
+
     screen.innerHTML = `
         <div class="settings-screen-header">
             <div class="settings-screen-title-wrap">
                 <h1>Settings</h1>
-                <p>Device behavior controls</p>
+                <p>Reader Controls are live. All other rows are wireframe-only.</p>
             </div>
-        </div>
-        <div class="settings-screen-body">
-            <div class="settings-item settings-item-temperature">
-                <div class="settings-item-copy">
-                    <h3>Temp</h3>
-                </div>
-                ${toggleControl('set-temperature', deviceSettings.deviceTemperature === 40, '40 C', '50 C')}
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-copy">
-                    <h3>Micro Switch</h3>
-                    <p>ON uses cassette insertion detection. OFF enables full manual workflow.</p>
-                </div>
-                ${toggleControl('set-microswitch', deviceSettings.microswitchEnabled)}
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-copy">
-                    <h3>QR Scanning</h3>
-                    <p>ON locks test type to cassette QR. OFF allows manual test type selection.</p>
-                </div>
-                ${toggleControl('set-qr', deviceSettings.qrScanningEnabled)}
-            </div>
-            <div class="settings-item">
-                <div class="settings-item-copy">
-                    <h3>Incubation</h3>
-                    <p>ON shows Read + Incubate. OFF uses Read only.</p>
-                </div>
-                ${toggleControl('set-incubation', deviceSettings.incubationEnabled)}
-            </div>
-        </div>
-        <div class="settings-screen-footer">
-            <button class="modal-btn btn-secondary" id="settings-screen-cancel">Cancel</button>
-            <button class="modal-btn btn-primary" id="settings-screen-save">Save</button>
+            <button class="history-close-btn" id="settings-screen-close">Close</button>
         </div>`;
+
+    const body = document.createElement('div');
+    body.className = 'settings-screen-body';
+    body.innerHTML = `
+        ${section('Reader Controls', [
+            liveRow({
+                title: 'Temperature',
+                detail: 'Sets the reader to 40 C or 50 C.',
+                id: 'set-temperature',
+                value: deviceSettings.deviceTemperature === 40,
+                onLabel: '40 C',
+                offLabel: '50 C'
+            }),
+            liveRow({
+                title: 'QR Scanning',
+                detail: 'Cassette QR loads the test type automatically.',
+                id: 'set-qr',
+                value: deviceSettings.qrScanningEnabled
+            }),
+            liveRow({
+                title: 'Incubation',
+                detail: 'Turns incubation on and off.',
+                id: 'set-incubation',
+                value: deviceSettings.incubationEnabled
+            }),
+            liveRow({
+                title: 'Micro Switch',
+                detail: 'Uses cassette insertion detection instead of manual start.',
+                id: 'set-microswitch',
+                value: deviceSettings.microswitchEnabled
+            })
+        ].join(''), 'These rows affect the prototype immediately.')}
+        ${section('Verification', [
+            mockRow({
+                title: 'Run Verification',
+                detail: 'Run a verification test with a verification cassette.',
+                buttonId: 'settings-open-verification',
+                buttonLabel: 'Open',
+                badge: ''
+            }),
+            mockRow({
+                title: 'Verification Threshold',
+                detail: 'Tests since last verification warning.',
+                value: '250 Tests'
+            }),
+            mockRow({
+                title: 'Verification History',
+                detail: 'Local history and cloud upload placement.',
+                value: 'Not Implemented'
+            })
+        ].join(''))}
+        ${section('Test Setup', [
+            mockRow({
+                title: 'Test Types',
+                detail: 'Cloud-managed for signed-in users, manual enablement for anonymous.'
+            })
+        ].join(''))}
+        ${section('Connectivity', [
+            mockRow({
+                title: 'Connect to Internet',
+                detail: 'Wi-Fi and Ethernet setup live here in the final product.'
+            }),
+            mockRow({
+                title: 'Printer Setup',
+                detail: 'Enable or disable printing and select the printer.'
+            }),
+            mockRow({
+                title: 'LIMS',
+                detail: 'Enable LIMS export behavior.'
+            }),
+            mockRow({
+                title: 'MilkSafe Cloud',
+                detail: 'Sign in, account state, and logout.'
+            })
+        ].join(''))}
+        ${section('Device', [
+            mockRow({
+                title: 'Language',
+                detail: 'Default language and translations.',
+                value: 'English'
+            }),
+            mockRow({
+                title: 'Date and Time',
+                detail: 'Date, time, and timezone for uploads.',
+                value: 'UTC'
+            }),
+            mockRow({
+                title: 'Sound',
+                detail: 'Reader sound on or off.'
+            }),
+            mockRow({
+                title: 'Software Update',
+                detail: 'USB update and internet update.'
+            }),
+            mockRow({
+                title: 'Factory Reset',
+                detail: 'Password-protected in the final product.'
+            }),
+            mockRow({
+                title: 'About',
+                detail: 'Reader and firmware details.'
+            })
+        ].join(''))}`;
+
+    screen.appendChild(body);
 
     screen.classList.add('active');
 
@@ -1294,27 +1382,30 @@ function showSettingsScreen() {
             opt.addEventListener('click', () => {
                 sc.querySelectorAll('.seg-option').forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
+
+                const nextSettings = {
+                    deviceTemperature: screen.querySelector('#set-temperature .seg-option.selected')?.dataset.value === 'on' ? 40 : 50,
+                    microswitchEnabled: screen.querySelector('#set-microswitch .seg-option.selected')?.dataset.value === 'on',
+                    qrScanningEnabled: screen.querySelector('#set-qr .seg-option.selected')?.dataset.value === 'on',
+                    incubationEnabled: screen.querySelector('#set-incubation .seg-option.selected')?.dataset.value === 'on'
+                };
+
+                handleSettingsApply(nextSettings);
             });
         });
     });
 
-    document.getElementById('settings-screen-cancel').addEventListener('click', () => {
+    document.getElementById('settings-screen-close').addEventListener('click', () => {
         handleSettingsCancel();
     });
 
-    document.getElementById('settings-screen-save').addEventListener('click', () => {
-        const deviceTemperature = screen.querySelector('#set-temperature .seg-option.selected')?.dataset.value === 'on' ? 40 : 50;
-        const microswitchEnabled = screen.querySelector('#set-microswitch .seg-option.selected')?.dataset.value === 'on';
-        const qrScanningEnabled = screen.querySelector('#set-qr .seg-option.selected')?.dataset.value === 'on';
-        const incubationEnabled = screen.querySelector('#set-incubation .seg-option.selected')?.dataset.value === 'on';
-
-        handleSettingsApply({
-            deviceTemperature,
-            microswitchEnabled,
-            qrScanningEnabled,
-            incubationEnabled
+    const openVerificationBtn = document.getElementById('settings-open-verification');
+    if (openVerificationBtn) {
+        openVerificationBtn.addEventListener('click', () => {
+            hideSettingsScreen();
+            showVerificationScreen();
         });
-    });
+    }
 }
 
 function hideSettingsScreen() {
@@ -1325,6 +1416,48 @@ function hideSettingsScreen() {
     screen.innerHTML = '';
 
     if (activeModal && activeModal.type === 'settings') {
+        activeModal = null;
+    }
+}
+
+// ---- Verification Screen ----
+
+function showVerificationScreen() {
+    const screen = document.getElementById('verification-screen');
+    if (!screen) return;
+
+    activeModal = { type: 'verification' };
+
+    screen.innerHTML = `
+        <div class="verification-screen-header">
+            <div class="settings-screen-title-wrap">
+                <h1>Verification</h1>
+                <p>Verification is not implemented in this prototype.</p>
+            </div>
+            <button class="history-close-btn" id="verification-screen-close">Back</button>
+        </div>
+        <div class="verification-screen-body">
+            <div class="history-placeholder-panel history-placeholder-panel-simple">
+                <strong>Verification not implemented</strong>
+                <p>This screen is only here to reserve the separate verification flow in the prototype.</p>
+            </div>
+        </div>`;
+
+    screen.classList.add('active');
+
+    document.getElementById('verification-screen-close').addEventListener('click', () => {
+        handleVerificationClose();
+    });
+}
+
+function hideVerificationScreen() {
+    const screen = document.getElementById('verification-screen');
+    if (!screen) return;
+
+    screen.classList.remove('active');
+    screen.innerHTML = '';
+
+    if (activeModal && activeModal.type === 'verification') {
         activeModal = null;
     }
 }
