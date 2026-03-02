@@ -52,7 +52,7 @@ function renderCardHeader(ch) {
     }
 
     return `<div class="card-header">
-        <span class="ch-label">CH ${ch.id}</span>
+        <span class="ch-label">${ch.id}</span>
         ${badges ? `<div class="card-badges">${badges}</div>` : ''}
     </div>`;
 }
@@ -569,7 +569,6 @@ function showConfigModal(ch) {
                     </div>
                 </div>
                 <div class="form-field form-field-temp-status">
-                    <label>Temperature Check</label>
                     <div class="config-temp-status" id="cfg-temp-status"></div>
                 </div>
             </div>
@@ -641,20 +640,13 @@ function showConfigModal(ch) {
         if (validation.ok) {
             statusEl.className = 'config-temp-status is-valid';
             statusEl.innerHTML = `
-                <div class="config-temp-title">Reader temperature ready</div>
-                <div class="config-temp-meta">
-                    Device ${validation.currentTemperature} C · Required ${validation.requiredTemperature ?? '-'} C
-                </div>`;
+                <span class="config-temp-badge">Temp OK</span>
+                <span class="config-temp-copy">${validation.currentTemperature} C / ${validation.requiredTemperature ?? '-'} C</span>`;
         } else {
             statusEl.className = 'config-temp-status is-invalid';
             statusEl.innerHTML = `
-                <div class="config-temp-title">Incorrect reader temperature</div>
-                <div class="config-temp-meta">
-                    ${testType} requires ${validation.requiredTemperature} C. Device is set to ${validation.currentTemperature} C.
-                </div>
-                <div class="config-temp-action">
-                    Heat the reader to ${validation.requiredTemperature} C in Settings before starting this test.
-                </div>`;
+                <span class="config-temp-badge">Temp</span>
+                <span class="config-temp-copy">${validation.currentTemperature} C device, ${validation.requiredTemperature} C required</span>`;
         }
 
         readBtn.disabled = !validation.ok;
@@ -692,7 +684,7 @@ function showHistoryScreen() {
     const tableBody = rows.length > 0
         ? rows.map(entry => `
             <tr>
-                <td>CH ${entry.channelId}</td>
+                <td>${entry.channelId}</td>
                 <td>${entry.scenario || '-'}</td>
                 <td>${entry.cassetteType || '-'}</td>
                 <td>${entry.result ? entry.result.toUpperCase() : '-'}</td>
@@ -767,10 +759,9 @@ function showSettingsScreen() {
             </div>
         </div>
         <div class="settings-screen-body">
-            <div class="settings-item">
+            <div class="settings-item settings-item-temperature">
                 <div class="settings-item-copy">
-                    <h3>Reader Temperature</h3>
-                    <p>Set the heating plate to 40 C or 50 C. Tests can only start when this matches the selected test type.</p>
+                    <h3>Temp</h3>
                 </div>
                 ${toggleControl('set-temperature', deviceSettings.deviceTemperature === 40, '40 C', '50 C')}
             </div>

@@ -117,13 +117,7 @@
 .config-modal .modal-channel-badge {
     width: 64px;
     height: 64px;
-    padding-top: 12px;
     font-size: 30px;
-}
-
-.config-modal .modal-channel-badge::before {
-    top: 4px;
-    font-size: 10px;
 }
 
 .config-modal .modal-header-row .header-text h2 {
@@ -195,8 +189,12 @@
 .config-temp-status {
     border: 1px solid var(--gray-300);
     border-radius: 2px;
-    padding: 10px 12px;
+    padding: 6px 8px;
     background: var(--gray-50);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
 }
 
 .config-temp-status.is-valid {
@@ -209,25 +207,25 @@
     background: var(--danger-bg);
 }
 
-.config-temp-title {
-    font-size: var(--font-sm);
+.config-temp-badge {
+    flex-shrink: 0;
+    font-size: 10px;
     font-weight: 700;
-    color: var(--gray-800);
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--gray-700);
 }
 
-.config-temp-meta,
-.config-temp-action {
-    margin-top: 4px;
-    font-size: var(--font-xs);
-    line-height: 1.3;
-}
-
-.config-temp-meta {
-    color: var(--gray-600);
-}
-
-.config-temp-action {
-    color: #991b1b;
+.config-temp-copy {
+    min-width: 0;
+    font-size: 10px;
+    line-height: 1.1;
+    color: var(--gray-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .config-modal .recent-chips {
@@ -364,28 +362,17 @@
     position: relative;
     width: 72px;
     height: 72px;
-    padding-top: 14px;
     box-sizing: border-box;
     background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
     border: 2px solid #1e40af;
     color: var(--white);
     font-size: 34px;
     font-weight: 900;
+    line-height: 1;
+    text-align: center;
     border-radius: 2px;
     flex-shrink: 0;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
-}
-
-.modal-channel-badge::before {
-    content: 'CH';
-    position: absolute;
-    top: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 1.2px;
-    color: rgba(255, 255, 255, 0.88);
 }
 
 /* Modal header with channel badge */
@@ -452,14 +439,7 @@
 .detail-modal .modal-channel-badge {
     width: 64px;
     height: 64px;
-    padding-top: 12px;
     font-size: 30px;
-}
-
-.decision-modal .modal-channel-badge::before,
-.detail-modal .modal-channel-badge::before {
-    top: 4px;
-    font-size: 10px;
 }
 
 .decision-modal .modal-header-row .header-text h2,

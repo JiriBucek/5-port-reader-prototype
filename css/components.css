@@ -185,9 +185,11 @@
 }
 
 .card-header .ch-label {
-    font-weight: 700;
-    font-size: var(--font-base);
+    font-weight: 800;
+    font-size: 18px;
+    line-height: 1;
     color: var(--gray-700);
+    text-align: center;
     white-space: nowrap;
     width: 100%;
 }
@@ -765,6 +767,31 @@
     margin-top: 3px;
     font-size: var(--font-sm);
     color: var(--gray-500);
+}
+
+.settings-item-temperature {
+    padding: 4px 8px;
+    min-height: 42px;
+}
+
+.settings-item-temperature .settings-item-copy {
+    display: flex;
+    align-items: center;
+}
+
+.settings-item-temperature .settings-item-copy h3 {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.settings-item-temperature .settings-toggle {
+    width: 96px;
+}
+
+.settings-item-temperature .segmented-control .seg-option {
+    min-height: 28px;
+    padding: 4px 2px;
+    font-size: 10px;
 }
 
 .settings-screen .settings-toggle {
