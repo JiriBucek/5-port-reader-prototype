@@ -182,6 +182,22 @@ function renderMiniHistory(ch) {
     return `<div class="mini-history">${minis}</div>`;
 }
 
+function renderConfirmationHistory(ch) {
+    if (ch.testResults.length === 0) return '';
+
+    const chips = ch.testResults.map(tr => {
+        const positive = isTestPositive(tr.substances);
+        const cls = positive ? 'confirm-chip-positive' : 'confirm-chip-negative';
+        const label = positive ? 'POS' : 'NEG';
+        return `<span class="confirm-chip ${cls}">T${tr.testNumber} ${label}</span>`;
+    }).join('');
+
+    return `<div class="confirm-history">
+        <span class="confirm-history-label">Completed:</span>
+        ${chips}
+    </div>`;
+}
+
 // ---- Card Status Area ----
 
 function renderCardStatus(ch) {
@@ -252,7 +268,8 @@ function renderCardStatus(ch) {
         case STATES.READY_FOR_TEST_N: {
             const nextTest = ch.currentTestNumber + 1;
             statusHtml = `<span class="status-text">Ready for Test ${nextTest}</span>
-                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert cassette if needed, then tap Start</span>`;
+                          ${renderConfirmationHistory(ch)}
+                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert cassette (if needed), then tap Start</span>`;
             break;
         }
 
@@ -613,6 +630,69 @@ function hideModal() {
     overlay.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
     overlay.classList.remove('active');
     activeModal = null;
+}
+
+// ---- History Screen ----
+
+function showHistoryScreen() {
+    const screen = document.getElementById('history-screen');
+    if (!screen) return;
+
+    activeModal = { type: 'history' };
+
+    const rows = sessionHistory.slice(-12).reverse();
+    const tableBody = rows.length > 0
+        ? rows.map(entry => `
+            <tr>
+                <td>CH ${entry.channelId}</td>
+                <td>${entry.scenario || '-'}</td>
+                <td>${entry.cassetteType || '-'}</td>
+                <td>${entry.result ? entry.result.toUpperCase() : '-'}</td>
+                <td>${entry.testCount || 0}</td>
+            </tr>
+        `).join('')
+        : `<tr><td colspan="5" class="history-empty">No recorded sessions yet.</td></tr>`;
+
+    screen.innerHTML = `
+        <div class="history-screen-header">
+            <div>
+                <h1>History</h1>
+                <p>Prototype placeholder. Full history workflow coming later.</p>
+            </div>
+            <button class="history-close-btn" id="history-screen-close">Close</button>
+        </div>
+        <div class="history-screen-body">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Channel</th>
+                        <th>Scenario</th>
+                        <th>Type</th>
+                        <th>Result</th>
+                        <th>Tests</th>
+                    </tr>
+                </thead>
+                <tbody>${tableBody}</tbody>
+            </table>
+        </div>`;
+
+    screen.classList.add('active');
+
+    document.getElementById('history-screen-close').addEventListener('click', () => {
+        handleHistoryClose();
+    });
+}
+
+function hideHistoryScreen() {
+    const screen = document.getElementById('history-screen');
+    if (!screen) return;
+
+    screen.classList.remove('active');
+    screen.innerHTML = '';
+
+    if (activeModal && activeModal.type === 'history') {
+        activeModal = null;
+    }
 }
 
 // ---- Settings Screen ----

@@ -166,6 +166,9 @@ function clearTimer(ch) {
 // ---- State Queries ----
 
 function canInsertCassette(ch) {
+    // Physical workflow guard: cannot insert a new cassette while one is still present.
+    if (ch.physicalCassettePresent) return false;
+
     return ch.state === STATES.EMPTY ||
            ch.state === STATES.DETECTED ||
            ch.state === STATES.READY_FOR_TEST_N ||

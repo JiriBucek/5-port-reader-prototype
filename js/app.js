@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', init);
 // ---- Status Bar ----
 
 function bindStatusBarEvents() {
+    const historyBtn = document.getElementById('history-btn');
+    if (historyBtn && !historyBtn.hidden) {
+        historyBtn.addEventListener('click', () => {
+            if (activeModal) return;
+            showHistoryScreen();
+        });
+    }
+
     const settingsBtn = document.getElementById('settings-open-btn');
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
@@ -26,6 +34,11 @@ function bindStatusBarEvents() {
             showSettingsScreen();
         });
     }
+}
+
+function handleHistoryClose() {
+    hideHistoryScreen();
+    processModalQueue();
 }
 
 function handleSettingsCancel() {
