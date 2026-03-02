@@ -32,11 +32,25 @@ function renderCard(ch) {
 
 // ---- Card Header ----
 
+function getCardHeaderTypeLabel(ch) {
+    const configuredType = getTestTypeById(ch.testTypeId);
+    if (ch.testTypeName) return ch.testTypeName;
+    if (configuredType?.name) return configuredType.name;
+
+    const insertedType = getTestTypeById(ch.loadedTestTypeId);
+    if (deviceSettings.qrScanningEnabled && insertedType?.qrEnabled) {
+        return insertedType.name;
+    }
+
+    return '';
+}
+
 function renderCardHeader(ch) {
     let badges = '';
+    const typeLabel = getCardHeaderTypeLabel(ch);
 
-    if (ch.cassetteType) {
-        badges += `<span class="badge badge-type">${ch.cassetteType}</span>`;
+    if (typeLabel) {
+        badges += `<span class="badge badge-type" title="${escapeHtml(typeLabel)}">${escapeHtml(typeLabel)}</span>`;
     }
 
     if (ch.scenario && ch.scenario !== 'test') {
@@ -213,7 +227,7 @@ function renderCardStatus(ch) {
                 statusHtml = `<span class="status-text status-waiting">No cassette inserted</span>`;
             } else {
                 statusHtml = `<span class="status-text status-waiting">Manual mode</span>
-                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure to start without detection</span>`;
+                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Insert cassette and tap Configure</span>`;
             }
             break;
 
@@ -273,7 +287,7 @@ function renderCardStatus(ch) {
             const nextTest = ch.currentTestNumber + 1;
             statusHtml = `<span class="status-text">Ready for Test ${nextTest}</span>
                           ${renderConfirmationHistory(ch)}
-                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert cassette (if needed), then tap Start</span>`;
+                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert a new cassette, then tap Start</span>`;
             break;
         }
 
@@ -522,12 +536,16 @@ function escapeHtml(value) {
 
 function buildConfigDraft(ch) {
     const fallbackCassetteType = ch.loadedCassetteType || ch.cassetteType || CASSETTE_TYPES[0];
-    const qrPrefillType = (deviceSettings.qrScanningEnabled && ch.cassettePresent && ch.loadedCassetteType)
-        ? getQrPrefillTestType(fallbackCassetteType)
+    const insertedTestType = getTestTypeById(ch.loadedTestTypeId);
+    const qrPrefillType = (deviceSettings.qrScanningEnabled && ch.cassettePresent && insertedTestType?.qrEnabled)
+        ? insertedTestType
         : null;
     const recentTestType = getRecentTestTypes()[0] || getDefaultManualTestType();
     const defaultManualTestType = qrPrefillType || getTestTypeById(ch.testTypeId) || recentTestType;
     const defaultBrandFilter = defaultManualTestType?.brand || 'MilkSafe';
+    const defaultCurve = defaultManualTestType?.quantitative
+        ? getDefaultCurveForTestType(defaultManualTestType.id, ch.curveId)
+        : null;
 
     return {
         scenario: ch.scenario || 'test',
@@ -537,7 +555,12 @@ function buildConfigDraft(ch) {
         search: '',
         fallbackCassetteType,
         lockedToQr: Boolean(qrPrefillType),
-        brandFilter: defaultBrandFilter
+        brandFilter: defaultBrandFilter,
+        curveId: defaultCurve?.id || null,
+        curveLoadSource: 'qr',
+        curveLoadName: '',
+        curveLoadReady: false,
+        curveLoadError: ''
     };
 }
 
@@ -549,12 +572,84 @@ function collectConfigDraft(modal, ch, previousDraft) {
         operatorId: modal.querySelector('#cfg-operator')?.value || '',
         fallbackCassetteType: ch.loadedCassetteType || ch.cassetteType || previousDraft.fallbackCassetteType || CASSETTE_TYPES[0],
         lockedToQr: previousDraft.lockedToQr,
-        brandFilter: previousDraft.brandFilter || 'MilkSafe'
+        brandFilter: previousDraft.brandFilter || 'MilkSafe',
+        curveId: previousDraft.curveId || null,
+        curveLoadSource: previousDraft.curveLoadSource || 'qr',
+        curveLoadName: previousDraft.curveLoadName || '',
+        curveLoadReady: Boolean(previousDraft.curveLoadReady),
+        curveLoadError: previousDraft.curveLoadError || ''
     };
 }
 
 function getDraftSelection(draft, qrLocked) {
     return getDisplayTestType(draft.testTypeId, draft.fallbackCassetteType, qrLocked);
+}
+
+function getDraftCurve(draft, selectedType) {
+    if (!selectedType?.quantitative) return null;
+
+    const selectedCurve = getCurveById(draft.curveId);
+    if (selectedCurve && selectedCurve.testTypeId === selectedType.id) {
+        return selectedCurve;
+    }
+
+    return getDefaultCurveForTestType(selectedType.id, draft.curveId);
+}
+
+function syncDraftForTestType(draft, testTypeId) {
+    const normalizedTestTypeId = Number(testTypeId);
+    const selectedType = getTestTypeById(normalizedTestTypeId);
+    const nextDraft = {
+        ...draft,
+        testTypeId: normalizedTestTypeId,
+        lockedToQr: false,
+        curveLoadReady: false,
+        curveLoadName: '',
+        curveLoadError: '',
+        curveLoadSource: draft.curveLoadSource || 'qr'
+    };
+
+    if (!selectedType?.quantitative) {
+        return {
+            ...nextDraft,
+            curveId: null
+        };
+    }
+
+    return {
+        ...nextDraft,
+        curveId: getDefaultCurveForTestType(selectedType.id, draft.curveId)?.id || null
+    };
+}
+
+function formatCurveTimestamp(value) {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function buildSuggestedCurveName(testType, source) {
+    const stamp = formatCurveTimestamp(new Date().toISOString());
+    const cleanName = String(testType?.name || 'Curve').replace(/\s+/g, ' ').trim();
+    return `${cleanName} ${getCurveSourceLabel(source)} ${stamp}`.trim();
+}
+
+function getCurveSourceAvailability(source) {
+    if (source === 'qr') {
+        return deviceSettings.curveScannerConnected
+            ? { ok: true, message: 'Scanner ready. Scan the curve QR.' }
+            : { ok: false, message: 'Connect pistol scanner to load from QR.' };
+    }
+
+    return deviceSettings.storageCardMounted
+        ? { ok: true, message: 'Storage card ready. Import a saved curve file.' }
+        : { ok: false, message: 'Insert storage card to import a curve.' };
 }
 
 function renderConfigTemperatureGate(draft, qrLocked) {
@@ -591,11 +686,10 @@ function getTestTypeBadgeItems(testType) {
         items.push({ label: 'Quant', tone: 'quant' });
     }
 
-    if (testType.temperatureMode !== 'none') {
-        items.push({ label: formatTemperatureShort(testType), tone: 'temp' });
-    }
-
     if (testType.incubationTime != null) {
+        if (testType.requiredTemperature != null) {
+            items.push({ label: formatTemperatureShort(testType), tone: 'temp' });
+        }
         items.push({ label: formatIncubationTimeShort(testType.incubationTime), tone: 'time' });
     }
 
@@ -605,6 +699,22 @@ function getTestTypeBadgeItems(testType) {
 function renderTestTypeBadges(testType) {
     return getTestTypeBadgeItems(testType).map(item => `
         <span class="type-badge type-badge-${item.tone}">${escapeHtml(item.label)}</span>
+    `).join('');
+}
+
+function renderCurvePickerRows(curves, selectedCurveId) {
+    if (curves.length === 0) {
+        return `<div class="type-picker-empty">No saved curves for this test type yet.</div>`;
+    }
+
+    return curves.map(curve => `
+        <button class="type-picker-row${curve.id === selectedCurveId ? ' selected' : ''}" data-curve-id="${curve.id}">
+            <span class="type-picker-row-name">${escapeHtml(curve.name)}</span>
+            <span class="type-picker-row-meta">
+                <span class="type-badge type-badge-neutral">${escapeHtml(getCurveSourceLabel(curve.source))}</span>
+                <span class="type-badge type-badge-time">${escapeHtml(formatCurveTimestamp(curve.createdAt))}</span>
+            </span>
+        </button>
     `).join('');
 }
 
@@ -677,11 +787,10 @@ function updateTypePickerList(draft) {
 
     document.querySelectorAll('[data-test-type-id]').forEach(button => {
         button.addEventListener('click', () => {
-            const nextDraft = {
+            const nextDraft = syncDraftForTestType({
                 ...draft,
-                testTypeId: Number(button.dataset.testTypeId),
                 brandFilter
-            };
+            }, Number(button.dataset.testTypeId));
             const ch = getChannel(activeModal.channelId);
             showConfigModal(ch, nextDraft, 'form');
         });
@@ -698,12 +807,13 @@ function showConfigModal(ch, draft = null, view = 'form') {
 
     const scenarioOpts = [
         { value: 'test', label: 'Test' },
-        { value: 'pos_control', label: 'Pos Control' },
-        { value: 'animal_control', label: 'Animal Control' }
+        { value: 'animal_control', label: 'Animal' },
+        { value: 'pos_control', label: 'Positive' }
     ];
 
     const qrLocked = Boolean(nextDraft.lockedToQr);
     const selectedType = getDraftSelection(nextDraft, qrLocked);
+    const selectedCurve = getDraftCurve(nextDraft, selectedType);
     const subtitle = ch.cassettePresent
         ? `${selectedType?.category || 'Test type'} ready`
         : 'Manual mode: configure without cassette detection';
@@ -762,26 +872,219 @@ function showConfigModal(ch, draft = null, view = 'form') {
         return;
     }
 
+    if (view === 'curve_picker') {
+        if (!selectedType?.quantitative) {
+            showConfigModal(ch, nextDraft, 'form');
+            return;
+        }
+
+        const recentCurves = getRecentQuantCurves(selectedType.id);
+        modal.innerHTML = `
+            <div class="modal-header">
+                <div class="modal-header-row">
+                    <div class="modal-channel-badge">${ch.id}</div>
+                    <div class="header-text">
+                        <h2>Select Curve</h2>
+                        <span class="modal-subtitle">${escapeHtml(selectedType.name)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body type-picker-body">
+                <div class="curve-picker-note">Choose one of the last five curves saved on the device.</div>
+                <div class="type-picker-sections">
+                    <div>
+                        <div class="type-picker-section-title">Recent Curves</div>
+                        <div class="type-picker-results">
+                            ${renderCurvePickerRows(recentCurves, selectedCurve?.id || null)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-secondary" id="cfg-curve-back">Back</button>
+                <button class="modal-btn btn-primary" id="cfg-curve-load-new">Load New Curve</button>
+            </div>`;
+
+        overlay.classList.add('active');
+
+        document.getElementById('cfg-curve-back').addEventListener('click', () => {
+            showConfigModal(ch, nextDraft, 'form');
+        });
+
+        document.getElementById('cfg-curve-load-new').addEventListener('click', () => {
+            showConfigModal(ch, {
+                ...nextDraft,
+                curveLoadSource: nextDraft.curveLoadSource || 'qr',
+                curveLoadName: '',
+                curveLoadReady: false,
+                curveLoadError: ''
+            }, 'curve_loader');
+        });
+
+        modal.querySelectorAll('[data-curve-id]').forEach(button => {
+            button.addEventListener('click', () => {
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveId: Number(button.dataset.curveId),
+                    curveLoadName: '',
+                    curveLoadReady: false,
+                    curveLoadError: ''
+                }, 'form');
+            });
+        });
+        return;
+    }
+
+    if (view === 'curve_loader') {
+        if (!selectedType?.quantitative) {
+            showConfigModal(ch, nextDraft, 'form');
+            return;
+        }
+
+        const loadSource = nextDraft.curveLoadSource || 'qr';
+        const availability = getCurveSourceAvailability(loadSource);
+        const loadActionLabel = loadSource === 'qr' ? 'Load From QR' : 'Load From Card';
+        const saveDisabled = !nextDraft.curveLoadReady || !String(nextDraft.curveLoadName || '').trim();
+        const curveLoadHasError = Boolean(nextDraft.curveLoadError) || !availability.ok;
+
+        modal.innerHTML = `
+            <div class="modal-header">
+                <div class="modal-header-row">
+                    <div class="modal-channel-badge">${ch.id}</div>
+                    <div class="header-text">
+                        <h2>Load Curve</h2>
+                        <span class="modal-subtitle">${escapeHtml(selectedType.name)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body type-picker-body">
+                <div class="form-field">
+                    <label>Source</label>
+                    <div class="segmented-control compact" id="cfg-curve-source">
+                        <button class="seg-option${loadSource === 'qr' ? ' selected' : ''}" data-value="qr">QR Scanner</button>
+                        <button class="seg-option${loadSource === 'card' ? ' selected' : ''}" data-value="card">Storage Card</button>
+                    </div>
+                </div>
+                <div class="curve-loader-status${curveLoadHasError ? ' is-error' : ' is-ready'}">${escapeHtml(nextDraft.curveLoadError || availability.message)}</div>
+                <button class="curve-loader-action" id="cfg-curve-import">${loadActionLabel}</button>
+                ${nextDraft.curveLoadReady ? `
+                    <div class="form-field">
+                        <label>Curve Name</label>
+                        <input type="text" class="form-input" id="cfg-curve-name" value="${escapeHtml(nextDraft.curveLoadName)}" placeholder="Name this curve">
+                        <div class="config-note">Saved curves return to the recent list for this quantitative test type.</div>
+                    </div>
+                ` : ''}
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-secondary" id="cfg-curve-loader-back">Back</button>
+                <button class="modal-btn btn-primary" id="cfg-curve-save" ${saveDisabled ? 'disabled' : ''}>Save Curve</button>
+            </div>`;
+
+        overlay.classList.add('active');
+
+        modal.querySelectorAll('#cfg-curve-source .seg-option').forEach(button => {
+            button.addEventListener('click', () => {
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveLoadSource: button.dataset.value,
+                    curveLoadReady: false,
+                    curveLoadName: '',
+                    curveLoadError: ''
+                }, 'curve_loader');
+            });
+        });
+
+        document.getElementById('cfg-curve-loader-back').addEventListener('click', () => {
+            showConfigModal(ch, {
+                ...nextDraft,
+                curveLoadReady: false,
+                curveLoadName: '',
+                curveLoadError: ''
+            }, 'curve_picker');
+        });
+
+        document.getElementById('cfg-curve-import').addEventListener('click', () => {
+            if (!availability.ok) {
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveLoadReady: false,
+                    curveLoadError: availability.message
+                }, 'curve_loader');
+                return;
+            }
+
+            showConfigModal(ch, {
+                ...nextDraft,
+                curveLoadReady: true,
+                curveLoadError: '',
+                curveLoadName: nextDraft.curveLoadName || buildSuggestedCurveName(selectedType, loadSource)
+            }, 'curve_loader');
+        });
+
+        const curveNameInput = document.getElementById('cfg-curve-name');
+        const curveSaveBtn = document.getElementById('cfg-curve-save');
+        if (curveNameInput && curveSaveBtn) {
+            curveNameInput.addEventListener('input', () => {
+                curveSaveBtn.disabled = !curveNameInput.value.trim();
+            });
+        }
+
+        document.getElementById('cfg-curve-save').addEventListener('click', () => {
+            const curveName = document.getElementById('cfg-curve-name')?.value?.trim() || '';
+            if (!curveName) {
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveLoadReady: true,
+                    curveLoadError: 'Enter a curve name before saving.'
+                }, 'curve_loader');
+                return;
+            }
+
+            const savedCurve = saveQuantCurve({
+                testTypeId: selectedType.id,
+                name: curveName,
+                source: loadSource
+            });
+
+            if (!savedCurve) {
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveLoadReady: true,
+                    curveLoadError: 'Curve could not be saved.'
+                }, 'curve_loader');
+                return;
+            }
+
+            showConfigModal(ch, {
+                ...nextDraft,
+                curveId: savedCurve.id,
+                curveLoadReady: false,
+                curveLoadName: '',
+                curveLoadError: ''
+            }, 'form');
+        });
+        return;
+    }
+
     modal.innerHTML = `
         <div class="modal-header">
-            <div class="modal-header-row">
+            <div class="modal-header-row config-header-row">
                 <div class="modal-channel-badge">${ch.id}</div>
                 <div class="header-text">
                     <h2>Configure Test</h2>
                     <span class="modal-subtitle">${subtitle}</span>
                 </div>
-            </div>
-        </div>
-        <div class="modal-body">
-            <div class="config-grid">
-                <div class="form-field">
-                    <label>Scenario</label>
-                    <div class="segmented-control" id="cfg-scenario">
+                <div class="config-header-controls">
+                    <div class="segmented-control compact" id="cfg-scenario">
                         ${scenarioOpts.map(o =>
                             `<button class="seg-option${o.value === nextDraft.scenario ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
                         ).join('')}
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="config-grid">
                 <div class="form-field">
                     <label>Test Type</label>
                     ${qrLocked
@@ -797,19 +1100,11 @@ function showConfigModal(ch, draft = null, view = 'form') {
                                 <span class="type-picker-trigger-action">Choose</span>
                             </button>`
                     }
-                    <div class="config-note">${
-                        qrLocked
-                            ? 'Loaded from cassette QR.'
-                            : deviceSettings.qrScanningEnabled
-                            ? (selectedType?.qrEnabled
-                                ? 'QR-enabled test type. Cassette QR can prefill when available.'
-                                : 'This test type has no QR. It must be selected manually each time.')
-                            : 'Tap to search and select manually.'
-                    }</div>
+                    ${qrLocked ? `<div class="config-note">QR detected</div>` : ''}
                 </div>
                 <div class="form-field">
-                    <label>Route / Sample ID</label>
-                    <input type="text" class="form-input" id="cfg-route" placeholder="Route or sample ID" value="${escapeHtml(nextDraft.route)}">
+                    <label>Sample ID</label>
+                    <input type="text" class="form-input" id="cfg-route" placeholder="Sample ID" value="${escapeHtml(nextDraft.route)}">
                     <div class="recent-chips" id="cfg-route-chips">
                         ${RECENT_ROUTES.slice(0, 2).map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
                     </div>
@@ -821,6 +1116,21 @@ function showConfigModal(ch, draft = null, view = 'form') {
                         ${RECENT_OPERATORS.slice(0, 2).map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
                     </div>
                 </div>
+                ${selectedType?.quantitative ? `
+                    <div class="form-field">
+                        <label>Quant Curve</label>
+                        <button class="type-picker-trigger${selectedCurve ? '' : ' is-missing'}" id="cfg-curve-picker">
+                            <span class="type-picker-trigger-main">${escapeHtml(selectedCurve?.name || 'Select curve')}</span>
+                            <span class="type-picker-trigger-meta">${selectedCurve
+                                ? `${escapeHtml(getCurveSourceLabel(selectedCurve.source))} · ${escapeHtml(formatCurveTimestamp(selectedCurve.createdAt))}`
+                                : 'Required for quantitative test types.'}</span>
+                            <span class="type-picker-trigger-action">${selectedCurve ? 'Change' : 'Choose'}</span>
+                        </button>
+                        <div class="config-note${selectedCurve ? '' : ' is-error'}">${selectedCurve
+                            ? 'Use one of the recent saved curves or load a new one.'
+                            : 'Select one of the last five saved curves or load a new curve.'}</div>
+                    </div>
+                ` : ''}
                 ${selectedType?.requiredTemperature != null ? `
                     <div class="form-field form-field-temp-status">
                         <div class="config-temp-status${getTemperatureValidation(selectedType?.id, selectedType?.cassetteType).ok ? ' is-valid' : ' is-invalid'}" id="cfg-temp-status">
@@ -864,6 +1174,14 @@ function showConfigModal(ch, draft = null, view = 'form') {
         });
     }
 
+    const curvePickerBtn = document.getElementById('cfg-curve-picker');
+    if (curvePickerBtn && selectedType?.quantitative) {
+        curvePickerBtn.addEventListener('click', () => {
+            const latestDraft = collectConfigDraft(modal, ch, nextDraft);
+            showConfigModal(ch, latestDraft, 'curve_picker');
+        });
+    }
+
     // Cancel
     document.getElementById('cfg-cancel').addEventListener('click', () => {
         handleConfigCancel(ch.id);
@@ -878,6 +1196,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
             scenario: latestDraft.scenario,
             testTypeId: currentSelection?.id || null,
             testTypeName: currentSelection?.name,
+            curveId: getDraftCurve(latestDraft, currentSelection)?.id || null,
             testType: currentSelection?.cassetteType || normalizeLoadedCassetteType(latestDraft.fallbackCassetteType),
             route: latestDraft.route || 'Default Route',
             operatorId: latestDraft.operatorId || 'OP-000',
@@ -897,9 +1216,10 @@ function showConfigModal(ch, draft = null, view = 'form') {
     }
 
     const validation = getTemperatureValidation(selectedType?.id, selectedType?.cassetteType);
-    document.getElementById('cfg-read-only').disabled = !validation.ok;
+    const hasRequiredCurve = !selectedType?.quantitative || Boolean(getDraftCurve(nextDraft, selectedType)?.id);
+    document.getElementById('cfg-read-only').disabled = !validation.ok || !hasRequiredCurve;
     if (incubateBtn) {
-        incubateBtn.disabled = !validation.ok || !selectedType?.incubationTime;
+        incubateBtn.disabled = !validation.ok || !selectedType?.incubationTime || !hasRequiredCurve;
     }
 }
 
@@ -1250,6 +1570,7 @@ function showDetailModal(ch) {
         const subsHtml = tr.substances.map(s =>
             `<div class="test-substance-row">
                 <span class="ts-name">${s.name}</span>
+                <span class="ts-value">${escapeHtml(s.displayValue || '')}</span>
                 <span class="ts-result ${s.result}">${s.result.toUpperCase()}</span>
             </div>`
         ).join('');

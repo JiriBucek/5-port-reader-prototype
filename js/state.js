@@ -25,6 +25,10 @@ const STATES = {
 };
 
 const CASSETTE_TYPES = ['2BC', '3BTC', '4BTCS'];
+const DEFAULT_QUALITATIVE_THRESHOLDS = {
+    positiveMax: 0.9,
+    negativeMin: 1.1
+};
 
 const TEST_TYPE_DATA = [
     [2, "MilkSafe™ 4BTSC", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Chloramphenicol", "Streptomycin", "Tetracyclines", "Beta-lactams"]],
@@ -35,7 +39,7 @@ const TEST_TYPE_DATA = [
     [17, "MilkSafe™ FAST 3BTS", "MilkSafe", "Cassette", "03", 40, 240, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
     [18, "MilkSafe™ FAST 3BTC", "MilkSafe", "Cassette", "02", 50, 180, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
     [19, "MilkSafe™ FAST 2BC", "MilkSafe", "Cassette", "01", 50, 180, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
-    [20, "MilkSafe™ Afla M1", "MilkSafe", "Strip", null, null, null, "Quantitative", ["Aflatoxin M1 (Concentration)"]],
+    [20, "MilkSafe™ Afla M1", "MilkSafe", "Strip", null, null, null, "Quantitative", ["Aflatoxin M1 (Concentration)"], { measurableRangeMin: 15, measurableRangeMax: 150, negativeRangeMin: 15, negativeRangeMax: 50 }],
     [21, "MilkSafe™ Afla M1 500", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Aflatoxin M1"]],
     [22, "MilkSafe™ TR Verification", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Test line 1", "Test line 2", "Test line 3", "Test line 4"]],
     [23, "MilkSafe™ FAST 3BTC (ewe/buffalo milk)", "MilkSafe", "Cassette", "02", 50, 300, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
@@ -90,7 +94,8 @@ const TEST_TYPES = TEST_TYPE_DATA.map(([
     temperature,
     incubationTime,
     measurementMethod,
-    substances
+    substances,
+    quantitativeRange = null
 ]) => ({
     id,
     name: name.trim(),
@@ -104,6 +109,7 @@ const TEST_TYPES = TEST_TYPE_DATA.map(([
     incubationTime: typeof incubationTime === 'number' && incubationTime > 0 ? incubationTime : null,
     measurementMethod,
     quantitative: measurementMethod === 'Quantitative',
+    quantitativeRange,
     substances,
     lineCount: substances.length,
     cassetteType: `${substances.length}L`
@@ -141,6 +147,14 @@ const TIMING = {
 // Recent values for config form
 const RECENT_ROUTES = ['Farm A', 'Route 12', 'North Barn', 'South Field'];
 const RECENT_OPERATORS = ['OP-001', 'OP-042', 'OP-103'];
+const PRELOADED_QUANT_CURVES = [
+    { id: 501, testTypeId: 20, name: 'Afla M1 Baseline A', source: 'qr', createdAt: '2026-02-28T08:15:00.000Z' },
+    { id: 502, testTypeId: 20, name: 'Afla M1 North Tank', source: 'card', createdAt: '2026-02-25T09:40:00.000Z' },
+    { id: 503, testTypeId: 20, name: 'Afla M1 Shift 2', source: 'qr', createdAt: '2026-02-22T13:05:00.000Z' },
+    { id: 504, testTypeId: 20, name: 'Afla M1 Evening Run', source: 'card', createdAt: '2026-02-18T16:20:00.000Z' },
+    { id: 505, testTypeId: 20, name: 'Afla M1 Backup Curve', source: 'qr', createdAt: '2026-02-14T07:50:00.000Z' }
+];
+const SIMULATION_TEST_TYPE_IDS = [43, 37, 8, 20, 57];
 
 // ---- Global State ----
 
@@ -151,11 +165,16 @@ let usedCassetteIds = new Set();
 let cassetteIdCounter = 1;
 let sessionHistory = [];
 let recentTestTypeIds = [];
+let savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
+let recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
+let quantCurveIdCounter = Math.max(...savedQuantCurves.map(curve => curve.id)) + 1;
 let deviceSettings = {
     microswitchEnabled: true,
     qrScanningEnabled: true,
     incubationEnabled: true,
-    deviceTemperature: 50
+    deviceTemperature: 50,
+    curveScannerConnected: true,
+    storageCardMounted: true
 };
 
 // ---- Channel Data Factory ----
@@ -168,8 +187,12 @@ function createChannel(id) {
         cassettePresent: false,
         loadedCassetteId: null,   // currently inserted cassette instance
         loadedCassetteType: null, // type read/known for currently inserted cassette
+        loadedTestTypeId: null,   // exact simulated inserted test type
         testTypeId: null,
         testTypeName: '',
+        curveId: null,
+        curveName: '',
+        curveSource: '',
         cassetteType: null,
         scenario: null,         // 'test', 'pos_control', 'animal_control'
         processing: null,       // 'read_only', 'read_incubate'
@@ -193,6 +216,9 @@ function initChannels() {
     usedCassetteIds = new Set();
     sessionHistory = [];
     recentTestTypeIds = DEFAULT_RECENT_TEST_TYPE_IDS.filter(id => TEST_TYPES.some(tt => tt.id === id));
+    savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
+    recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
+    quantCurveIdCounter = Math.max(...savedQuantCurves.map(curve => curve.id)) + 1;
     cassetteIdCounter = 1;
     for (let i = 1; i <= 5; i++) {
         channels.push(createChannel(i));
@@ -260,6 +286,89 @@ function rememberRecentTestType(testTypeId) {
     const normalizedId = normalizeTestTypeId(testTypeId);
     if (!getTestTypeById(normalizedId)) return;
     recentTestTypeIds = [normalizedId, ...recentTestTypeIds.filter(id => id !== normalizedId)].slice(0, 6);
+}
+
+function getCurveById(curveId) {
+    const normalizedId = normalizeTestTypeId(curveId);
+    if (normalizedId == null) return null;
+    return savedQuantCurves.find(curve => curve.id === normalizedId) || null;
+}
+
+function getCurveSourceLabel(source) {
+    if (source === 'qr') return 'QR';
+    if (source === 'card') return 'Card';
+    return 'Curve';
+}
+
+function getRecentQuantCurves(testTypeId = null) {
+    const normalizedTestTypeId = normalizeTestTypeId(testTypeId);
+    return recentQuantCurveIds
+        .map(getCurveById)
+        .filter(curve => curve && (normalizedTestTypeId == null || curve.testTypeId === normalizedTestTypeId))
+        .slice(0, 5);
+}
+
+function rememberQuantCurve(curveId) {
+    const normalizedId = normalizeTestTypeId(curveId);
+    if (!getCurveById(normalizedId)) return;
+    recentQuantCurveIds = [normalizedId, ...recentQuantCurveIds.filter(id => id !== normalizedId)].slice(0, 10);
+}
+
+function getSimulationFamilyHint(testType) {
+    const upperName = String(testType?.name || '').toUpperCase();
+
+    if (upperName.includes('2BC')) return '2BC';
+    if (upperName.includes('3BTC')) return '3BTC';
+    if (upperName.includes('4BTS') || upperName.includes('4BTC')) return '4BTCS';
+    if (upperName.includes('3BTS')) return '3BTC';
+
+    if (testType?.lineCount <= 3) return '2BC';
+    return '3BTC';
+}
+
+function getSimulationInsertOptions() {
+    return SIMULATION_TEST_TYPE_IDS
+        .map(getTestTypeById)
+        .filter(Boolean)
+        .map(testType => ({
+            id: testType.id,
+            familyHint: getSimulationFamilyHint(testType),
+            testType,
+            label: [testType.name, ...getTestTypeMetaParts(testType)].join(' | ')
+        }));
+}
+
+function getSimulationOptionById(optionId) {
+    const normalizedId = normalizeTestTypeId(optionId);
+    return getSimulationInsertOptions().find(option => option.id === normalizedId) || null;
+}
+
+function getDefaultCurveForTestType(testTypeId, currentCurveId = null) {
+    const selectedCurve = getCurveById(currentCurveId);
+    if (selectedCurve && selectedCurve.testTypeId === normalizeTestTypeId(testTypeId)) {
+        return selectedCurve;
+    }
+
+    return getRecentQuantCurves(testTypeId)[0] || null;
+}
+
+function saveQuantCurve({ testTypeId, name, source }) {
+    const normalizedTestTypeId = normalizeTestTypeId(testTypeId);
+    const selectedTestType = getTestTypeById(normalizedTestTypeId);
+    if (!selectedTestType || !selectedTestType.quantitative) return null;
+
+    const curve = {
+        id: quantCurveIdCounter++,
+        testTypeId: normalizedTestTypeId,
+        testTypeName: selectedTestType.name,
+        name: String(name || '').trim(),
+        source,
+        createdAt: new Date().toISOString()
+    };
+
+    savedQuantCurves = [curve, ...savedQuantCurves].slice(0, 20);
+    rememberQuantCurve(curve.id);
+    return curve;
 }
 
 function getRequiredTemperature(cassetteType) {
@@ -350,10 +459,9 @@ function formatIncubationTimeShort(seconds) {
 }
 
 function formatTemperatureShort(testType) {
-    if (!testType) return 'No temp';
-    if (testType.temperatureMode === 'ambient') return 'Ambient';
+    if (!testType) return '';
     if (testType.requiredTemperature != null) return `${testType.requiredTemperature} C`;
-    return 'No temp';
+    return '';
 }
 
 function getTestTypeMetaParts(testType) {
@@ -368,11 +476,10 @@ function getTestTypeMetaParts(testType) {
         parts.push('Quant');
     }
 
-    if (testType.temperatureMode !== 'none') {
-        parts.push(formatTemperatureShort(testType));
-    }
-
     if (testType.incubationTime != null) {
+        if (testType.requiredTemperature != null) {
+            parts.push(formatTemperatureShort(testType));
+        }
         parts.push(formatIncubationTimeShort(testType.incubationTime));
     }
 
@@ -399,20 +506,93 @@ function getTemperatureValidation(testTypeId, cassetteType) {
 
 // ---- Result Generation ----
 
+function randomBetween(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function formatQualitativeMeasuredValue(value) {
+    return Number(value).toFixed(2);
+}
+
+function formatQuantitativeMeasuredValue(value, quantitativeRange) {
+    if (!quantitativeRange) return String(Math.round(value));
+
+    if (value < quantitativeRange.measurableRangeMin) {
+        return `< ${quantitativeRange.measurableRangeMin}`;
+    }
+
+    if (value > quantitativeRange.measurableRangeMax) {
+        return `> ${quantitativeRange.measurableRangeMax}`;
+    }
+
+    return String(Math.round(value));
+}
+
+function getQuantitativeResultForValue(value, quantitativeRange) {
+    if (!quantitativeRange) {
+        return value > 0 ? 'positive' : 'negative';
+    }
+
+    return value > quantitativeRange.negativeRangeMax ? 'positive' : 'negative';
+}
+
+function generateQualitativeSubstanceResult(name, forcedResult = null) {
+    const result = forcedResult || (Math.random() > 0.5 ? 'positive' : 'negative');
+    const measuredValue = result === 'positive'
+        ? randomBetween(0.52, DEFAULT_QUALITATIVE_THRESHOLDS.positiveMax - 0.02)
+        : randomBetween(DEFAULT_QUALITATIVE_THRESHOLDS.negativeMin + 0.02, 1.55);
+
+    return {
+        name,
+        result,
+        measuredValue,
+        displayValue: formatQualitativeMeasuredValue(measuredValue)
+    };
+}
+
+function generateQuantitativeSubstanceResult(name, selectedTestType, outcome) {
+    const quantitativeRange = selectedTestType?.quantitativeRange || null;
+    let measuredValue = 0;
+
+    if (outcome === 'positive') {
+        measuredValue = Math.random() > 0.35
+            ? randomBetween((quantitativeRange?.negativeRangeMax || 50) + 5, (quantitativeRange?.measurableRangeMax || 150) - 5)
+            : randomBetween((quantitativeRange?.measurableRangeMax || 150) + 5, (quantitativeRange?.measurableRangeMax || 150) + 35);
+    } else {
+        measuredValue = Math.random() > 0.35
+            ? randomBetween((quantitativeRange?.negativeRangeMin || 15) + 1, (quantitativeRange?.negativeRangeMax || 50) - 3)
+            : randomBetween(4, (quantitativeRange?.measurableRangeMin || 15) - 1);
+    }
+
+    return {
+        name,
+        result: getQuantitativeResultForValue(measuredValue, quantitativeRange),
+        measuredValue,
+        displayValue: formatQuantitativeMeasuredValue(measuredValue, quantitativeRange)
+    };
+}
+
 function generateSubstanceResults(testTypeId, cassetteType, outcome) {
     const subs = getSubstancesForTestType(testTypeId, cassetteType);
-    if (outcome === 'negative') {
-        return subs.map(name => ({ name, result: 'negative' }));
+    const selectedTestType = getTestTypeById(testTypeId);
+
+    if (selectedTestType?.quantitative) {
+        return subs.map(name => generateQuantitativeSubstanceResult(name, selectedTestType, outcome));
     }
-    // Positive: at least one substance positive
-    const results = subs.map((name, i) => ({
-        name,
-        result: i === 0 ? 'positive' : (Math.random() > 0.6 ? 'positive' : 'negative')
-    }));
+
+    if (outcome === 'negative') {
+        return subs.map(name => generateQualitativeSubstanceResult(name, 'negative'));
+    }
+
+    const results = subs.map((name, i) =>
+        generateQualitativeSubstanceResult(name, i === 0 ? 'positive' : (Math.random() > 0.6 ? 'positive' : 'negative'))
+    );
+
     // Ensure at least one positive
     if (!results.some(r => r.result === 'positive')) {
-        results[0].result = 'positive';
+        results[0] = generateQualitativeSubstanceResult(results[0].name, 'positive');
     }
+
     return results;
 }
 
@@ -428,8 +608,12 @@ function resetChannel(ch) {
     ch.cassettePresent = false;
     ch.loadedCassetteId = null;
     ch.loadedCassetteType = null;
+    ch.loadedTestTypeId = null;
     ch.testTypeId = null;
     ch.testTypeName = '';
+    ch.curveId = null;
+    ch.curveName = '';
+    ch.curveSource = '';
     ch.cassetteType = null;
     ch.scenario = null;
     ch.processing = null;
@@ -503,6 +687,9 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
         scenario: ch.scenario,
         testTypeId: ch.testTypeId,
         testTypeName: ch.testTypeName,
+        curveId: ch.curveId,
+        curveName: ch.curveName,
+        curveSource: ch.curveSource,
         cassetteType: ch.cassetteType,
         route: ch.route,
         operatorId: ch.operatorId,
@@ -512,7 +699,12 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
             testNumber: tr.testNumber,
             overall: tr.overall,
             cassetteType: tr.cassetteType,
-            substances: tr.substances.map(s => ({ name: s.name, result: s.result }))
+            substances: tr.substances.map(s => ({
+                name: s.name,
+                result: s.result,
+                measuredValue: s.measuredValue,
+                displayValue: s.displayValue
+            }))
         })),
         timestamp: new Date().toISOString()
     });

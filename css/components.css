@@ -198,6 +198,7 @@
     display: flex;
     gap: 3px;
     flex-wrap: wrap;
+    min-width: 0;
 }
 
 .card-header .badge {
@@ -211,6 +212,12 @@
 .badge-type {
     background: var(--primary-light);
     color: var(--primary-dark);
+    display: block;
+    flex: 1 1 100%;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: top;
 }
 
 .badge-scenario {

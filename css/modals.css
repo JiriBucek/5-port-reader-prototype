@@ -114,6 +114,10 @@
     gap: 10px;
 }
 
+.config-modal .config-header-row {
+    align-items: flex-start;
+}
+
 .config-modal .modal-channel-badge {
     width: 64px;
     height: 64px;
@@ -126,6 +130,17 @@
 
 .config-modal .modal-header-row .header-text .modal-subtitle {
     font-size: var(--font-sm);
+}
+
+.config-header-controls {
+    width: 280px;
+    flex-shrink: 0;
+}
+
+#cfg-scenario .seg-option {
+    min-height: 42px;
+    padding: 8px 8px;
+    font-size: 12px;
 }
 
 .config-modal .modal-body {
@@ -172,6 +187,13 @@
     font-size: var(--font-sm);
 }
 
+.config-header-controls .segmented-control .seg-option,
+.segmented-control.compact .seg-option {
+    min-height: 34px;
+    padding: 6px 6px;
+    font-size: 11px;
+}
+
 .config-modal .form-select,
 .config-modal .form-input {
     min-height: 40px;
@@ -200,6 +222,11 @@
 .type-picker-trigger:disabled {
     cursor: default;
     background: var(--gray-50);
+}
+
+.type-picker-trigger.is-missing {
+    border-color: #fdba74;
+    background: #fff7ed;
 }
 
 .type-picker-trigger-main {
@@ -235,6 +262,10 @@
     font-size: var(--font-xs);
     color: var(--gray-500);
     line-height: 1.2;
+}
+
+.config-note.is-error {
+    color: #b91c1c;
 }
 
 .config-temp-status {
@@ -305,6 +336,11 @@
 
 .type-picker-search {
     min-height: 38px !important;
+}
+
+.curve-picker-note {
+    font-size: 11px;
+    color: var(--gray-500);
 }
 
 .type-picker-brand-filter {
@@ -480,6 +516,37 @@
     font-size: 11px;
     color: var(--gray-500);
     text-align: center;
+}
+
+.curve-loader-status {
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.curve-loader-status.is-ready {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.curve-loader-status.is-error {
+    background: #fff1f2;
+    color: #b91c1c;
+    border: 1px solid #fecdd3;
+}
+
+.curve-loader-action {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    background: var(--white);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-800);
+    cursor: pointer;
 }
 
 /* Form field */
@@ -888,10 +955,21 @@
 
 .test-substance-row .ts-name {
     color: var(--gray-600);
+    min-width: 0;
+    flex: 1;
+}
+
+.test-substance-row .ts-value {
+    color: var(--gray-700);
+    font-variant-numeric: tabular-nums;
+    margin-left: 10px;
+    white-space: nowrap;
 }
 
 .test-substance-row .ts-result {
     font-weight: 600;
+    margin-left: 10px;
+    white-space: nowrap;
 }
 
 .ts-result.positive { color: var(--danger); }

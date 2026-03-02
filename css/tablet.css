@@ -284,7 +284,7 @@ body {
     background: var(--white);
     border-radius: 3px;
     box-shadow: var(--shadow-lg);
-    padding: 20px 24px;
+    padding: 14px 16px;
     width: calc(var(--screen-width) + 20px);
     margin-top: 24px;
 }
@@ -299,12 +299,13 @@ body {
 .simulation-panel .sim-subtitle {
     font-size: var(--font-sm);
     color: var(--gray-400);
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 .sim-channels {
     display: flex;
-    gap: 12px;
+    gap: 8px;
+    min-width: 0;
 }
 
 .sim-channel {
@@ -312,14 +313,15 @@ body {
     background: var(--gray-50);
     border: 1px solid var(--gray-200);
     border-radius: var(--radius-md);
-    padding: 12px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    min-width: 0;
 }
 
 .sim-channel h3 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 800;
     line-height: 1;
     color: var(--gray-600);
@@ -329,37 +331,47 @@ body {
 .sim-channel .sim-type-select {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: var(--font-sm);
+    gap: 4px;
+    font-size: var(--font-xs);
     color: var(--gray-500);
+    min-width: 0;
+}
+
+.sim-channel .sim-type-select span {
+    display: none;
 }
 
 .sim-channel .sim-type-select select {
     flex: 1;
-    padding: 6px 8px;
+    width: 100%;
+    min-width: 0;
+    padding: 5px 6px;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-sm);
-    font-size: var(--font-sm);
+    font-size: 10px;
+    line-height: 1.1;
     background: var(--white);
     color: var(--gray-700);
     cursor: pointer;
+    text-overflow: ellipsis;
 }
 
 .sim-channel .sim-buttons {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .sim-btn {
-    padding: 8px 10px;
+    padding: 6px 6px;
     border: none;
     border-radius: var(--radius-sm);
-    font-size: var(--font-sm);
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s, transform 0.1s;
     text-align: center;
+    white-space: nowrap;
 }
 
 .sim-btn:active {

@@ -7,6 +7,7 @@
 
 function init() {
     initChannels();
+    populateSimulationTypeOptions();
     renderAllCards();
     renderStatusBar();
     setInterval(renderStatusBar, 30000);
@@ -63,7 +64,8 @@ function handleSettingsApply(nextSettings) {
             if (ch.state === STATES.EMPTY && ch.physicalCassettePresent) {
                 ch.cassettePresent = true;
                 ch.state = STATES.DETECTED;
-                if (deviceSettings.qrScanningEnabled && ch.loadedCassetteType) {
+                const loadedInsertedType = getTestTypeById(ch.loadedTestTypeId);
+                if (deviceSettings.qrScanningEnabled && loadedInsertedType?.qrEnabled && ch.loadedCassetteType) {
                     ch.cassetteType = ch.loadedCassetteType;
                 }
             }
@@ -75,7 +77,10 @@ function handleSettingsApply(nextSettings) {
         channels.forEach(ch => {
             if (ch.state !== STATES.DETECTED) return;
             if (deviceSettings.qrScanningEnabled) {
-                ch.cassetteType = ch.loadedCassetteType || ch.cassetteType;
+                const loadedInsertedType = getTestTypeById(ch.loadedTestTypeId);
+                if (loadedInsertedType?.qrEnabled) {
+                    ch.cassetteType = ch.loadedCassetteType || ch.cassetteType;
+                }
             } else {
                 ch.cassetteType = null;
             }
@@ -119,6 +124,25 @@ function bindSimulationEvents() {
     }
 }
 
+function populateSimulationTypeOptions() {
+    const options = getSimulationInsertOptions();
+    if (options.length === 0) return;
+
+    for (let i = 1; i <= 5; i++) {
+        const select = document.querySelector(`#sim-${i} .sim-type-select select`);
+        if (!select) continue;
+
+        const previousValue = select.value;
+        const selectedValue = options.some(option => String(option.id) === String(previousValue))
+            ? Number(previousValue)
+            : options[0].id;
+
+        select.innerHTML = options.map(option =>
+            `<option value="${option.id}"${option.id === selectedValue ? ' selected' : ''}>${option.label}</option>`
+        ).join('');
+    }
+}
+
 // ---- Cassette Insert / Replace ----
 
 function handleInsert(channelId, outcome) {
@@ -126,16 +150,19 @@ function handleInsert(channelId, outcome) {
     if (!canInsertCassette(ch)) return;
 
     const typeSelect = document.querySelector(`#sim-${channelId} .sim-type-select select`);
-    const selectedType = typeSelect ? typeSelect.value : '3BTC';
+    const selectedOption = getSimulationOptionById(typeSelect ? typeSelect.value : null) || getSimulationInsertOptions()[0];
+    const selectedType = selectedOption?.familyHint || '3BTC';
 
     ch.physicalCassettePresent = true;
     ch.cassettePresent = true;
     ch.loadedCassetteId = nextCassetteId();
     ch.loadedCassetteType = selectedType;
+    ch.loadedTestTypeId = selectedOption?.testType?.id || null;
     ch.simulatedOutcome = outcome;
 
     // QR-enabled mode auto-loads cassette type from inserted cassette.
     if (deviceSettings.qrScanningEnabled &&
+        selectedOption?.testType?.qrEnabled &&
         (ch.state === STATES.EMPTY || ch.state === STATES.DETECTED || ch.currentTestNumber === 0)) {
         ch.cassetteType = selectedType;
     }
@@ -203,10 +230,14 @@ function handleConfigStart(channelId, config) {
     hideModal();
 
     const selectedTestType = getTestTypeById(config.testTypeId);
+    const selectedCurve = getCurveById(config.curveId);
 
     ch.scenario = config.scenario;
     ch.testTypeId = selectedTestType ? selectedTestType.id : null;
     ch.testTypeName = selectedTestType ? selectedTestType.name : (config.testTypeName || config.testType);
+    ch.curveId = selectedTestType?.quantitative ? (selectedCurve?.id || null) : null;
+    ch.curveName = selectedTestType?.quantitative ? (selectedCurve?.name || '') : '';
+    ch.curveSource = selectedTestType?.quantitative ? (selectedCurve?.source || '') : '';
     ch.cassetteType = selectedTestType ? selectedTestType.cassetteType : normalizeLoadedCassetteType(config.testType);
     ch.route = config.route;
     ch.operatorId = config.operatorId;
@@ -217,6 +248,9 @@ function handleConfigStart(channelId, config) {
 
     if (ch.testTypeId) {
         rememberRecentTestType(ch.testTypeId);
+    }
+    if (ch.curveId) {
+        rememberQuantCurve(ch.curveId);
     }
 
     const started = attemptStartCurrentTest(ch);
