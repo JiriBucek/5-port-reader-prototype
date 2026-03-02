@@ -356,6 +356,10 @@
     text-align: right;
 }
 
+.substance-line.is-control .line-label {
+    color: var(--gray-700);
+}
+
 /* Line result states */
 .line-bar.result-positive {
     background: #dc2626;
@@ -364,6 +368,10 @@
 .line-bar.result-negative {
     background: #86efac;
     opacity: 0.7;
+}
+
+.line-bar.result-control {
+    background: #475569;
 }
 
 .line-bar.result-pending {
@@ -432,6 +440,7 @@
 
 .mini-line.result-positive { background: #dc2626; }
 .mini-line.result-negative { background: #86efac; opacity: 0.7; }
+.mini-line.result-control { background: #475569; }
 
 .mini-cassette-label {
     font-size: 10px;

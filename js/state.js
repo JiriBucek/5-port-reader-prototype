@@ -26,6 +26,89 @@ const STATES = {
 
 const CASSETTE_TYPES = ['2BC', '3BTC', '4BTCS'];
 
+const TEST_TYPE_DATA = [
+    [2, "MilkSafe™ 4BTSC", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Chloramphenicol", "Streptomycin", "Tetracyclines", "Beta-lactams"]],
+    [3, "MilkSafe™ 3BTS", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [4, "MilkSafe™ 3BTC", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [5, "MilkSafe™ 2BC", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [8, "MilkSafe™ 4BTSQ", "MilkSafe", "Strip", null, 50, 60, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Quinolones"]],
+    [17, "MilkSafe™ FAST 3BTS", "MilkSafe", "Cassette", "03", 40, 240, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [18, "MilkSafe™ FAST 3BTC", "MilkSafe", "Cassette", "02", 50, 180, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [19, "MilkSafe™ FAST 2BC", "MilkSafe", "Cassette", "01", 50, 180, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [20, "MilkSafe™ Afla M1", "MilkSafe", "Strip", null, null, null, "Quantitative", ["Aflatoxin M1 (Concentration)"]],
+    [21, "MilkSafe™ Afla M1 500", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Aflatoxin M1"]],
+    [22, "MilkSafe™ TR Verification", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Test line 1", "Test line 2", "Test line 3", "Test line 4"]],
+    [23, "MilkSafe™ FAST 3BTC (ewe/buffalo milk)", "MilkSafe", "Cassette", "02", 50, 300, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [24, "MilkSafe™ Macrolides", "MilkSafe", "Strip", null, null, null, "Qualitative", ["Spiramycin", "Tylosin & Tilmicosin", "Erythromycin", "Lincomycin"]],
+    [25, "MilkSafe™ FAST 4BTSQ (2.0)", "MilkSafe", "Cassette", "06", 50, 240, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Quinolones"]],
+    [26, "MilkSafe™ FAST 3BTC (2.0)", "MilkSafe", "Cassette", "02", 50, 180, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [27, "MilkSafe™ FAST CM1-3BTS", "MilkSafe", "Cassette", "05", 40, 270, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [28, "MilkSafe™ FAST 2BC - ANZ", "MilkSafe", "Cassette", "01", 50, 210, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [29, "MilkSafe™ FAST 3BTC - ANZ", "MilkSafe", "Cassette", "02", 50, 210, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [31, "MilkSafe™ PR Verification", "MilkSafe", "Strip", null, 40, null, "Qualitative", ["Test line 1"]],
+    [35, "MilkSafe™ FAST CM-2 2BC", "MilkSafe", "Cassette", "01", 50, 300, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [37, "MilkSafe™ FAST 3BTC (2.0) Read", "MilkSafe", "Cassette", "02", 0, null, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [39, "MilkSafe™ FAST 2BC (2.0)", "MilkSafe", "Cassette", "01", 50, 180, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [40, "MilkSafe™ FAST 2BC (2.0) Read", "MilkSafe", "Cassette", "01", 0, 0, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [41, "MilkSafe™ FAST 3BTC (2.0) (Ewe/Buffalo)", "MilkSafe", "Cassette", "02", 50, 300, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [42, "FAST 3BTC (2.0) (Ewe/Buffalo)", "MilkSafe", "Cassette", "02", 50, 300, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [43, "MilkSafe™ FAST 3BTS (2.0)", "MilkSafe", "Cassette", "03", 40, 240, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [44, "MilkSafe™ FAST CM-2 3BTC", "MilkSafe", "Cassette", "02", 50, 300, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [45, "MilkSafe™ FAST Cefalonium", "MilkSafe", "Cassette", "12", 50, 300, "Qualitative", ["Cefalonium"]],
+    [49, "MilkSafe™ FAST 3BTC Ambient", "MilkSafe", "Cassette", "02", 0, 480, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [51, "FAST 2BC (2.0) Schafsmilch", "MilkSafe", "Cassette", "01", 50, 300, "Qualitative", ["Beta-lactams", "Cephalexin", "Ceftiofur"]],
+    [53, "Bioeasy Beta-lactams", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Beta-lactams"]],
+    [54, "Bioeasy 2IN1 BT", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Tetracyclines", "Beta-lactams"]],
+    [55, "Bioeasy 2IN1 BTCef (EU)", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Tetracyclines", "Beta-lactams", "Cephalexin"]],
+    [56, "Bioeasy Beta Ceft Tetra", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [57, "Bioeasy 3IN1 BST", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams"]],
+    [58, "Bioeasy 3IN1 Rapid Test", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [59, "Bioeasy 4IN1 BTSQ", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Sulfonamides", "Tetracyclines", "Beta-lactams", "Fluoroquinolones"]],
+    [60, "Bioeasy 4IN1 BSCT", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Chloramphenicol", "Streptomycin", "Tetracyclines", "Beta-lactams"]],
+    [61, "Bioeasy 4IN1 BCTC", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Chloramphenicol", "Tetracyclines", "Beta-lactams", "Ceftiofur"]],
+    [62, "Bioeasy AMINO 3IN1", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Streptomycin", "Gentamicin", "Neomycin"]],
+    [63, "Bioeasy MACRO 3IN1", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Tylosin & Tilmicosin", "Erythromycin", "Lincomycin"]],
+    [64, "Bioeasy 4IN1 CGSN", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Chloramphenicol", "Streptomycin", "Gentamicin", "Neomycin"]],
+    [65, "Bioeasy 2IN1 QS", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Sulfonamides", "Quinolones"]],
+    [66, "Bioeasy Florfenicol & Thiamphenicol", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Florfenicol & Thiamphenicol"]],
+    [67, "Bioeasy Gentamicin", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Gentamicin"]],
+    [68, "Bioeasy Fluoroquinolones", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Fluoroquinolones"]],
+    [69, "Bioeasy 4IN1 NKSG", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Gentamicin", "Neomycin", "Kanamycin", "Spectinomycin"]],
+    [70, "Bioeasy Chloramphenicol", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Chloramphenicol"]],
+    [71, "Bioeasy Whey Adulteration", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Cow Whey"]],
+    [72, "Bioeasy Melamine", "Bioeasy", "Strip", null, null, null, "Qualitative", ["Melamine"]]
+];
+
+const DEFAULT_RECENT_TEST_TYPE_IDS = [18, 25, 19, 20];
+
+const TEST_TYPES = TEST_TYPE_DATA.map(([
+    id,
+    name,
+    brand,
+    category,
+    qrIdString,
+    temperature,
+    incubationTime,
+    measurementMethod,
+    substances
+]) => ({
+    id,
+    name: name.trim(),
+    brand,
+    category,
+    qrIdString,
+    qrEnabled: Boolean(qrIdString),
+    temperature,
+    requiredTemperature: typeof temperature === 'number' && temperature > 0 ? temperature : null,
+    temperatureMode: temperature === 0 ? 'ambient' : (temperature == null ? 'none' : 'fixed'),
+    incubationTime: typeof incubationTime === 'number' && incubationTime > 0 ? incubationTime : null,
+    measurementMethod,
+    quantitative: measurementMethod === 'Quantitative',
+    substances,
+    lineCount: substances.length,
+    cassetteType: `${substances.length}L`
+}));
+
 // Prototype stand-in for test type cloud configuration.
 const TEST_TYPE_CONFIG = {
     '2BC': { requiredTemperature: 40 },
@@ -67,6 +150,7 @@ let modalQueue = [];       // Queued modal events
 let usedCassetteIds = new Set();
 let cassetteIdCounter = 1;
 let sessionHistory = [];
+let recentTestTypeIds = [];
 let deviceSettings = {
     microswitchEnabled: true,
     qrScanningEnabled: true,
@@ -84,6 +168,8 @@ function createChannel(id) {
         cassettePresent: false,
         loadedCassetteId: null,   // currently inserted cassette instance
         loadedCassetteType: null, // type read/known for currently inserted cassette
+        testTypeId: null,
+        testTypeName: '',
         cassetteType: null,
         scenario: null,         // 'test', 'pos_control', 'animal_control'
         processing: null,       // 'read_only', 'read_incubate'
@@ -106,6 +192,7 @@ function initChannels() {
     channels = [];
     usedCassetteIds = new Set();
     sessionHistory = [];
+    recentTestTypeIds = DEFAULT_RECENT_TEST_TYPE_IDS.filter(id => TEST_TYPES.some(tt => tt.id === id));
     cassetteIdCounter = 1;
     for (let i = 1; i <= 5; i++) {
         channels.push(createChannel(i));
@@ -116,12 +203,184 @@ function getChannel(id) {
     return channels[id - 1];
 }
 
-function getRequiredTemperature(testType) {
-    return TEST_TYPE_CONFIG[testType]?.requiredTemperature ?? null;
+function normalizeTestTypeId(testTypeId) {
+    if (testTypeId == null || testTypeId === '') return null;
+    const normalized = Number(testTypeId);
+    return Number.isFinite(normalized) ? normalized : null;
 }
 
-function getTemperatureValidation(testType) {
-    const requiredTemperature = getRequiredTemperature(testType);
+function getTestTypeById(testTypeId) {
+    const normalizedId = normalizeTestTypeId(testTypeId);
+    if (normalizedId == null) return null;
+    return TEST_TYPES.find(testType => testType.id === normalizedId) || null;
+}
+
+function getDefaultManualTestType() {
+    return TEST_TYPES[0] || null;
+}
+
+function normalizeLoadedCassetteType(cassetteType) {
+    switch (cassetteType) {
+        case '2BC':
+            return '3L';
+        case '3BTC':
+            return '4L';
+        case '4BTCS':
+            return '4L';
+        default:
+            return cassetteType || null;
+    }
+}
+
+function getQrPrefillTestType(cassetteTypeHint) {
+    if (!cassetteTypeHint) return null;
+
+    const hint = String(cassetteTypeHint).toUpperCase();
+    const matchers = {
+        '2BC': (name) => name.includes('2BC'),
+        '3BTC': (name) => name.includes('3BTC'),
+        '4BTCS': (name) => name.includes('4BTS') || name.includes('4BTC')
+    };
+
+    const matcher = matchers[hint];
+    if (!matcher) return null;
+
+    return TEST_TYPES.find(testType =>
+        testType.qrEnabled && matcher(testType.name.toUpperCase())
+    ) || null;
+}
+
+function getRecentTestTypes() {
+    return recentTestTypeIds
+        .map(getTestTypeById)
+        .filter(Boolean);
+}
+
+function rememberRecentTestType(testTypeId) {
+    const normalizedId = normalizeTestTypeId(testTypeId);
+    if (!getTestTypeById(normalizedId)) return;
+    recentTestTypeIds = [normalizedId, ...recentTestTypeIds.filter(id => id !== normalizedId)].slice(0, 6);
+}
+
+function getRequiredTemperature(cassetteType) {
+    return TEST_TYPE_CONFIG[cassetteType]?.requiredTemperature ?? null;
+}
+
+function getRequiredTemperatureForSelection(testTypeId, cassetteType) {
+    const selectedTestType = getTestTypeById(testTypeId);
+    if (selectedTestType) {
+        return selectedTestType.requiredTemperature;
+    }
+
+    return getRequiredTemperature(cassetteType);
+}
+
+function getDisplayTestType(testTypeId, cassetteType, allowQrPrefill = false) {
+    const selectedTestType = getTestTypeById(testTypeId);
+    if (selectedTestType) return selectedTestType;
+
+    if (allowQrPrefill) {
+        const qrPrefillType = getQrPrefillTestType(cassetteType);
+        if (qrPrefillType) return qrPrefillType;
+    }
+
+    const recentTestType = getRecentTestTypes()[0];
+    if (recentTestType) return recentTestType;
+
+    if (cassetteType) {
+        return {
+            id: null,
+            name: `${cassetteType} cassette`,
+            category: 'Cassette',
+            qrEnabled: true,
+            quantitative: false,
+            lineCount: 0,
+            temperature: null,
+            temperatureMode: 'none',
+            incubationTime: null,
+            measurementMethod: 'Qualitative',
+            substances: [],
+            cassetteType: normalizeLoadedCassetteType(cassetteType),
+            requiredTemperature: getRequiredTemperature(cassetteType)
+        };
+    }
+
+    return getDefaultManualTestType();
+}
+
+function getSubstancesForTestType(testTypeId, cassetteType) {
+    const selectedTestType = getTestTypeById(testTypeId);
+    if (selectedTestType?.substances?.length) {
+        return selectedTestType.substances;
+    }
+
+    if (cassetteType && SUBSTANCES[cassetteType]) {
+        return SUBSTANCES[cassetteType];
+    }
+
+    return ['Line 1'];
+}
+
+function getSubstanceShortLabel(name) {
+    if (SUBSTANCE_SHORT[name]) {
+        return SUBSTANCE_SHORT[name];
+    }
+
+    if (name.startsWith('Test line ')) {
+        return `T${name.replace('Test line ', '')}`;
+    }
+
+    const initials = name
+        .split(/[^A-Za-z0-9]+/)
+        .filter(Boolean)
+        .map(part => part[0].toUpperCase())
+        .join('');
+
+    return (initials || name.slice(0, 2)).slice(0, 2);
+}
+
+function formatIncubationTimeShort(seconds) {
+    if (seconds == null) return 'Read';
+    if (seconds === 0) return 'Read';
+
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (secs === 0) return `${mins}m`;
+    return `${mins}m${secs}s`;
+}
+
+function formatTemperatureShort(testType) {
+    if (!testType) return 'No temp';
+    if (testType.temperatureMode === 'ambient') return 'Ambient';
+    if (testType.requiredTemperature != null) return `${testType.requiredTemperature} C`;
+    return 'No temp';
+}
+
+function getTestTypeMetaParts(testType) {
+    if (!testType) return [];
+
+    const parts = [
+        testType.category,
+        testType.qrEnabled ? 'QR On' : 'QR Off'
+    ];
+
+    if (testType.quantitative) {
+        parts.push('Quant');
+    }
+
+    if (testType.temperatureMode !== 'none') {
+        parts.push(formatTemperatureShort(testType));
+    }
+
+    if (testType.incubationTime != null) {
+        parts.push(formatIncubationTimeShort(testType.incubationTime));
+    }
+
+    return parts;
+}
+
+function getTemperatureValidation(testTypeId, cassetteType) {
+    const requiredTemperature = getRequiredTemperatureForSelection(testTypeId, cassetteType);
 
     if (requiredTemperature === null) {
         return {
@@ -140,8 +399,8 @@ function getTemperatureValidation(testType) {
 
 // ---- Result Generation ----
 
-function generateSubstanceResults(cassetteType, outcome) {
-    const subs = SUBSTANCES[cassetteType];
+function generateSubstanceResults(testTypeId, cassetteType, outcome) {
+    const subs = getSubstancesForTestType(testTypeId, cassetteType);
     if (outcome === 'negative') {
         return subs.map(name => ({ name, result: 'negative' }));
     }
@@ -169,6 +428,8 @@ function resetChannel(ch) {
     ch.cassettePresent = false;
     ch.loadedCassetteId = null;
     ch.loadedCassetteType = null;
+    ch.testTypeId = null;
+    ch.testTypeName = '';
     ch.cassetteType = null;
     ch.scenario = null;
     ch.processing = null;
@@ -240,6 +501,8 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
         channelId: ch.id,
         reason,
         scenario: ch.scenario,
+        testTypeId: ch.testTypeId,
+        testTypeName: ch.testTypeName,
         cassetteType: ch.cassetteType,
         route: ch.route,
         operatorId: ch.operatorId,

@@ -202,14 +202,22 @@ function handleConfigStart(channelId, config) {
     const ch = getChannel(channelId);
     hideModal();
 
+    const selectedTestType = getTestTypeById(config.testTypeId);
+
     ch.scenario = config.scenario;
-    ch.cassetteType = config.testType;
+    ch.testTypeId = selectedTestType ? selectedTestType.id : null;
+    ch.testTypeName = selectedTestType ? selectedTestType.name : (config.testTypeName || config.testType);
+    ch.cassetteType = selectedTestType ? selectedTestType.cassetteType : normalizeLoadedCassetteType(config.testType);
     ch.route = config.route;
     ch.operatorId = config.operatorId;
     ch.processing = (config.processing === 'read_incubate' && !deviceSettings.incubationEnabled)
         ? 'read_only'
         : config.processing;
     ch.currentTestNumber = 1;
+
+    if (ch.testTypeId) {
+        rememberRecentTestType(ch.testTypeId);
+    }
 
     const started = attemptStartCurrentTest(ch);
 
@@ -253,11 +261,12 @@ function hasReadableCassette(ch) {
 }
 
 function validateCassetteForCurrentTest(ch) {
-    const temperatureValidation = getTemperatureValidation(ch.cassetteType);
+    const temperatureValidation = getTemperatureValidation(ch.testTypeId, ch.cassetteType);
     if (!temperatureValidation.ok) {
+        const selectedTestType = ch.testTypeName || ch.cassetteType;
         return {
             ok: false,
-            message: `Device is at ${temperatureValidation.currentTemperature} C. Heat reader to ${temperatureValidation.requiredTemperature} C for ${ch.cassetteType}.`
+            message: `Device is at ${temperatureValidation.currentTemperature} C. Heat reader to ${temperatureValidation.requiredTemperature} C for ${selectedTestType}.`
         };
     }
 
@@ -275,11 +284,13 @@ function validateCassetteForCurrentTest(ch) {
         };
     }
 
-    const expectedType = ch.currentTestNumber > 1
-        ? (ch.testResults[0] ? ch.testResults[0].cassetteType : ch.cassetteType)
-        : ch.cassetteType;
+    const expectedType = normalizeLoadedCassetteType(
+        ch.currentTestNumber > 1
+            ? (ch.testResults[0] ? ch.testResults[0].cassetteType : ch.cassetteType)
+            : ch.cassetteType
+    );
 
-    const loadedType = ch.loadedCassetteType || ch.cassetteType;
+    const loadedType = normalizeLoadedCassetteType(ch.loadedCassetteType || ch.cassetteType);
 
     // Type mismatch is only enforceable when QR scanning is enabled, and only for confirmation tests.
     if (deviceSettings.qrScanningEnabled &&
@@ -305,11 +316,6 @@ function attemptStartCurrentTest(ch) {
     if (!validation.ok) {
         setChannelError(ch, validation.message);
         return false;
-    }
-
-    if (deviceSettings.qrScanningEnabled && ch.loadedCassetteType && ch.currentTestNumber === 1) {
-        // Align configured type with what is currently inserted.
-        ch.cassetteType = ch.loadedCassetteType;
     }
 
     startProcessing(ch);
@@ -413,7 +419,7 @@ function startReadingTimer(ch) {
 
 function completeReading(ch) {
     const outcome = ch.simulatedOutcome || 'negative';
-    const results = generateSubstanceResults(ch.cassetteType, outcome);
+    const results = generateSubstanceResults(ch.testTypeId, ch.cassetteType, outcome);
     const overall = isTestPositive(results) ? 'positive' : 'negative';
     const testNumber = ch.currentTestNumber;
 
@@ -421,7 +427,8 @@ function completeReading(ch) {
         substances: results,
         overall,
         testNumber,
-        cassetteType: ch.cassetteType
+        cassetteType: ch.cassetteType,
+        testTypeId: ch.testTypeId
     });
 
     if (ch.loadedCassetteId !== null) {

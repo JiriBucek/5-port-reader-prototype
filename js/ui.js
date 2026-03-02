@@ -99,7 +99,8 @@ function renderCassetteSlotPlaceholder() {
 function renderCassetteGraphic(ch) {
     if (!ch.cassetteType) return '<div class="cassette-empty">&#9649;</div>';
 
-    const subs = SUBSTANCES[ch.cassetteType];
+    const subs = getSubstancesForTestType(ch.testTypeId, ch.cassetteType);
+    const lineItems = [{ label: 'C', isControl: true }, ...subs.map(sub => ({ label: getSubstanceShortLabel(sub), isControl: false }))];
     let lineClass = 'cassette-graphic';
 
     if (ch.state === STATES.ERROR_USED || ch.state === STATES.ERROR_USED_CONFIRMATION) {
@@ -118,15 +119,18 @@ function renderCassetteGraphic(ch) {
         currentResults = ch.testResults[ch.testResults.length - 1].substances;
     }
 
-    let linesHtml = subs.map((sub, i) => {
+    let linesHtml = lineItems.map((item, i) => {
         let resultClass = 'result-pending';
         if (ch.state === STATES.READING) {
             resultClass = 'result-reading';
+        } else if (item.isControl && currentResults) {
+            resultClass = 'result-control';
         } else if (currentResults) {
-            resultClass = currentResults[i].result === 'positive' ? 'result-positive' : 'result-negative';
+            const resultIndex = item.isControl ? -1 : i - 1;
+            resultClass = currentResults[resultIndex].result === 'positive' ? 'result-positive' : 'result-negative';
         }
-        return `<div class="substance-line">
-            <span class="line-label">${SUBSTANCE_SHORT[sub]}</span>
+        return `<div class="substance-line${item.isControl ? ' is-control' : ''}">
+            <span class="line-label">${item.label}</span>
             <div class="line-bar ${resultClass}"></div>
         </div>`;
     }).join('');
@@ -167,9 +171,9 @@ function renderMiniHistory(ch) {
     if (testsToShow.length === 0) return '';
 
     let minis = testsToShow.map(tr => {
-        const lines = tr.substances.map(s =>
+        const lines = [`<div class="mini-line result-control"></div>`, ...tr.substances.map(s =>
             `<div class="mini-line result-${s.result}"></div>`
-        ).join('');
+        )].join('');
         const overall = isTestPositive(tr.substances) ? 'positive' : 'negative';
         const resultClass = overall === 'positive' ? 'mini-result-positive' : 'mini-result-negative';
         return `<div class="mini-cassette">
@@ -461,7 +465,8 @@ function updateSlotLines(ch, linesEl) {
         return;
     }
 
-    const subs = SUBSTANCES[ch.cassetteType];
+    const subs = getSubstancesForTestType(ch.testTypeId, ch.cassetteType);
+    const lineItems = [{ isControl: true }, ...subs.map(() => ({ isControl: false }))];
 
     // Determine line states (mirror the card cassette logic)
     let currentResults = null;
@@ -471,12 +476,15 @@ function updateSlotLines(ch, linesEl) {
         currentResults = ch.testResults[ch.testResults.length - 1].substances;
     }
 
-    linesEl.innerHTML = subs.map((sub, i) => {
+    linesEl.innerHTML = lineItems.map((item, i) => {
         let lineClass = 'cassette-line-mark';
         if (ch.state === STATES.READING) {
             lineClass += ' line-reading';
+        } else if (item.isControl && currentResults) {
+            lineClass += ' line-control';
         } else if (currentResults) {
-            lineClass += currentResults[i].result === 'positive' ? ' line-positive' : ' line-negative';
+            const resultIndex = item.isControl ? -1 : i - 1;
+            lineClass += currentResults[resultIndex].result === 'positive' ? ' line-positive' : ' line-negative';
         }
         return `<div class="${lineClass}"></div>`;
     }).join('');
@@ -503,12 +511,190 @@ function renderSimulationButtons() {
 
 // ---- Config Modal ----
 
-function showConfigModal(ch) {
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function buildConfigDraft(ch) {
+    const fallbackCassetteType = ch.loadedCassetteType || ch.cassetteType || CASSETTE_TYPES[0];
+    const qrPrefillType = (deviceSettings.qrScanningEnabled && ch.cassettePresent && ch.loadedCassetteType)
+        ? getQrPrefillTestType(fallbackCassetteType)
+        : null;
+    const recentTestType = getRecentTestTypes()[0] || getDefaultManualTestType();
+    const defaultManualTestType = qrPrefillType || getTestTypeById(ch.testTypeId) || recentTestType;
+    const defaultBrandFilter = defaultManualTestType?.brand || 'MilkSafe';
+
+    return {
+        scenario: ch.scenario || 'test',
+        testTypeId: defaultManualTestType?.id || getDefaultManualTestType()?.id || null,
+        route: ch.route || '',
+        operatorId: ch.operatorId || '',
+        search: '',
+        fallbackCassetteType,
+        lockedToQr: Boolean(qrPrefillType),
+        brandFilter: defaultBrandFilter
+    };
+}
+
+function collectConfigDraft(modal, ch, previousDraft) {
+    return {
+        ...previousDraft,
+        scenario: modal.querySelector('#cfg-scenario .seg-option.selected')?.dataset.value || previousDraft.scenario || 'test',
+        route: modal.querySelector('#cfg-route')?.value || '',
+        operatorId: modal.querySelector('#cfg-operator')?.value || '',
+        fallbackCassetteType: ch.loadedCassetteType || ch.cassetteType || previousDraft.fallbackCassetteType || CASSETTE_TYPES[0],
+        lockedToQr: previousDraft.lockedToQr,
+        brandFilter: previousDraft.brandFilter || 'MilkSafe'
+    };
+}
+
+function getDraftSelection(draft, qrLocked) {
+    return getDisplayTestType(draft.testTypeId, draft.fallbackCassetteType, qrLocked);
+}
+
+function renderConfigTemperatureGate(draft, qrLocked) {
+    const selectedType = getDraftSelection(draft, qrLocked);
+    const validation = getTemperatureValidation(selectedType?.id, selectedType?.cassetteType);
+    const temperatureLabel = formatTemperatureShort(selectedType);
+
+    if (validation.requiredTemperature == null) {
+        return `
+            <span class="config-temp-badge">Temp</span>
+            <span class="config-temp-copy">${temperatureLabel}</span>`;
+    }
+
+    if (validation.ok) {
+        return `
+            <span class="config-temp-badge">Temp OK</span>
+            <span class="config-temp-copy">${validation.currentTemperature} C / ${validation.requiredTemperature} C</span>`;
+    }
+
+    return `
+        <span class="config-temp-badge">Temp</span>
+        <span class="config-temp-copy">${validation.currentTemperature} C device, ${validation.requiredTemperature} C required</span>`;
+}
+
+function getTestTypeBadgeItems(testType) {
+    if (!testType) return [];
+
+    const items = [
+        { label: testType.category, tone: 'neutral' },
+        { label: testType.qrEnabled ? 'QR On' : 'QR Off', tone: testType.qrEnabled ? 'qr-on' : 'qr-off' }
+    ];
+
+    if (testType.quantitative) {
+        items.push({ label: 'Quant', tone: 'quant' });
+    }
+
+    if (testType.temperatureMode !== 'none') {
+        items.push({ label: formatTemperatureShort(testType), tone: 'temp' });
+    }
+
+    if (testType.incubationTime != null) {
+        items.push({ label: formatIncubationTimeShort(testType.incubationTime), tone: 'time' });
+    }
+
+    return items;
+}
+
+function renderTestTypeBadges(testType) {
+    return getTestTypeBadgeItems(testType).map(item => `
+        <span class="type-badge type-badge-${item.tone}">${escapeHtml(item.label)}</span>
+    `).join('');
+}
+
+function renderTypePickerRows(testTypes, selectedTestTypeId) {
+    if (testTypes.length === 0) {
+        return `<div class="type-picker-empty">No test types match this search.</div>`;
+    }
+
+    return testTypes.map(testType => `
+        <button class="type-picker-row${testType.id === selectedTestTypeId ? ' selected' : ''}" data-test-type-id="${testType.id}">
+            <span class="type-picker-row-name">${escapeHtml(testType.name)}</span>
+            <span class="type-picker-row-meta">${renderTestTypeBadges(testType)}</span>
+        </button>
+    `).join('');
+}
+
+function updateTypePickerList(draft) {
+    const recentsEl = document.getElementById('cfg-type-recents');
+    const listEl = document.getElementById('cfg-type-list');
+    const filterEl = document.getElementById('cfg-type-brand-filter');
+    if (!recentsEl || !listEl) return;
+
+    const query = (draft.search || '').trim().toLowerCase();
+    const brandFilter = draft.brandFilter || 'MilkSafe';
+
+    if (filterEl) {
+        filterEl.querySelectorAll('[data-brand-filter]').forEach(button => {
+            button.classList.toggle('selected', button.dataset.brandFilter === brandFilter);
+            button.onclick = () => {
+                if (draft.brandFilter === button.dataset.brandFilter) return;
+                const nextDraft = { ...draft, brandFilter: button.dataset.brandFilter };
+                updateTypePickerList(nextDraft);
+                activeModal.draft = nextDraft;
+            };
+        });
+    }
+
+    const filteredTypes = TEST_TYPES.filter(testType => {
+        if (brandFilter && testType.brand !== brandFilter) return false;
+        if (!query) return true;
+        return testType.name.toLowerCase().includes(query) ||
+               String(testType.id).includes(query) ||
+               testType.brand.toLowerCase().includes(query) ||
+               testType.category.toLowerCase().includes(query) ||
+               testType.substances.some(substance => substance.toLowerCase().includes(query));
+    });
+
+    const recentTypes = !query
+        ? getRecentTestTypes().filter(testType => testType.brand === brandFilter).slice(0, 4)
+        : [];
+
+    recentsEl.innerHTML = recentTypes.length > 0
+        ? `
+            <div class="type-picker-section-title">Recent</div>
+            <div class="type-picker-recents">
+                ${recentTypes.map(testType => `
+                    <button class="type-picker-chip${testType.id === draft.testTypeId ? ' selected' : ''}" data-test-type-id="${testType.id}">
+                        ${escapeHtml(testType.name)}
+                    </button>
+                `).join('')}
+            </div>`
+        : '';
+
+    listEl.innerHTML = `
+        <div class="type-picker-section-title">All Test Types</div>
+        <div class="type-picker-results-meta">${filteredTypes.length} shown</div>
+        <div class="type-picker-results">
+            ${renderTypePickerRows(filteredTypes, draft.testTypeId)}
+        </div>`;
+
+    document.querySelectorAll('[data-test-type-id]').forEach(button => {
+        button.addEventListener('click', () => {
+            const nextDraft = {
+                ...draft,
+                testTypeId: Number(button.dataset.testTypeId),
+                brandFilter
+            };
+            const ch = getChannel(activeModal.channelId);
+            showConfigModal(ch, nextDraft, 'form');
+        });
+    });
+}
+
+function showConfigModal(ch, draft = null, view = 'form') {
     const overlay = document.getElementById('modal-overlay');
     const modal = document.getElementById('config-modal');
     if (!overlay || !modal) return;
 
-    activeModal = { type: 'config', channelId: ch.id };
+    const nextDraft = draft || buildConfigDraft(ch);
+    activeModal = { type: 'config', channelId: ch.id, draft: nextDraft, view };
 
     const scenarioOpts = [
         { value: 'test', label: 'Test' },
@@ -516,12 +702,65 @@ function showConfigModal(ch) {
         { value: 'animal_control', label: 'Animal Control' }
     ];
 
-    const qrLocked = deviceSettings.qrScanningEnabled;
-    const loadedType = ch.loadedCassetteType || ch.cassetteType || CASSETTE_TYPES[0];
-    const selectedType = qrLocked ? loadedType : (ch.cassetteType || loadedType);
+    const qrLocked = Boolean(nextDraft.lockedToQr);
+    const selectedType = getDraftSelection(nextDraft, qrLocked);
     const subtitle = ch.cassettePresent
-        ? `${loadedType} loaded`
+        ? `${selectedType?.category || 'Test type'} ready`
         : 'Manual mode: configure without cassette detection';
+
+    modal.className = `modal config-modal${view === 'type_picker' ? ' type-picker-mode active' : ' active'}`;
+
+    if (view === 'type_picker') {
+        modal.innerHTML = `
+            <div class="modal-header">
+                <div class="modal-header-row">
+                    <div class="modal-channel-badge">${ch.id}</div>
+                    <div class="header-text">
+                        <h2>Select Test Type</h2>
+                        <span class="modal-subtitle">${TEST_TYPES.length} available test types</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body type-picker-body">
+                <div class="type-picker-search-wrap">
+                    <input
+                        type="text"
+                        class="form-input type-picker-search"
+                        id="cfg-type-search"
+                        placeholder="Search test types"
+                        value="${escapeHtml(nextDraft.search)}"
+                    >
+                </div>
+                <div class="type-picker-brand-filter" id="cfg-type-brand-filter">
+                    <button class="type-picker-brand-btn${nextDraft.brandFilter === 'MilkSafe' ? ' selected' : ''}" data-brand-filter="MilkSafe">MilkSafe</button>
+                    <button class="type-picker-brand-btn${nextDraft.brandFilter === 'Bioeasy' ? ' selected' : ''}" data-brand-filter="Bioeasy">BioEasy</button>
+                </div>
+                <div class="type-picker-sections">
+                    <div id="cfg-type-recents"></div>
+                    <div id="cfg-type-list"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-secondary" id="cfg-type-back">Back</button>
+            </div>`;
+
+        overlay.classList.add('active');
+
+        document.getElementById('cfg-type-back').addEventListener('click', () => {
+            showConfigModal(ch, nextDraft, 'form');
+        });
+
+        const searchInput = document.getElementById('cfg-type-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                nextDraft.search = searchInput.value;
+                updateTypePickerList(nextDraft);
+            });
+        }
+
+        updateTypePickerList(nextDraft);
+        return;
+    }
 
     modal.innerHTML = `
         <div class="modal-header">
@@ -539,38 +778,56 @@ function showConfigModal(ch) {
                     <label>Scenario</label>
                     <div class="segmented-control" id="cfg-scenario">
                         ${scenarioOpts.map(o =>
-                            `<button class="seg-option${o.value === 'test' ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
+                            `<button class="seg-option${o.value === nextDraft.scenario ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
                         ).join('')}
                     </div>
                 </div>
                 <div class="form-field">
                     <label>Test Type</label>
-                    <select class="form-select" id="cfg-type" ${qrLocked ? 'disabled' : ''}>
-                        ${CASSETTE_TYPES.map(t =>
-                            `<option value="${t}"${t === selectedType ? ' selected' : ''}>${t}</option>`
-                        ).join('')}
-                    </select>
                     ${qrLocked
-                        ? `<div class="config-note">Loaded automatically from cassette QR</div>`
-                        : `<div class="config-note">Select manually (QR scanning OFF)</div>`}
+                        ? `
+                            <div class="type-picker-trigger is-locked">
+                                <span class="type-picker-trigger-main">${escapeHtml(selectedType?.name || 'Select test type')}</span>
+                                <span class="type-picker-trigger-meta">${getTestTypeMetaParts(selectedType).join(' · ')}</span>
+                            </div>`
+                        : `
+                            <button class="type-picker-trigger" id="cfg-type-picker">
+                                <span class="type-picker-trigger-main">${escapeHtml(selectedType?.name || 'Select test type')}</span>
+                                <span class="type-picker-trigger-meta">${getTestTypeMetaParts(selectedType).join(' · ')}</span>
+                                <span class="type-picker-trigger-action">Choose</span>
+                            </button>`
+                    }
+                    <div class="config-note">${
+                        qrLocked
+                            ? 'Loaded from cassette QR.'
+                            : deviceSettings.qrScanningEnabled
+                            ? (selectedType?.qrEnabled
+                                ? 'QR-enabled test type. Cassette QR can prefill when available.'
+                                : 'This test type has no QR. It must be selected manually each time.')
+                            : 'Tap to search and select manually.'
+                    }</div>
                 </div>
                 <div class="form-field">
                     <label>Route / Sample ID</label>
-                    <input type="text" class="form-input" id="cfg-route" placeholder="Route or sample ID">
+                    <input type="text" class="form-input" id="cfg-route" placeholder="Route or sample ID" value="${escapeHtml(nextDraft.route)}">
                     <div class="recent-chips" id="cfg-route-chips">
                         ${RECENT_ROUTES.slice(0, 2).map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
                     </div>
                 </div>
                 <div class="form-field">
                     <label>Operator ID</label>
-                    <input type="text" class="form-input" id="cfg-operator" placeholder="Operator ID">
+                    <input type="text" class="form-input" id="cfg-operator" placeholder="Operator ID" value="${escapeHtml(nextDraft.operatorId)}">
                     <div class="recent-chips" id="cfg-operator-chips">
                         ${RECENT_OPERATORS.slice(0, 2).map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
                     </div>
                 </div>
-                <div class="form-field form-field-temp-status">
-                    <div class="config-temp-status" id="cfg-temp-status"></div>
-                </div>
+                ${selectedType?.requiredTemperature != null ? `
+                    <div class="form-field form-field-temp-status">
+                        <div class="config-temp-status${getTemperatureValidation(selectedType?.id, selectedType?.cassetteType).ok ? ' is-valid' : ' is-invalid'}" id="cfg-temp-status">
+                            ${renderConfigTemperatureGate(nextDraft, qrLocked)}
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         </div>
         <div class="modal-footer">
@@ -580,7 +837,6 @@ function showConfigModal(ch) {
         </div>`;
 
     overlay.classList.add('active');
-    modal.classList.add('active');
 
     // Bind segmented control clicks
     modal.querySelectorAll('.segmented-control').forEach(sc => {
@@ -600,6 +856,14 @@ function showConfigModal(ch) {
         });
     });
 
+    const typePickerBtn = document.getElementById('cfg-type-picker');
+    if (typePickerBtn && !qrLocked) {
+        typePickerBtn.addEventListener('click', () => {
+            const latestDraft = collectConfigDraft(modal, ch, nextDraft);
+            showConfigModal(ch, latestDraft, 'type_picker');
+        });
+    }
+
     // Cancel
     document.getElementById('cfg-cancel').addEventListener('click', () => {
         handleConfigCancel(ch.id);
@@ -607,13 +871,17 @@ function showConfigModal(ch) {
 
     // Start helpers
     function collectConfigAndStart(processing) {
-        const scenario = modal.querySelector('#cfg-scenario .seg-option.selected')?.dataset.value || 'test';
-        const testType = document.getElementById('cfg-type').value;
-        const route = document.getElementById('cfg-route').value || 'Default Route';
-        const operator = document.getElementById('cfg-operator').value || 'OP-000';
+        const latestDraft = collectConfigDraft(modal, ch, nextDraft);
+        const currentSelection = getDraftSelection(latestDraft, qrLocked);
 
         handleConfigStart(ch.id, {
-            scenario, testType, route, operatorId: operator, processing
+            scenario: latestDraft.scenario,
+            testTypeId: currentSelection?.id || null,
+            testTypeName: currentSelection?.name,
+            testType: currentSelection?.cassetteType || normalizeLoadedCassetteType(latestDraft.fallbackCassetteType),
+            route: latestDraft.route || 'Default Route',
+            operatorId: latestDraft.operatorId || 'OP-000',
+            processing
         });
     }
 
@@ -628,39 +896,11 @@ function showConfigModal(ch) {
         });
     }
 
-    function updateTemperatureGate() {
-        const testType = document.getElementById('cfg-type').value;
-        const validation = getTemperatureValidation(testType);
-        const statusEl = document.getElementById('cfg-temp-status');
-        const readBtn = document.getElementById('cfg-read-only');
-        const readIncubateBtn = document.getElementById('cfg-read-incubate');
-
-        if (!statusEl || !readBtn) return;
-
-        if (validation.ok) {
-            statusEl.className = 'config-temp-status is-valid';
-            statusEl.innerHTML = `
-                <span class="config-temp-badge">Temp OK</span>
-                <span class="config-temp-copy">${validation.currentTemperature} C / ${validation.requiredTemperature ?? '-'} C</span>`;
-        } else {
-            statusEl.className = 'config-temp-status is-invalid';
-            statusEl.innerHTML = `
-                <span class="config-temp-badge">Temp</span>
-                <span class="config-temp-copy">${validation.currentTemperature} C device, ${validation.requiredTemperature} C required</span>`;
-        }
-
-        readBtn.disabled = !validation.ok;
-        if (readIncubateBtn) {
-            readIncubateBtn.disabled = !validation.ok;
-        }
+    const validation = getTemperatureValidation(selectedType?.id, selectedType?.cassetteType);
+    document.getElementById('cfg-read-only').disabled = !validation.ok;
+    if (incubateBtn) {
+        incubateBtn.disabled = !validation.ok || !selectedType?.incubationTime;
     }
-
-    const typeSelect = document.getElementById('cfg-type');
-    if (typeSelect) {
-        typeSelect.addEventListener('change', updateTemperatureGate);
-    }
-
-    updateTemperatureGate();
 }
 
 function hideModal() {
@@ -686,7 +926,7 @@ function showHistoryScreen() {
             <tr>
                 <td>${entry.channelId}</td>
                 <td>${entry.scenario || '-'}</td>
-                <td>${entry.cassetteType || '-'}</td>
+                <td>${entry.testTypeName || entry.cassetteType || '-'}</td>
                 <td>${entry.result ? entry.result.toUpperCase() : '-'}</td>
                 <td>${entry.testCount || 0}</td>
             </tr>
@@ -852,13 +1092,13 @@ function showDecisionModal(ch, variant) {
         // After T1 positive
         resultLabel = 'Test 1';
         resultValue = 'POSITIVE';
-        messageHtml = `<p>Confirmation required. Insert a new ${ch.cassetteType} cassette, then start Test 2.</p>
+        messageHtml = `<p>Confirmation required. Insert a new ${ch.testTypeName || ch.cassetteType} test, then start Test 2.</p>
                        <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
     } else {
         // After T2 negative (variant b)
         resultLabel = 'Test 2';
         resultValue = 'NEGATIVE';
-        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert a new ${ch.cassetteType} cassette, then start Test 3.</p>
+        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert a new ${ch.testTypeName || ch.cassetteType} test, then start Test 3.</p>
                        <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
     }
 
@@ -879,7 +1119,7 @@ function showDecisionModal(ch, variant) {
                 <div class="header-text">
                     <h2 style="color:${titleColor}">${resultLabel}: ${resultValue}</h2>
                     <div class="modal-meta">
-                        <span class="meta-item"><span class="meta-value">${ch.cassetteType}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.route || 'Test'}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.operatorId || ''}</span></span>
                     </div>
@@ -930,7 +1170,7 @@ function showStopConfirmationModal(ch) {
                 <div class="header-text">
                     <h2 style="color:var(--warning)">Abort Flow?</h2>
                     <div class="modal-meta">
-                        <span class="meta-item"><span class="meta-value">${ch.cassetteType}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.route || 'Test'}</span></span>
                     </div>
                 </div>
@@ -1038,7 +1278,7 @@ function showDetailModal(ch) {
                 <div class="header-text">
                     <h2>${scenarioLabels[ch.scenario] || 'Test'} Details</h2>
                     <div class="modal-meta">
-                        <span class="meta-item"><span class="meta-value">${ch.cassetteType}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.route}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.operatorId}</span></span>
                         <span class="meta-item"><span class="meta-value">${processingLabels[ch.processing] || ch.processing}</span></span>
