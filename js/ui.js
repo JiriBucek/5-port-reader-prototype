@@ -611,6 +611,68 @@ function syncDraftForTestType(draft, testTypeId) {
     };
 }
 
+function getKeyboardFieldLabel(fieldId) {
+    return fieldId === 'cfg-operator' ? 'Operator ID' : 'Sample ID';
+}
+
+function setConfigKeyboardState(modal, fieldId = '') {
+    if (!modal) return;
+
+    const isActive = Boolean(fieldId);
+    modal.classList.toggle('keyboard-active', isActive);
+    modal.dataset.keyboardField = fieldId || '';
+
+    const labelEl = modal.querySelector('#cfg-keyboard-field-label');
+    if (labelEl) {
+        labelEl.textContent = isActive ? getKeyboardFieldLabel(fieldId) : '';
+    }
+
+    if (!isActive) return;
+
+    const targetInput = modal.querySelector(`#${fieldId}`);
+    if (targetInput) {
+        window.requestAnimationFrame(() => {
+            targetInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+    }
+}
+
+function bindConfigKeyboardPlaceholder(modal) {
+    if (!modal) return;
+
+    const inputs = modal.querySelectorAll('#cfg-route, #cfg-operator');
+    if (!inputs.length) return;
+
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            setConfigKeyboardState(modal, input.id);
+        });
+
+        input.addEventListener('blur', () => {
+            window.setTimeout(() => {
+                const activeId = document.activeElement?.id;
+                if (activeId === 'cfg-route' || activeId === 'cfg-operator') {
+                    setConfigKeyboardState(modal, activeId);
+                    return;
+                }
+                setConfigKeyboardState(modal, '');
+            }, 60);
+        });
+    });
+
+    const doneBtn = modal.querySelector('#cfg-keyboard-done');
+    if (doneBtn) {
+        doneBtn.addEventListener('click', () => {
+            const activeFieldId = modal.dataset.keyboardField;
+            if (activeFieldId) {
+                const activeInput = modal.querySelector(`#${activeFieldId}`);
+                if (activeInput) activeInput.blur();
+            }
+            setConfigKeyboardState(modal, '');
+        });
+    }
+}
+
 function formatCurveTimestamp(value) {
     if (!value) return '';
 
@@ -1077,6 +1139,29 @@ function showConfigModal(ch, draft = null, view = 'form') {
             <button class="modal-btn btn-secondary" id="cfg-cancel">Cancel</button>
             <button class="modal-btn btn-primary" id="cfg-read-only">Read</button>
             ${deviceSettings.incubationEnabled ? `<button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>` : ''}
+        </div>
+        <div class="config-keyboard" id="cfg-keyboard">
+            <div class="config-keyboard-header">
+                <span class="config-keyboard-title">Keyboard</span>
+                <span class="config-keyboard-field" id="cfg-keyboard-field-label"></span>
+                <button class="config-keyboard-done" id="cfg-keyboard-done">Done</button>
+            </div>
+            <div class="config-keyboard-row">
+                <span class="config-key">1</span><span class="config-key">2</span><span class="config-key">3</span><span class="config-key">4</span><span class="config-key">5</span>
+                <span class="config-key">6</span><span class="config-key">7</span><span class="config-key">8</span><span class="config-key">9</span><span class="config-key">0</span>
+            </div>
+            <div class="config-keyboard-row">
+                <span class="config-key">Q</span><span class="config-key">W</span><span class="config-key">E</span><span class="config-key">R</span><span class="config-key">T</span>
+                <span class="config-key">Y</span><span class="config-key">U</span><span class="config-key">I</span><span class="config-key">O</span><span class="config-key">P</span>
+            </div>
+            <div class="config-keyboard-row">
+                <span class="config-key">A</span><span class="config-key">S</span><span class="config-key">D</span><span class="config-key">F</span><span class="config-key">G</span>
+                <span class="config-key">H</span><span class="config-key">J</span><span class="config-key">K</span><span class="config-key">L</span>
+            </div>
+            <div class="config-keyboard-row config-keyboard-row-bottom">
+                <span class="config-key config-key-wide">Space</span>
+                <span class="config-key config-key-wide">Backspace</span>
+            </div>
         </div>`;
 
     overlay.classList.add('active');
@@ -1098,6 +1183,8 @@ function showConfigModal(ch, draft = null, view = 'form') {
             if (target) target.value = chip.dataset.value;
         });
     });
+
+    bindConfigKeyboardPlaceholder(modal);
 
     const typePickerBtn = document.getElementById('cfg-type-picker');
     if (typePickerBtn && !qrLocked) {
