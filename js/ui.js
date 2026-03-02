@@ -749,23 +749,24 @@ function updateTypePickerList(draft) {
     });
 
     const recentTypes = !query
-        ? getRecentTestTypes().filter(testType => testType.brand === brandFilter).slice(0, 4)
+        ? getRecentTestTypes().filter(testType => testType.brand === brandFilter).slice(0, 3)
         : [];
 
     recentsEl.innerHTML = recentTypes.length > 0
         ? `
-            <div class="type-picker-section-title">Recent</div>
-            <div class="type-picker-recents">
-                ${recentTypes.map(testType => `
-                    <button class="type-picker-chip${testType.id === draft.testTypeId ? ' selected' : ''}" data-test-type-id="${testType.id}">
-                        ${escapeHtml(testType.name)}
-                    </button>
-                `).join('')}
+            <div class="type-picker-recents-block">
+                <div class="type-picker-section-title">Recent</div>
+                <div class="type-picker-recents">
+                    ${recentTypes.map(testType => `
+                        <button class="type-picker-chip${testType.id === draft.testTypeId ? ' selected' : ''}" data-test-type-id="${testType.id}">
+                            ${escapeHtml(testType.name)}
+                        </button>
+                    `).join('')}
+                </div>
             </div>`
         : '';
 
     listEl.innerHTML = `
-        <div class="type-picker-section-title">Results</div>
         <div class="type-picker-results">
             ${renderTypePickerRows(filteredTypes, draft.testTypeId)}
         </div>`;
@@ -832,7 +833,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 </div>
                 <div class="type-picker-sections">
                     <div id="cfg-type-recents"></div>
-                    <div id="cfg-type-list"></div>
+                    <div class="type-picker-list-block" id="cfg-type-list"></div>
                 </div>
             </div>
             <div class="modal-footer">

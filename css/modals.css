@@ -359,7 +359,7 @@
 .type-picker-body {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     overflow: hidden;
 }
 
@@ -379,7 +379,7 @@
 .type-picker-brand-filter {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
 }
 
@@ -404,11 +404,10 @@
 .type-picker-sections {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-right: 2px;
+    gap: 6px;
+    overflow: hidden;
 }
 
 .type-picker-section-title {
@@ -420,14 +419,29 @@
     margin-bottom: 4px;
 }
 
+.type-picker-recents-block {
+    flex-shrink: 0;
+}
+
+.type-picker-list-block {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 .type-picker-recents {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
 }
 
 .type-picker-chip {
-    max-width: 100%;
+    flex: 0 0 auto;
+    max-width: 220px;
     min-height: var(--chip-height);
     padding: 6px 10px;
     border: 1px solid var(--gray-300);
@@ -448,9 +462,13 @@
 }
 
 .type-picker-results {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding-right: 2px;
 }
 
 .type-picker-row {
