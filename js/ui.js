@@ -46,28 +46,13 @@ function getCardHeaderTypeLabel(ch) {
 }
 
 function renderCardHeader(ch) {
-    let badges = '';
     const typeLabel = getCardHeaderTypeLabel(ch);
-
-    if (typeLabel) {
-        badges += `<span class="badge badge-type" title="${escapeHtml(typeLabel)}">${escapeHtml(typeLabel)}</span>`;
-    }
-
-    if (ch.scenario && ch.scenario !== 'test') {
-        const scenarioLabels = {
-            'pos_control': 'Pos Control',
-            'animal_control': 'Animal Ctrl'
-        };
-        badges += `<span class="badge badge-scenario scenario-control">${scenarioLabels[ch.scenario]}</span>`;
-    }
-
-    if (ch.currentTestNumber > 1 && ch.state !== STATES.COMPLETE) {
-        badges += `<span class="badge badge-test-num">T${ch.currentTestNumber}/3</span>`;
-    }
 
     return `<div class="card-header">
         <span class="ch-label">${ch.id}</span>
-        ${badges ? `<div class="card-badges">${badges}</div>` : ''}
+        <div class="card-badges">
+            ${typeLabel ? `<span class="badge badge-type" title="${escapeHtml(typeLabel)}">${escapeHtml(typeLabel)}</span>` : ''}
+        </div>
     </div>`;
 }
 
@@ -779,8 +764,7 @@ function updateTypePickerList(draft) {
         : '';
 
     listEl.innerHTML = `
-        <div class="type-picker-section-title">All Test Types</div>
-        <div class="type-picker-results-meta">${filteredTypes.length} shown</div>
+        <div class="type-picker-section-title">Results</div>
         <div class="type-picker-results">
             ${renderTypePickerRows(filteredTypes, draft.testTypeId)}
         </div>`;
@@ -815,8 +799,8 @@ function showConfigModal(ch, draft = null, view = 'form') {
     const selectedType = getDraftSelection(nextDraft, qrLocked);
     const selectedCurve = getDraftCurve(nextDraft, selectedType);
     const subtitle = ch.cassettePresent
-        ? `${selectedType?.category || 'Test type'} ready`
-        : 'Manual mode: configure without cassette detection';
+        ? 'Cassette inserted'
+        : 'Manual mode';
 
     modal.className = `modal config-modal${view === 'type_picker' ? ' type-picker-mode active' : ' active'}`;
 
@@ -827,7 +811,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     <div class="modal-channel-badge">${ch.id}</div>
                     <div class="header-text">
                         <h2>Select Test Type</h2>
-                        <span class="modal-subtitle">${TEST_TYPES.length} available test types</span>
+                        <span class="modal-subtitle">Search or choose</span>
                     </div>
                 </div>
             </div>
@@ -872,28 +856,47 @@ function showConfigModal(ch, draft = null, view = 'form') {
         return;
     }
 
-    if (view === 'curve_picker') {
+    if (view === 'curve_picker' || view === 'curve_loader') {
         if (!selectedType?.quantitative) {
             showConfigModal(ch, nextDraft, 'form');
             return;
         }
 
         const recentCurves = getRecentQuantCurves(selectedType.id);
+        const loadSource = nextDraft.curveLoadSource || 'qr';
+        const availability = getCurveSourceAvailability(loadSource);
+        const loadActionLabel = loadSource === 'qr' ? 'Load From QR' : 'Load From Card';
+        const saveDisabled = !nextDraft.curveLoadReady || !String(nextDraft.curveLoadName || '').trim();
+        const curveLoadHasError = Boolean(nextDraft.curveLoadError) || !availability.ok;
         modal.innerHTML = `
             <div class="modal-header">
                 <div class="modal-header-row">
                     <div class="modal-channel-badge">${ch.id}</div>
                     <div class="header-text">
-                        <h2>Select Curve</h2>
+                        <h2>Quant Curve</h2>
                         <span class="modal-subtitle">${escapeHtml(selectedType.name)}</span>
                     </div>
                 </div>
             </div>
             <div class="modal-body type-picker-body">
-                <div class="curve-picker-note">Choose one of the last five curves saved on the device.</div>
                 <div class="type-picker-sections">
+                    <div class="curve-loader-panel">
+                        <div class="type-picker-section-title">Load New</div>
+                        <div class="segmented-control compact" id="cfg-curve-source">
+                            <button class="seg-option${loadSource === 'qr' ? ' selected' : ''}" data-value="qr">QR Scanner</button>
+                            <button class="seg-option${loadSource === 'card' ? ' selected' : ''}" data-value="card">Storage Card</button>
+                        </div>
+                        <div class="curve-loader-status${curveLoadHasError ? ' is-error' : ' is-ready'}">${escapeHtml(nextDraft.curveLoadError || availability.message)}</div>
+                        <button class="curve-loader-action" id="cfg-curve-import">${loadActionLabel}</button>
+                        ${nextDraft.curveLoadReady ? `
+                            <div class="form-field curve-name-field">
+                                <label>Curve Name</label>
+                                <input type="text" class="form-input" id="cfg-curve-name" value="${escapeHtml(nextDraft.curveLoadName)}" placeholder="Curve name">
+                            </div>
+                        ` : ''}
+                    </div>
                     <div>
-                        <div class="type-picker-section-title">Recent Curves</div>
+                        <div class="type-picker-section-title">Saved Curves</div>
                         <div class="type-picker-results">
                             ${renderCurvePickerRows(recentCurves, selectedCurve?.id || null)}
                         </div>
@@ -902,23 +905,30 @@ function showConfigModal(ch, draft = null, view = 'form') {
             </div>
             <div class="modal-footer">
                 <button class="modal-btn btn-secondary" id="cfg-curve-back">Back</button>
-                <button class="modal-btn btn-primary" id="cfg-curve-load-new">Load New Curve</button>
+                <button class="modal-btn btn-primary" id="cfg-curve-save" ${saveDisabled ? 'disabled' : ''}>Save Curve</button>
             </div>`;
 
         overlay.classList.add('active');
 
         document.getElementById('cfg-curve-back').addEventListener('click', () => {
-            showConfigModal(ch, nextDraft, 'form');
-        });
-
-        document.getElementById('cfg-curve-load-new').addEventListener('click', () => {
             showConfigModal(ch, {
                 ...nextDraft,
-                curveLoadSource: nextDraft.curveLoadSource || 'qr',
-                curveLoadName: '',
                 curveLoadReady: false,
+                curveLoadName: '',
                 curveLoadError: ''
-            }, 'curve_loader');
+            }, 'form');
+        });
+
+        modal.querySelectorAll('#cfg-curve-source .seg-option').forEach(button => {
+            button.addEventListener('click', () => {
+                showConfigModal(ch, {
+                    ...nextDraft,
+                    curveLoadSource: button.dataset.value,
+                    curveLoadReady: false,
+                    curveLoadName: '',
+                    curveLoadError: ''
+                }, 'curve_picker');
+            });
         });
 
         modal.querySelectorAll('[data-curve-id]').forEach(button => {
@@ -932,76 +942,6 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 }, 'form');
             });
         });
-        return;
-    }
-
-    if (view === 'curve_loader') {
-        if (!selectedType?.quantitative) {
-            showConfigModal(ch, nextDraft, 'form');
-            return;
-        }
-
-        const loadSource = nextDraft.curveLoadSource || 'qr';
-        const availability = getCurveSourceAvailability(loadSource);
-        const loadActionLabel = loadSource === 'qr' ? 'Load From QR' : 'Load From Card';
-        const saveDisabled = !nextDraft.curveLoadReady || !String(nextDraft.curveLoadName || '').trim();
-        const curveLoadHasError = Boolean(nextDraft.curveLoadError) || !availability.ok;
-
-        modal.innerHTML = `
-            <div class="modal-header">
-                <div class="modal-header-row">
-                    <div class="modal-channel-badge">${ch.id}</div>
-                    <div class="header-text">
-                        <h2>Load Curve</h2>
-                        <span class="modal-subtitle">${escapeHtml(selectedType.name)}</span>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-body type-picker-body">
-                <div class="form-field">
-                    <label>Source</label>
-                    <div class="segmented-control compact" id="cfg-curve-source">
-                        <button class="seg-option${loadSource === 'qr' ? ' selected' : ''}" data-value="qr">QR Scanner</button>
-                        <button class="seg-option${loadSource === 'card' ? ' selected' : ''}" data-value="card">Storage Card</button>
-                    </div>
-                </div>
-                <div class="curve-loader-status${curveLoadHasError ? ' is-error' : ' is-ready'}">${escapeHtml(nextDraft.curveLoadError || availability.message)}</div>
-                <button class="curve-loader-action" id="cfg-curve-import">${loadActionLabel}</button>
-                ${nextDraft.curveLoadReady ? `
-                    <div class="form-field">
-                        <label>Curve Name</label>
-                        <input type="text" class="form-input" id="cfg-curve-name" value="${escapeHtml(nextDraft.curveLoadName)}" placeholder="Name this curve">
-                        <div class="config-note">Saved curves return to the recent list for this quantitative test type.</div>
-                    </div>
-                ` : ''}
-            </div>
-            <div class="modal-footer">
-                <button class="modal-btn btn-secondary" id="cfg-curve-loader-back">Back</button>
-                <button class="modal-btn btn-primary" id="cfg-curve-save" ${saveDisabled ? 'disabled' : ''}>Save Curve</button>
-            </div>`;
-
-        overlay.classList.add('active');
-
-        modal.querySelectorAll('#cfg-curve-source .seg-option').forEach(button => {
-            button.addEventListener('click', () => {
-                showConfigModal(ch, {
-                    ...nextDraft,
-                    curveLoadSource: button.dataset.value,
-                    curveLoadReady: false,
-                    curveLoadName: '',
-                    curveLoadError: ''
-                }, 'curve_loader');
-            });
-        });
-
-        document.getElementById('cfg-curve-loader-back').addEventListener('click', () => {
-            showConfigModal(ch, {
-                ...nextDraft,
-                curveLoadReady: false,
-                curveLoadName: '',
-                curveLoadError: ''
-            }, 'curve_picker');
-        });
 
         document.getElementById('cfg-curve-import').addEventListener('click', () => {
             if (!availability.ok) {
@@ -1009,7 +949,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     ...nextDraft,
                     curveLoadReady: false,
                     curveLoadError: availability.message
-                }, 'curve_loader');
+                }, 'curve_picker');
                 return;
             }
 
@@ -1018,7 +958,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 curveLoadReady: true,
                 curveLoadError: '',
                 curveLoadName: nextDraft.curveLoadName || buildSuggestedCurveName(selectedType, loadSource)
-            }, 'curve_loader');
+            }, 'curve_picker');
         });
 
         const curveNameInput = document.getElementById('cfg-curve-name');
@@ -1036,7 +976,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     ...nextDraft,
                     curveLoadReady: true,
                     curveLoadError: 'Enter a curve name before saving.'
-                }, 'curve_loader');
+                }, 'curve_picker');
                 return;
             }
 
@@ -1051,7 +991,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     ...nextDraft,
                     curveLoadReady: true,
                     curveLoadError: 'Curve could not be saved.'
-                }, 'curve_loader');
+                }, 'curve_picker');
                 return;
             }
 
@@ -1089,14 +1029,12 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     <label>Test Type</label>
                     ${qrLocked
                         ? `
-                            <div class="type-picker-trigger is-locked">
+                            <div class="type-picker-trigger type-picker-trigger-inline is-locked">
                                 <span class="type-picker-trigger-main">${escapeHtml(selectedType?.name || 'Select test type')}</span>
-                                <span class="type-picker-trigger-meta">${getTestTypeMetaParts(selectedType).join(' · ')}</span>
                             </div>`
                         : `
-                            <button class="type-picker-trigger" id="cfg-type-picker">
+                            <button class="type-picker-trigger type-picker-trigger-inline" id="cfg-type-picker">
                                 <span class="type-picker-trigger-main">${escapeHtml(selectedType?.name || 'Select test type')}</span>
-                                <span class="type-picker-trigger-meta">${getTestTypeMetaParts(selectedType).join(' · ')}</span>
                                 <span class="type-picker-trigger-action">Choose</span>
                             </button>`
                     }
@@ -1119,16 +1057,11 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 ${selectedType?.quantitative ? `
                     <div class="form-field">
                         <label>Quant Curve</label>
-                        <button class="type-picker-trigger${selectedCurve ? '' : ' is-missing'}" id="cfg-curve-picker">
+                        <button class="type-picker-trigger type-picker-trigger-inline${selectedCurve ? '' : ' is-missing'}" id="cfg-curve-picker">
                             <span class="type-picker-trigger-main">${escapeHtml(selectedCurve?.name || 'Select curve')}</span>
-                            <span class="type-picker-trigger-meta">${selectedCurve
-                                ? `${escapeHtml(getCurveSourceLabel(selectedCurve.source))} · ${escapeHtml(formatCurveTimestamp(selectedCurve.createdAt))}`
-                                : 'Required for quantitative test types.'}</span>
                             <span class="type-picker-trigger-action">${selectedCurve ? 'Change' : 'Choose'}</span>
                         </button>
-                        <div class="config-note${selectedCurve ? '' : ' is-error'}">${selectedCurve
-                            ? 'Use one of the recent saved curves or load a new one.'
-                            : 'Select one of the last five saved curves or load a new curve.'}</div>
+                        ${selectedCurve ? '' : '<div class="config-note is-error">Choose or load a curve.</div>'}
                     </div>
                 ` : ''}
                 ${selectedType?.requiredTemperature != null ? `

@@ -74,7 +74,7 @@
     font-size: var(--font-lg);
     font-weight: 600;
     cursor: pointer;
-    min-height: 52px;
+    min-height: var(--touch-target-large);
     min-width: 140px;
     text-align: center;
     transition: background-color 0.15s, transform 0.1s;
@@ -138,9 +138,9 @@
 }
 
 #cfg-scenario .seg-option {
-    min-height: 42px;
+    min-height: var(--touch-target-compact);
     padding: 8px 8px;
-    font-size: 12px;
+    font-size: var(--font-sm);
 }
 
 .config-modal .modal-body {
@@ -156,7 +156,7 @@
 .config-modal .modal-footer .modal-btn {
     flex: 1;
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--touch-target-default);
     padding: 10px 8px;
     font-size: var(--font-base);
 }
@@ -178,33 +178,33 @@
 
 .config-grid .form-field label {
     margin-bottom: 6px;
-    font-size: var(--font-xs);
+    font-size: var(--font-sm);
 }
 
 .config-modal .segmented-control .seg-option {
-    min-height: 40px;
+    min-height: var(--touch-target-compact);
     padding: 8px 6px;
     font-size: var(--font-sm);
 }
 
 .config-header-controls .segmented-control .seg-option,
 .segmented-control.compact .seg-option {
-    min-height: 34px;
-    padding: 6px 6px;
-    font-size: 11px;
+    min-height: var(--touch-target-compact);
+    padding: 7px 6px;
+    font-size: var(--font-sm);
 }
 
 .config-modal .form-select,
 .config-modal .form-input {
-    min-height: 40px;
+    min-height: var(--touch-target-default);
     padding: 8px 10px;
     font-size: var(--font-base);
 }
 
 .type-picker-trigger {
     width: 100%;
-    min-height: 42px;
-    padding: 7px 10px;
+    min-height: var(--touch-target-default);
+    padding: 8px 10px;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
     background: var(--white);
@@ -218,10 +218,23 @@
     cursor: pointer;
 }
 
+.type-picker-trigger-inline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "main action";
+    align-items: center;
+    gap: 8px;
+}
+
 .type-picker-trigger.is-locked,
 .type-picker-trigger:disabled {
     cursor: default;
     background: var(--gray-50);
+}
+
+.type-picker-trigger-inline.is-locked {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "main";
 }
 
 .type-picker-trigger.is-missing {
@@ -232,7 +245,7 @@
 .type-picker-trigger-main {
     grid-area: main;
     min-width: 0;
-    font-size: var(--font-sm);
+    font-size: var(--font-base);
     font-weight: 700;
     color: var(--gray-800);
     white-space: nowrap;
@@ -242,7 +255,7 @@
 
 .type-picker-trigger-meta {
     grid-area: meta;
-    font-size: 10px;
+    font-size: var(--font-sm);
     color: var(--gray-500);
     white-space: nowrap;
     overflow: hidden;
@@ -252,14 +265,14 @@
 .type-picker-trigger-action {
     grid-area: action;
     align-self: center;
-    font-size: 10px;
+    font-size: var(--font-sm);
     font-weight: 700;
     color: var(--primary);
 }
 
 .config-note {
     margin-top: 4px;
-    font-size: var(--font-xs);
+    font-size: var(--font-sm);
     color: var(--gray-500);
     line-height: 1.2;
 }
@@ -276,7 +289,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 30px;
+    min-height: 36px;
 }
 
 .config-temp-status.is-valid {
@@ -291,7 +304,7 @@
 
 .config-temp-badge {
     flex-shrink: 0;
-    font-size: 10px;
+    font-size: var(--font-sm);
     font-weight: 700;
     line-height: 1;
     padding: 2px 5px;
@@ -302,7 +315,7 @@
 
 .config-temp-copy {
     min-width: 0;
-    font-size: 10px;
+    font-size: var(--font-sm);
     line-height: 1.1;
     color: var(--gray-700);
     white-space: nowrap;
@@ -318,8 +331,9 @@
 }
 
 .config-modal .recent-chip {
-    padding: 4px 8px;
-    font-size: var(--font-xs);
+    min-height: var(--chip-height);
+    padding: 6px 10px;
+    font-size: var(--font-sm);
     white-space: nowrap;
 }
 
@@ -335,11 +349,11 @@
 }
 
 .type-picker-search {
-    min-height: 38px !important;
+    min-height: var(--touch-target-default) !important;
 }
 
 .curve-picker-note {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--gray-500);
 }
 
@@ -351,12 +365,12 @@
 }
 
 .type-picker-brand-btn {
-    min-height: 32px;
-    padding: 4px 8px;
+    min-height: var(--touch-target-compact);
+    padding: 6px 8px;
     border: 1px solid var(--gray-300);
     border-radius: 999px;
     background: var(--white);
-    font-size: 11px;
+    font-size: var(--font-sm);
     font-weight: 700;
     color: var(--gray-700);
     cursor: pointer;
@@ -379,7 +393,7 @@
 }
 
 .type-picker-section-title {
-    font-size: 10px;
+    font-size: var(--font-sm);
     font-weight: 700;
     letter-spacing: 0.3px;
     text-transform: uppercase;
@@ -395,11 +409,12 @@
 
 .type-picker-chip {
     max-width: 100%;
-    padding: 5px 8px;
+    min-height: var(--chip-height);
+    padding: 6px 10px;
     border: 1px solid var(--gray-300);
     border-radius: 999px;
     background: var(--white);
-    font-size: 10px;
+    font-size: var(--font-sm);
     color: var(--gray-700);
     white-space: nowrap;
     overflow: hidden;
@@ -411,12 +426,6 @@
     border-color: var(--primary);
     background: var(--primary-light);
     color: var(--primary-dark);
-}
-
-.type-picker-results-meta {
-    font-size: 10px;
-    color: var(--gray-500);
-    margin-bottom: 4px;
 }
 
 .type-picker-results {
@@ -444,7 +453,7 @@
 }
 
 .type-picker-row-name {
-    font-size: 12px;
+    font-size: var(--font-base);
     font-weight: 700;
     color: var(--gray-800);
     line-height: 1.2;
@@ -459,10 +468,10 @@
 .type-badge {
     display: inline-flex;
     align-items: center;
-    min-height: 18px;
+    min-height: 22px;
     padding: 1px 6px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: var(--font-sm);
     font-weight: 700;
     line-height: 1;
     border: 1px solid var(--gray-300);
@@ -513,15 +522,26 @@
     border: 1px dashed var(--gray-300);
     border-radius: var(--radius-md);
     background: var(--gray-50);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--gray-500);
     text-align: center;
+}
+
+.curve-loader-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 2px;
+}
+
+.curve-name-field {
+    margin-bottom: 0;
 }
 
 .curve-loader-status {
     border-radius: var(--radius-md);
     padding: 10px 12px;
-    font-size: 11px;
+    font-size: var(--font-sm);
     font-weight: 600;
 }
 
@@ -539,7 +559,7 @@
 
 .curve-loader-action {
     width: 100%;
-    min-height: 40px;
+    min-height: var(--touch-target-compact);
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
     background: var(--white);
@@ -764,7 +784,7 @@
 .detail-modal .modal-meta {
     gap: 8px;
     padding: 4px 0;
-    font-size: var(--font-xs);
+    font-size: var(--font-sm);
 }
 
 .decision-modal .modal-meta .meta-item,
@@ -847,7 +867,7 @@
 
 .decision-modal .modal-footer .modal-btn {
     flex: 1;
-    min-height: 44px;
+    min-height: var(--touch-target-default);
     min-width: 0;
     padding: 10px 8px;
     font-size: var(--font-base);
@@ -870,7 +890,7 @@
 }
 
 .detail-modal .modal-footer .modal-btn {
-    min-height: 44px;
+    min-height: var(--touch-target-default);
     min-width: 120px;
     padding: 10px 8px;
     font-size: var(--font-base);

@@ -178,10 +178,11 @@
     padding: 4px 5px;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     border-bottom: 1px solid var(--gray-200);
     flex-shrink: 0;
     overflow: hidden;
+    min-height: 54px;
 }
 
 .card-header .ch-label {
@@ -196,9 +197,12 @@
 
 .card-header .card-badges {
     display: flex;
-    gap: 3px;
-    flex-wrap: wrap;
+    gap: 0;
+    flex-wrap: nowrap;
     min-width: 0;
+    min-height: 16px;
+    justify-content: center;
+    align-items: center;
 }
 
 .card-header .badge {
@@ -213,7 +217,7 @@
     background: var(--primary-light);
     color: var(--primary-dark);
     display: block;
-    flex: 1 1 100%;
+    flex: 1 1 auto;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -663,7 +667,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.15s, transform 0.1s;
-    min-height: 40px;
+    min-height: var(--touch-target-compact);
     text-align: center;
 }
 
@@ -786,8 +790,8 @@
 }
 
 .settings-item-temperature {
-    padding: 4px 8px;
-    min-height: 42px;
+    padding: 6px 10px;
+    min-height: var(--touch-target-default);
 }
 
 .settings-item-temperature .settings-item-copy {
@@ -796,18 +800,18 @@
 }
 
 .settings-item-temperature .settings-item-copy h3 {
-    font-size: 12px;
+    font-size: var(--font-sm);
     line-height: 1;
 }
 
 .settings-item-temperature .settings-toggle {
-    width: 96px;
+    width: 112px;
 }
 
 .settings-item-temperature .segmented-control .seg-option {
-    min-height: 28px;
-    padding: 4px 2px;
-    font-size: 10px;
+    min-height: var(--touch-target-compact);
+    padding: 6px 4px;
+    font-size: var(--font-sm);
 }
 
 .settings-screen .settings-toggle {
@@ -816,7 +820,7 @@
 }
 
 .settings-screen .segmented-control .seg-option {
-    min-height: 44px;
+    min-height: var(--touch-target-default);
     font-size: var(--font-lg);
     font-weight: 700;
 }
@@ -832,8 +836,8 @@
 
 .settings-screen-footer .modal-btn {
     min-width: 132px;
-    min-height: 48px;
-    font-size: var(--font-xl);
+    min-height: var(--touch-target-default);
+    font-size: var(--font-lg);
     font-weight: 700;
     border: 1px solid transparent;
     cursor: pointer;
@@ -890,7 +894,7 @@
     background: var(--white);
     color: var(--gray-700);
     border-radius: 2px;
-    min-height: 40px;
+    min-height: var(--touch-target-compact);
     min-width: 92px;
     padding: 8px 10px;
     font-size: var(--font-base);
