@@ -1201,14 +1201,14 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 </div>
                 <div class="form-field">
                     <label>Sample ID</label>
-                    <input type="text" class="form-input" id="cfg-route" placeholder="Sample ID" value="${escapeHtml(nextDraft.route)}">
+                    <input type="text" class="form-input" id="cfg-route" placeholder="Type or scan sample ID" value="${escapeHtml(nextDraft.route)}">
                     <div class="recent-chips" id="cfg-route-chips">
                         ${RECENT_ROUTES.slice(0, 2).map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
                     </div>
                 </div>
                 <div class="form-field">
                     <label>Operator ID</label>
-                    <input type="text" class="form-input" id="cfg-operator" placeholder="Operator ID" value="${escapeHtml(nextDraft.operatorId)}">
+                    <input type="text" class="form-input" id="cfg-operator" placeholder="Type or scan operator ID" value="${escapeHtml(nextDraft.operatorId)}">
                     <div class="recent-chips" id="cfg-operator-chips">
                         ${RECENT_OPERATORS.slice(0, 2).map(o => `<span class="recent-chip" data-target="cfg-operator" data-value="${o}">${o}</span>`).join('')}
                     </div>
