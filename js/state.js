@@ -171,11 +171,35 @@ let quantCurveIdCounter = Math.max(...savedQuantCurves.map(curve => curve.id)) +
 let deviceSettings = {
     microswitchEnabled: true,
     qrScanningEnabled: true,
-    incubationEnabled: true,
     deviceTemperature: 50,
     curveScannerConnected: true,
     storageCardMounted: true
 };
+
+function normalizeDeviceTemperature(value) {
+    if (value === 40 || value === '40') return 40;
+    if (value === 50 || value === '50') return 50;
+    return 'off';
+}
+
+function getDeviceTemperatureValue(value = deviceSettings.deviceTemperature) {
+    const normalized = normalizeDeviceTemperature(value);
+    return typeof normalized === 'number' ? normalized : null;
+}
+
+function isIncubationEnabled() {
+    return getDeviceTemperatureValue() != null;
+}
+
+function formatDeviceTemperatureLabel(value = deviceSettings.deviceTemperature) {
+    const numericValue = getDeviceTemperatureValue(value);
+    return numericValue == null ? 'Off' : `${numericValue} C`;
+}
+
+function formatStatusBarTemperatureLabel(value = deviceSettings.deviceTemperature) {
+    const numericValue = getDeviceTemperatureValue(value);
+    return numericValue == null ? 'Off' : `${numericValue}.0&deg;C`;
+}
 
 // ---- Channel Data Factory ----
 
@@ -488,18 +512,35 @@ function getTestTypeMetaParts(testType) {
 
 function getTemperatureValidation(testTypeId, cassetteType) {
     const requiredTemperature = getRequiredTemperatureForSelection(testTypeId, cassetteType);
+    const currentTemperature = getDeviceTemperatureValue();
+    const currentTemperatureLabel = formatDeviceTemperatureLabel();
+    const bypassed = !isIncubationEnabled();
 
     if (requiredTemperature === null) {
         return {
             ok: true,
-            currentTemperature: deviceSettings.deviceTemperature,
+            bypassed: false,
+            currentTemperature,
+            currentTemperatureLabel,
             requiredTemperature: null
         };
     }
 
+    if (bypassed) {
+        return {
+            ok: true,
+            bypassed: true,
+            currentTemperature,
+            currentTemperatureLabel,
+            requiredTemperature
+        };
+    }
+
     return {
-        ok: deviceSettings.deviceTemperature === requiredTemperature,
-        currentTemperature: deviceSettings.deviceTemperature,
+        ok: currentTemperature === requiredTemperature,
+        bypassed: false,
+        currentTemperature,
+        currentTemperatureLabel,
         requiredTemperature
     };
 }

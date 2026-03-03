@@ -837,34 +837,13 @@
     color: var(--gray-500);
 }
 
-.settings-item-temperature {
-    padding: 6px 10px;
-    min-height: var(--touch-target-default);
-}
-
-.settings-item-temperature .settings-item-copy {
-    display: flex;
-    align-items: center;
-}
-
-.settings-item-temperature .settings-item-copy h3 {
-    font-size: var(--font-sm);
-    line-height: 1;
-}
-
-.settings-item-temperature .settings-toggle {
-    width: 112px;
-}
-
-.settings-item-temperature .segmented-control .seg-option {
-    min-height: var(--touch-target-compact);
-    padding: 6px 4px;
-    font-size: var(--font-sm);
-}
-
 .settings-screen .settings-toggle {
     width: 170px;
     flex-shrink: 0;
+}
+
+.settings-screen .settings-toggle.settings-toggle-wide {
+    width: 255px;
 }
 
 .settings-item-mock {

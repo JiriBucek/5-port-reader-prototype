@@ -60,11 +60,13 @@ function handleSettingsCurveClose() {
 function handleSettingsApply(nextSettings) {
     const prevMicroswitch = deviceSettings.microswitchEnabled;
     const prevQr = deviceSettings.qrScanningEnabled;
+    const prevDeviceTemperature = normalizeDeviceTemperature(deviceSettings.deviceTemperature);
 
     deviceSettings.microswitchEnabled = !!nextSettings.microswitchEnabled;
     deviceSettings.qrScanningEnabled = !!nextSettings.qrScanningEnabled;
-    deviceSettings.incubationEnabled = !!nextSettings.incubationEnabled;
-    deviceSettings.deviceTemperature = Number(nextSettings.deviceTemperature) || 50;
+    deviceSettings.deviceTemperature = normalizeDeviceTemperature(nextSettings.deviceTemperature);
+    const incubationEnabled = isIncubationEnabled();
+    const temperatureChanged = prevDeviceTemperature !== deviceSettings.deviceTemperature;
 
     // If microswitch turns ON, physically present cassettes can immediately become detected.
     if (!prevMicroswitch && deviceSettings.microswitchEnabled) {
@@ -95,8 +97,34 @@ function handleSettingsApply(nextSettings) {
         });
     }
 
+    if (temperatureChanged) {
+        channels.forEach(ch => {
+            const inIncubationFlow =
+                ch.processing === 'read_incubate' &&
+                (ch.state === STATES.WAITING_TEMP ||
+                 ch.state === STATES.INCUBATING ||
+                 ch.state === STATES.INCUBATION_ALERT);
+
+            if (!inIncubationFlow) return;
+
+            const temperatureValidation = getTemperatureValidation(ch.testTypeId, ch.cassetteType);
+            if (incubationEnabled && temperatureValidation.ok) return;
+
+            if (!incubationEnabled) {
+                setChannelError(ch, 'Incubation stopped because reader temperature was turned off.');
+                return;
+            }
+
+            setChannelError(
+                ch,
+                `Incubation stopped. Reader temperature is ${temperatureValidation.currentTemperatureLabel}; ${temperatureValidation.requiredTemperature} C is required for ${ch.testTypeName || ch.cassetteType}.`
+            );
+        });
+    }
+
     renderAllCards();
     renderStatusBar();
+    renderSimulationButtons();
 }
 
 // ---- Simulation Event Handlers ----
@@ -248,7 +276,7 @@ function handleConfigStart(channelId, config) {
     ch.cassetteType = selectedTestType ? selectedTestType.cassetteType : normalizeLoadedCassetteType(config.testType);
     ch.route = config.route;
     ch.operatorId = config.operatorId;
-    ch.processing = (config.processing === 'read_incubate' && !deviceSettings.incubationEnabled)
+    ch.processing = (config.processing === 'read_incubate' && !isIncubationEnabled())
         ? 'read_only'
         : config.processing;
     ch.currentTestNumber = 1;
@@ -307,7 +335,7 @@ function validateCassetteForCurrentTest(ch) {
         const selectedTestType = ch.testTypeName || ch.cassetteType;
         return {
             ok: false,
-            message: `Device is at ${temperatureValidation.currentTemperature} C. Heat reader to ${temperatureValidation.requiredTemperature} C for ${selectedTestType}.`
+            message: `Reader temperature is ${temperatureValidation.currentTemperatureLabel}. Set it to ${temperatureValidation.requiredTemperature} C for ${selectedTestType}.`
         };
     }
 

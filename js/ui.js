@@ -425,7 +425,7 @@ function renderStatusBar() {
     if (el) el.textContent = timeStr;
 
     const tempEl = document.getElementById('status-bar-temp-value');
-    if (tempEl) tempEl.innerHTML = `${deviceSettings.deviceTemperature}.0&deg;C`;
+    if (tempEl) tempEl.innerHTML = formatStatusBarTemperatureLabel();
 
     const internetEl = document.getElementById('status-bar-internet-status');
     if (internetEl) internetEl.textContent = 'Offline';
@@ -819,15 +819,27 @@ function renderConfigTemperatureGate(draft, qrLocked) {
             <span class="config-temp-copy">${temperatureLabel}</span>`;
     }
 
+    if (validation.bypassed) {
+        return `
+            <span class="config-temp-badge">Temp Off</span>
+            <span class="config-temp-copy">Incubation disabled. ${validation.requiredTemperature} C not required.</span>`;
+    }
+
     if (validation.ok) {
         return `
             <span class="config-temp-badge">Temp OK</span>
-            <span class="config-temp-copy">${validation.currentTemperature} C / ${validation.requiredTemperature} C</span>`;
+            <span class="config-temp-copy">${validation.currentTemperatureLabel} / ${validation.requiredTemperature} C</span>`;
     }
 
     return `
         <span class="config-temp-badge">Temp</span>
-        <span class="config-temp-copy">${validation.currentTemperature} C device, ${validation.requiredTemperature} C required</span>`;
+        <span class="config-temp-copy">${validation.currentTemperatureLabel} device, ${validation.requiredTemperature} C required</span>`;
+}
+
+function getConfigTemperatureStatusClass(testTypeId, cassetteType) {
+    const validation = getTemperatureValidation(testTypeId, cassetteType);
+    if (validation.bypassed || validation.requiredTemperature == null) return '';
+    return validation.ok ? ' is-valid' : ' is-invalid';
 }
 
 function getTestTypeBadgeItems(testType) {
@@ -1213,7 +1225,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 ` : ''}
                 ${selectedType?.requiredTemperature != null ? `
                     <div class="form-field form-field-temp-status">
-                        <div class="config-temp-status${getTemperatureValidation(selectedType?.id, selectedType?.cassetteType).ok ? ' is-valid' : ' is-invalid'}" id="cfg-temp-status">
+                        <div class="config-temp-status${getConfigTemperatureStatusClass(selectedType?.id, selectedType?.cassetteType)}" id="cfg-temp-status">
                             ${renderConfigTemperatureGate(nextDraft, qrLocked)}
                         </div>
                     </div>
@@ -1223,7 +1235,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="cfg-cancel">Cancel</button>
             <button class="modal-btn btn-primary" id="cfg-read-only">Read</button>
-            ${deviceSettings.incubationEnabled ? `<button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>` : ''}
+            ${isIncubationEnabled() ? `<button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>` : ''}
         </div>
         <div class="config-keyboard" id="cfg-keyboard">
             <div class="config-keyboard-header">
@@ -1387,11 +1399,13 @@ function showSettingsScreen() {
 
     activeModal = { type: 'settings' };
 
-    function toggleControl(id, value, onLabel = 'On', offLabel = 'Off') {
+    function segmentedControl(id, value, options) {
+        const widthClass = options.length > 2 ? ' settings-toggle-wide' : '';
         return `
-            <div class="segmented-control settings-toggle" id="${id}">
-                <button class="seg-option${value ? ' selected' : ''}" data-value="on">${onLabel}</button>
-                <button class="seg-option${!value ? ' selected' : ''}" data-value="off">${offLabel}</button>
+            <div class="segmented-control settings-toggle${widthClass}" id="${id}">
+                ${options.map(option => `
+                    <button class="seg-option${String(option.value) === String(value) ? ' selected' : ''}" data-value="${option.value}">${option.label}</button>
+                `).join('')}
             </div>`;
     }
 
@@ -1406,18 +1420,18 @@ function showSettingsScreen() {
             </section>`;
     }
 
-    function liveRow({ title, detail, id, value, onLabel = 'On', offLabel = 'Off', compact = false }) {
+    function liveRow({ title, detail, id, value, options }) {
         return `
-            <div class="settings-item${compact ? ' settings-item-temperature' : ''}">
+            <div class="settings-item">
                 <div class="settings-item-copy">
                     <h3>${title}</h3>
                     ${detail ? `<p>${detail}</p>` : ''}
                 </div>
-                ${toggleControl(id, value, onLabel, offLabel)}
+                ${segmentedControl(id, value, options)}
             </div>`;
     }
 
-    function mockRow({ title, detail = '', value = '', badge = 'Prototype', buttonId = '', buttonLabel = '' }) {
+    function mockRow({ title, detail = '', value = '', badge = 'Not Implemented', buttonId = '', buttonLabel = '' }) {
         return `
             <div class="settings-item settings-item-mock">
                 <div class="settings-item-copy">
@@ -1447,29 +1461,34 @@ function showSettingsScreen() {
         ${section('Reader Controls', [
             liveRow({
                 title: 'Temperature',
-                detail: 'Sets the reader to 40 C or 50 C.',
+                detail: 'Off disables incubation. 40 C and 50 C turn it on.',
                 id: 'set-temperature',
-                value: deviceSettings.deviceTemperature === 40,
-                onLabel: '40 C',
-                offLabel: '50 C'
+                value: normalizeDeviceTemperature(deviceSettings.deviceTemperature),
+                options: [
+                    { value: 'off', label: 'Off' },
+                    { value: 40, label: '40 C' },
+                    { value: 50, label: '50 C' }
+                ]
             }),
             liveRow({
                 title: 'QR Scanning',
                 detail: 'Cassette QR loads the test type automatically.',
                 id: 'set-qr',
-                value: deviceSettings.qrScanningEnabled
-            }),
-            liveRow({
-                title: 'Incubation',
-                detail: 'Turns incubation on and off.',
-                id: 'set-incubation',
-                value: deviceSettings.incubationEnabled
+                value: deviceSettings.qrScanningEnabled ? 'on' : 'off',
+                options: [
+                    { value: 'on', label: 'On' },
+                    { value: 'off', label: 'Off' }
+                ]
             }),
             liveRow({
                 title: 'Micro Switch',
                 detail: 'Uses cassette insertion detection instead of manual start.',
                 id: 'set-microswitch',
-                value: deviceSettings.microswitchEnabled
+                value: deviceSettings.microswitchEnabled ? 'on' : 'off',
+                options: [
+                    { value: 'on', label: 'On' },
+                    { value: 'off', label: 'Off' }
+                ]
             })
         ].join(''), 'These rows affect the prototype immediately.')}
         ${section('Verification', [
@@ -1562,10 +1581,9 @@ function showSettingsScreen() {
                 opt.classList.add('selected');
 
                 const nextSettings = {
-                    deviceTemperature: screen.querySelector('#set-temperature .seg-option.selected')?.dataset.value === 'on' ? 40 : 50,
+                    deviceTemperature: screen.querySelector('#set-temperature .seg-option.selected')?.dataset.value || 'off',
                     microswitchEnabled: screen.querySelector('#set-microswitch .seg-option.selected')?.dataset.value === 'on',
-                    qrScanningEnabled: screen.querySelector('#set-qr .seg-option.selected')?.dataset.value === 'on',
-                    incubationEnabled: screen.querySelector('#set-incubation .seg-option.selected')?.dataset.value === 'on'
+                    qrScanningEnabled: screen.querySelector('#set-qr .seg-option.selected')?.dataset.value === 'on'
                 };
 
                 handleSettingsApply(nextSettings);
