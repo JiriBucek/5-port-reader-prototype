@@ -715,7 +715,7 @@ function showSettingsCurveScreen(draft = null) {
                 <div class="settings-section-body">
                     <div class="curve-loader-actions">
                         <button class="curve-loader-action" id="settings-curve-import-qr" data-source="qr">Load From QR</button>
-                        <button class="curve-loader-action" id="settings-curve-import-card" data-source="card">Load From Card</button>
+                        <button class="curve-loader-action" id="settings-curve-import-card" data-source="card">Load From Chip</button>
                     </div>
                     ${loadError ? `<div class="curve-loader-status is-error">${escapeHtml(loadError)}</div>` : ''}
                 </div>
@@ -804,8 +804,8 @@ function getCurveSourceAvailability(source) {
     }
 
     return deviceSettings.storageCardMounted
-        ? { ok: true, message: 'Storage card ready. Import a saved curve file.' }
-        : { ok: false, message: 'Insert storage card to import a curve.' };
+        ? { ok: true, message: 'Chip ready. Import a saved curve file.' }
+        : { ok: false, message: 'Insert chip to import a curve.' };
 }
 
 function renderConfigTemperatureGate(draft, qrLocked) {
@@ -1076,7 +1076,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
                         <div class="type-picker-section-title">Load New</div>
                         <div class="curve-loader-actions">
                             <button class="curve-loader-action" id="cfg-curve-import-qr" data-source="qr">Load From QR</button>
-                            <button class="curve-loader-action" id="cfg-curve-import-card" data-source="card">Load From Card</button>
+                            <button class="curve-loader-action" id="cfg-curve-import-card" data-source="card">Load From Chip</button>
                         </div>
                         ${nextDraft.curveLoadError ? `<div class="curve-loader-status is-error">${escapeHtml(nextDraft.curveLoadError)}</div>` : ''}
                     </div>

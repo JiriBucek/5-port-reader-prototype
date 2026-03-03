@@ -320,7 +320,7 @@ function getCurveById(curveId) {
 
 function getCurveSourceLabel(source) {
     if (source === 'qr') return 'QR';
-    if (source === 'card') return 'Card';
+    if (source === 'card') return 'Chip';
     return 'Curve';
 }
 
