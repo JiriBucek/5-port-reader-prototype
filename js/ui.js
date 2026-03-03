@@ -218,30 +218,30 @@ function renderCardStatus(ch) {
     switch (ch.state) {
         case STATES.EMPTY:
             if (deviceSettings.microswitchEnabled) {
-                statusHtml = `<span class="status-text status-waiting">No cassette inserted</span>`;
+                statusHtml = `<span class="status-text status-waiting">Insert cassette</span>`;
             } else {
-                statusHtml = `<span class="status-text status-waiting">Manual mode</span>
-                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Insert cassette and tap Configure</span>`;
+                statusHtml = `<span class="status-text status-waiting">Insert cassette</span>
+                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure</span>`;
             }
             break;
 
         case STATES.DETECTED:
             statusHtml = `<span class="status-text">Cassette detected</span>
-                          <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure to start</span>`;
+                          <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure</span>`;
             break;
 
         case STATES.ERROR_USED:
         case STATES.ERROR_USED_CONFIRMATION:
-            statusHtml = `<span class="status-text status-error">Used cassette detected</span>
-                          <span class="status-text status-error" style="font-size:var(--font-xs)">Insert a new cassette and retry</span>`;
+            statusHtml = `<span class="status-text status-error">Used cassette</span>
+                          <span class="status-text status-error" style="font-size:var(--font-xs)">Insert new cassette</span>`;
             break;
 
         case STATES.CONFIGURING:
-            statusHtml = `<span class="status-text status-processing">Configuring test...</span>`;
+            statusHtml = `<span class="status-text status-processing">Configuring</span>`;
             break;
 
         case STATES.WAITING_TEMP:
-            statusHtml = `<span class="status-text status-processing">Reaching temperature</span>
+            statusHtml = `<span class="status-text status-processing">Heating</span>
                           <div class="spinner"></div>`;
             break;
 
@@ -260,7 +260,7 @@ function renderCardStatus(ch) {
 
         case STATES.READING:
             statusHtml = `<div class="spinner"></div>
-                          <span class="status-text status-processing">Reading cassette...</span>`;
+                          <span class="status-text status-processing">Reading</span>`;
             break;
 
         case STATES.RESULT: {
@@ -268,20 +268,20 @@ function renderCardStatus(ch) {
             const isPos = isTestPositive(lastResult.substances);
             const testNum = lastResult.testNumber;
             if (testNum === 1 && isPos) {
-                statusHtml = `<span class="status-text status-error">Test 1: Positive</span>
-                              <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Confirmation required</span>`;
+                statusHtml = `<span class="status-text status-error">T1 positive</span>
+                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T2</span>`;
             } else if (testNum === 2 && !isPos) {
-                statusHtml = `<span class="status-text" style="color:var(--warning)">Test 2: Negative</span>
-                              <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Tiebreaker test needed</span>`;
+                statusHtml = `<span class="status-text status-success">T2 negative</span>
+                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T3</span>`;
             }
             break;
         }
 
         case STATES.READY_FOR_TEST_N: {
             const nextTest = ch.currentTestNumber + 1;
-            statusHtml = `<span class="status-text">Ready for Test ${nextTest}</span>
-                          ${renderConfirmationHistory(ch)}
-                          <span class="status-text" style="font-size:var(--font-xs);margin-top:2px;color:var(--gray-500)">Insert a new cassette, then tap Start</span>`;
+            statusHtml = `${renderConfirmationHistory(ch)}
+                          <span class="status-text">Insert new cassette</span>
+                          <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T${nextTest}</span>`;
             break;
         }
 
@@ -290,12 +290,8 @@ function renderCardStatus(ch) {
             if (isCtrl) {
                 const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
                 statusHtml = `<span class="status-text" style="color:var(--gray-500)">${controlLabel}</span>`;
-            } else if (ch.groupResult === 'inconclusive') {
-                statusHtml = `<span class="status-text" style="color:var(--warning)">Flow result INCONCLUSIVE</span>`;
-            } else if (ch.groupResult === 'positive') {
-                statusHtml = `<span class="status-text status-error">Flow result POSITIVE</span>`;
-            } else {
-                statusHtml = `<span class="status-text" style="color:var(--success)">Flow result NEGATIVE</span>`;
+            } else if (ch.groupResult) {
+                statusHtml = `<span class="status-text" style="color:var(--gray-500)">Test flow</span>`;
             }
             break;
         }
@@ -313,6 +309,8 @@ function renderCardStatus(ch) {
             break;
         }
     }
+
+    if (!statusHtml) return '';
 
     return `<div class="card-status">${statusHtml}</div>`;
 }

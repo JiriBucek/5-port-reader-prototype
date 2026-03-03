@@ -516,6 +516,11 @@
     font-weight: 600;
 }
 
+.status-text.status-success {
+    color: var(--success);
+    font-weight: 600;
+}
+
 .status-text.status-alert {
     color: var(--danger);
     font-weight: 700;
