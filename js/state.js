@@ -171,7 +171,7 @@ let quantCurveIdCounter = Math.max(...savedQuantCurves.map(curve => curve.id)) +
 let deviceSettings = {
     microswitchEnabled: true,
     qrScanningEnabled: true,
-    deviceTemperature: 50,
+    deviceTemperature: 40,
     curveScannerConnected: true,
     storageCardMounted: true
 };

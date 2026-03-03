@@ -214,35 +214,42 @@ function renderConfirmationHistory(ch) {
 
 function renderCardStatus(ch) {
     let statusHtml = '';
+    let statusClass = ' is-empty';
 
     switch (ch.state) {
         case STATES.EMPTY:
             if (deviceSettings.microswitchEnabled) {
                 statusHtml = `<span class="status-text status-waiting">Insert cassette</span>`;
+                statusClass = ' is-single';
             } else {
                 statusHtml = `<span class="status-text status-waiting">Insert cassette</span>
                               <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure</span>`;
+                statusClass = ' is-dual';
             }
             break;
 
         case STATES.DETECTED:
             statusHtml = `<span class="status-text">Cassette detected</span>
                           <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure</span>`;
+            statusClass = ' is-dual';
             break;
 
         case STATES.ERROR_USED:
         case STATES.ERROR_USED_CONFIRMATION:
             statusHtml = `<span class="status-text status-error">Used cassette</span>
                           <span class="status-text status-error" style="font-size:var(--font-xs)">Insert new cassette</span>`;
+            statusClass = ' is-dual';
             break;
 
         case STATES.CONFIGURING:
             statusHtml = `<span class="status-text status-processing">Configuring</span>`;
+            statusClass = ' is-single';
             break;
 
         case STATES.WAITING_TEMP:
             statusHtml = `<span class="status-text status-processing">Heating</span>
                           <div class="spinner"></div>`;
+            statusClass = ' is-busy';
             break;
 
         case STATES.INCUBATING: {
@@ -255,12 +262,14 @@ function renderCardStatus(ch) {
             statusHtml = `<span class="status-text status-processing">Incubating</span>
                           <span class="countdown-text">${timeStr}</span>
                           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+            statusClass = ' is-meter';
             break;
         }
 
         case STATES.READING:
             statusHtml = `<div class="spinner"></div>
                           <span class="status-text status-processing">Reading</span>`;
+            statusClass = ' is-busy';
             break;
 
         case STATES.RESULT: {
@@ -270,9 +279,11 @@ function renderCardStatus(ch) {
             if (testNum === 1 && isPos) {
                 statusHtml = `<span class="status-text status-error">T1 positive</span>
                               <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T2</span>`;
+                statusClass = ' is-dual';
             } else if (testNum === 2 && !isPos) {
                 statusHtml = `<span class="status-text status-success">T2 negative</span>
                               <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T3</span>`;
+                statusClass = ' is-dual';
             }
             break;
         }
@@ -282,6 +293,7 @@ function renderCardStatus(ch) {
             statusHtml = `${renderConfirmationHistory(ch)}
                           <span class="status-text">Insert new cassette</span>
                           <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T${nextTest}</span>`;
+            statusClass = ' is-history';
             break;
         }
 
@@ -290,14 +302,17 @@ function renderCardStatus(ch) {
             if (isCtrl) {
                 const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
                 statusHtml = `<span class="status-text" style="color:var(--gray-500)">${controlLabel}</span>`;
+                statusClass = ' is-single';
             } else if (ch.groupResult) {
                 statusHtml = `<span class="status-text" style="color:var(--gray-500)">Test flow</span>`;
+                statusClass = ' is-single';
             }
             break;
         }
 
         case STATES.ERROR:
             statusHtml = `<span class="status-text status-error">${ch.errorMessage || 'Test error'}</span>`;
+            statusClass = ' is-message';
             break;
 
         case STATES.ERROR_TYPE_MISMATCH: {
@@ -306,52 +321,55 @@ function renderCardStatus(ch) {
                 : (ch.testTypeName || '?');
             statusHtml = `<span class="status-text status-error">Wrong cassette type</span>
                           <span class="status-text status-error" style="font-size:var(--font-xs)">Expected ${expected} &mdash; insert correct type and retry</span>`;
+            statusClass = ' is-message';
             break;
         }
     }
 
-    if (!statusHtml) return '';
-
-    return `<div class="card-status">${statusHtml}</div>`;
+    return `<div class="card-status${statusClass}">${statusHtml}</div>`;
 }
 
 // ---- Card Group Result ----
 
 function renderCardGroupResult(ch) {
-    if (ch.state !== STATES.COMPLETE) return '';
+    let groupResultHtml = '';
 
     let badgeClass, label;
     const isControl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
 
-    if (isControl) {
+    if (ch.state === STATES.COMPLETE && isControl) {
         const lastResult = ch.testResults[ch.testResults.length - 1];
         const isPos = isTestPositive(lastResult.substances);
         label = isPos ? 'POSITIVE' : 'NEGATIVE';
         badgeClass = isPos ? 'group-badge-positive' : 'group-badge-negative';
-        return `<div class="card-group-result">
+        groupResultHtml = `
             <span class="group-badge ${badgeClass}">${label}</span>
-        </div>`;
+        `;
+    } else if (ch.state === STATES.COMPLETE) {
+        switch (ch.groupResult) {
+            case 'negative':
+                badgeClass = 'group-badge-negative';
+                label = 'NEGATIVE';
+                break;
+            case 'positive':
+                badgeClass = 'group-badge-positive';
+                label = 'POSITIVE';
+                break;
+            case 'inconclusive':
+                badgeClass = 'group-badge-inconclusive';
+                label = 'INCONCLUSIVE';
+                break;
+        }
+
+        if (badgeClass && label) {
+            groupResultHtml = `
+                <span class="group-badge ${badgeClass}">${label}</span>
+            `;
+        }
     }
 
-    switch (ch.groupResult) {
-        case 'negative':
-            badgeClass = 'group-badge-negative';
-            label = 'NEGATIVE';
-            break;
-        case 'positive':
-            badgeClass = 'group-badge-positive';
-            label = 'POSITIVE';
-            break;
-        case 'inconclusive':
-            badgeClass = 'group-badge-inconclusive';
-            label = 'INCONCLUSIVE';
-            break;
-        default:
-            return '';
-    }
-
-    return `<div class="card-group-result">
-        <span class="group-badge ${badgeClass}">${label}</span>
+    return `<div class="card-group-result${groupResultHtml ? '' : ' is-empty'}">
+        ${groupResultHtml}
     </div>`;
 }
 
@@ -359,43 +377,61 @@ function renderCardGroupResult(ch) {
 
 function renderCardAction(ch) {
     const clearBtn = `<button class="action-btn btn-ghost" data-action="clear" data-ch="${ch.id}">Clear</button>`;
+    const primaryAction = (buttonHtml = '') => `
+        <div class="card-action-row card-action-row-primary${buttonHtml ? '' : ' is-empty'}">
+            ${buttonHtml}
+        </div>`;
+    const secondaryAction = (buttons = []) => `
+        <div class="card-action-row card-action-row-secondary${buttons.length > 1 ? ' is-split' : ''}${buttons.length ? '' : ' is-empty'}">
+            ${buttons.join('')}
+        </div>`;
+
+    let primaryButton = '';
+    let secondaryButtons = [];
 
     switch (ch.state) {
         case STATES.EMPTY:
-            if (!canConfigureChannel(ch)) return '';
-            return `<div class="card-action">
-                <button class="action-btn btn-primary" data-action="configure" data-ch="${ch.id}">Configure</button>
-            </div>`;
+            if (canConfigureChannel(ch)) {
+                primaryButton = `<button class="action-btn btn-primary" data-action="configure" data-ch="${ch.id}">Configure</button>`;
+            }
+            break;
 
         case STATES.DETECTED:
-            return `<div class="card-action">
-                <button class="action-btn btn-primary" data-action="configure" data-ch="${ch.id}">Configure</button>
-                ${clearBtn}
-            </div>`;
+            primaryButton = `<button class="action-btn btn-primary" data-action="configure" data-ch="${ch.id}">Configure</button>`;
+            secondaryButtons = [clearBtn];
+            break;
 
         case STATES.READY_FOR_TEST_N:
-            return `<div class="card-action">
-                <button class="action-btn btn-primary btn-full" data-action="start-test-n" data-ch="${ch.id}">Start Test ${ch.currentTestNumber + 1}</button>
-                <button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort Flow</button>
-            </div>`;
+            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}">Start Test ${ch.currentTestNumber + 1}</button>`;
+            secondaryButtons = [
+                `<button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort Flow</button>`
+            ];
+            break;
 
         case STATES.COMPLETE:
-            return `<div class="card-action">
-                <button class="action-btn btn-secondary" data-action="view-details" data-ch="${ch.id}">View Details</button>
-                ${clearBtn}
-            </div>`;
+            primaryButton = `<button class="action-btn btn-secondary" data-action="view-details" data-ch="${ch.id}">View Details</button>`;
+            secondaryButtons = [clearBtn];
+            break;
 
         case STATES.ERROR:
-            return `<div class="card-action">
-                <button class="action-btn btn-primary btn-full" data-action="retry" data-ch="${ch.id}">Retry</button>
-                <button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>
-                ${clearBtn}
-            </div>`;
+            primaryButton = `<button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>`;
+            secondaryButtons = [
+                `<button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>`,
+                clearBtn
+            ];
+            break;
 
         default:
-            if (!canClearChannel(ch)) return '';
-            return `<div class="card-action">${clearBtn}</div>`;
+            if (canClearChannel(ch)) {
+                primaryButton = clearBtn;
+            }
+            break;
     }
+
+    return `<div class="card-action${primaryButton || secondaryButtons.length ? '' : ' is-empty'}">
+        ${primaryAction(primaryButton)}
+        ${secondaryAction(secondaryButtons)}
+    </div>`;
 }
 
 // ---- Bind Card Button Events ----

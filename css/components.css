@@ -494,15 +494,44 @@
 
 /* ---- Status Area ---- */
 .card-status {
-    min-height: 56px;
     padding: 4px 5px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     text-align: center;
     border-top: 1px solid var(--gray-200);
     flex-shrink: 0;
+}
+
+.card-status.is-empty {
+    display: none;
+}
+
+.card-status.is-single {
+    min-height: 42px;
+}
+
+.card-status.is-dual {
+    min-height: 52px;
+}
+
+.card-status.is-busy {
+    min-height: 50px;
+}
+
+.card-status.is-meter {
+    min-height: 72px;
+}
+
+.card-status.is-history {
+    min-height: 58px;
+}
+
+.card-status.is-message {
+    min-height: 56px;
+    justify-content: flex-start;
 }
 
 .status-text {
@@ -626,9 +655,16 @@
 
 /* ---- Group Result Badge ---- */
 .card-group-result {
-    padding: 4px 5px;
+    padding: 0 5px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     flex-shrink: 0;
+}
+
+.card-group-result.is-empty {
+    display: none;
 }
 
 .group-badge {
@@ -673,13 +709,29 @@
     padding: 4px 5px 5px;
     display: flex;
     flex-direction: column;
-    flex-wrap: nowrap;
     gap: 4px;
     flex-shrink: 0;
 }
 
+.card-action.is-empty {
+    display: none;
+}
+
+.card-action-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+}
+
+.card-action-row.is-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card-action-row.is-empty {
+    display: none;
+}
+
 .card-action .action-btn {
-    flex: 1 1 auto;
     width: 100%;
     padding: 8px 6px;
     border: none;
@@ -690,10 +742,6 @@
     transition: background-color 0.15s, transform 0.1s;
     min-height: var(--touch-target-compact);
     text-align: center;
-}
-
-.card-action .action-btn.btn-full {
-    flex-basis: auto;
 }
 
 .card-action .action-btn:active {
