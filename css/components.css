@@ -227,12 +227,17 @@
 .badge-type {
     background: var(--primary-light);
     color: var(--primary-dark);
-    display: block;
-    flex: 1 1 auto;
+    display: inline-flex;
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     vertical-align: top;
+    text-align: center;
+    justify-content: center;
+    padding-left: 2px;
+    padding-right: 2px;
 }
 
 .badge-scenario {

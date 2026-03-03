@@ -45,13 +45,22 @@ function getCardHeaderTypeLabel(ch) {
     return '';
 }
 
+function formatCardHeaderTypeLabel(label) {
+    if (!label) return '';
+
+    return label
+        .replace(/^MilkSafe(?:™)?\s*/i, 'MS ')
+        .replace(/^Bioeasy\s+/i, 'BE ');
+}
+
 function renderCardHeader(ch) {
     const typeLabel = getCardHeaderTypeLabel(ch);
+    const shortTypeLabel = formatCardHeaderTypeLabel(typeLabel);
 
     return `<div class="card-header">
         <span class="ch-label">${ch.id}</span>
         <div class="card-badges">
-            ${typeLabel ? `<span class="badge badge-type" title="${escapeHtml(typeLabel)}">${escapeHtml(typeLabel)}</span>` : ''}
+            ${shortTypeLabel ? `<span class="badge badge-type" title="${escapeHtml(typeLabel)}">${escapeHtml(shortTypeLabel)}</span>` : ''}
         </div>
     </div>`;
 }
