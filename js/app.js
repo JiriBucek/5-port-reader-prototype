@@ -363,16 +363,33 @@ function validateCassetteForCurrentTest(ch) {
         ch.testTypeName ||
         expectedType;
 
+    const expectedTestTypeId = normalizeTestTypeId(
+        ch.currentTestNumber > 1
+            ? (ch.testResults[0] ? ch.testResults[0].testTypeId : ch.testTypeId)
+            : ch.testTypeId
+    );
+    const loadedTestTypeId = normalizeTestTypeId(ch.loadedTestTypeId);
     const loadedType = normalizeLoadedCassetteType(ch.loadedCassetteType || ch.cassetteType);
 
-    // Type mismatch is only enforceable when QR scanning is enabled, and only for confirmation tests.
+    // Confirmation must reuse the exact same test type when the inserted cassette
+    // provides an identifiable test type. Fall back to the older cassette-shape
+    // check only when no concrete type id is available.
     if (deviceSettings.qrScanningEnabled &&
-        ch.currentTestNumber > 1 &&
-        expectedType && loadedType && expectedType !== loadedType) {
-        return {
-            ok: false,
-            message: `Wrong cassette type. Expected ${expectedTypeLabel}.`
-        };
+        ch.currentTestNumber > 1) {
+        if (expectedTestTypeId != null && loadedTestTypeId != null && expectedTestTypeId !== loadedTestTypeId) {
+            return {
+                ok: false,
+                message: `Wrong cassette type. Expected ${expectedTypeLabel}.`
+            };
+        }
+
+        if ((expectedTestTypeId == null || loadedTestTypeId == null) &&
+            expectedType && loadedType && expectedType !== loadedType) {
+            return {
+                ok: false,
+                message: `Wrong cassette type. Expected ${expectedTypeLabel}.`
+            };
+        }
     }
 
     return { ok: true };
