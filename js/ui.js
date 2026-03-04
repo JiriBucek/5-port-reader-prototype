@@ -416,8 +416,7 @@ function renderCardAction(ch) {
         case STATES.ERROR:
             primaryButton = `<button class="action-btn btn-primary" data-action="retry" data-ch="${ch.id}">Retry</button>`;
             secondaryButtons = [
-                `<button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>`,
-                clearBtn
+                `<button class="action-btn btn-secondary" data-action="abort" data-ch="${ch.id}">Abort</button>`
             ];
             break;
 
