@@ -114,7 +114,7 @@ User taps the channel card to open the config modal:
 
 - **Scenario**: Test / Positive Control / Animal Control
 - **Test Type**: auto-filled from QR or selected manually (2BC, 3BTC, 4BTCS)
-- **Route**: text input with recent-used chips
+- **Sample ID**: text input with recent-used chips
 - **Operator ID**: text input with recent-used chips
 - **Processing**: Read Only / Read + Incubate
 - **Cancel** returns to DETECTED, **Start** begins the test
@@ -172,7 +172,7 @@ After the user chooses [Continue]:
 
 Test 2 and Test 3 **skip the config modal entirely**. All settings are inherited from Test 1:
 - Same test type (verified by QR type match check)
-- Same route
+- Same sample ID
 - Same operator
 - Same processing option
 
@@ -274,7 +274,7 @@ If the user inserts a cassette with a **different test type** during confirmatio
 | **Channel** | Auto-assigned | Locked to the physical slot that was tapped |
 | **Scenario** | User selects | Test / Positive Control / Animal Control |
 | **Test Type** | QR or manual | 2BC, 3BTC, 4BTCS |
-| **Route** | User input | Text field with recent-used chips |
+| **Sample ID** | User input | Text field with recent-used chips |
 | **Operator ID** | User input | Text field with recent-used chips |
 | **Processing** | User selects | Read Only / Read + Incubate |
 

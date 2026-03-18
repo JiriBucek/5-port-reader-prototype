@@ -17,10 +17,10 @@ The user can comment in the history. They comment on the entire Group, not an in
 
 
  ✓
-Do we support OperatorID and Route scanning by using an external device? 
+Do we support OperatorID and Sample ID scanning by using an external device?
 Yes. Scanning works similarly to the Desktop Reader.
 
-Both operator id and route for both logged in and out
+Both operator ID and sample ID for both logged in and out
  ✓
 Are the test records synced for a particular test account like in mobile apps? This allows for test records synchronization after a factory reset. But ideally requires separate accounts for every device. 
 Same behavior as DRC. We send the test records to the cloud but we do not download it to the device. 
@@ -156,7 +156,7 @@ Test type
 Date
 User
 Operator ID
-Route
+Sample ID
 Upload status - synced, not synced
 Measured substances and values
 Port number
@@ -197,7 +197,7 @@ Wifi
 Ethernet cable
 Printer setup	Enable or disable
 Comment setup 	Yes or No
-Route (Sample ID)	On and off
+Sample ID	On and off
 Operator ID		On and off 
 Incubator		On and off
 Microswitch 		On and off
@@ -220,7 +220,7 @@ Contains similar
 
 Anonymous (not signed in) user features
 The user can also use the device without being signed in.
-Anonymous test records are uploaded with obfuscated data (no route, operator id and user name) to the Anonymous Data site. 
+Anonymous test records are uploaded with obfuscated data (no sample ID, operator ID and user name) to the Anonymous Data site.
 When the user logs in, the cached anonymous data is assigned to their account and reuploaded to their site.
 
 

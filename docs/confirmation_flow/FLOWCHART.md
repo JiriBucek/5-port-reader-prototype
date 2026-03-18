@@ -40,7 +40,7 @@ After the user chooses [Continue], the confirmation cassette follows a **shorter
 2. Card shows "Remove cassette, insert new for Test N"
 3. User removes old cassette → card shows "Waiting for new cassette" + [Stop] button
 4. User inserts new cassette → QR scan → used check → **type match check**
-5. Card shows "Ready for Test N - Tap to start" (config inherited from Test 1: same type, route, operator, processing)
+5. Card shows "Ready for Test N - Tap to start" (config inherited from Test 1: same type, sample ID, operator, processing)
 6. User taps Start → test runs → result checked as Test N
 
 **No config modal for confirmation tests.** All settings carry over from Test 1. The only checks are: cassette not used before, and cassette type matches the original.
@@ -110,7 +110,7 @@ The channel card must **always** clearly show whether a cassette is physically p
 
 For Test 2 and Test 3, **no config modal is shown**. All settings are inherited from Test 1:
 - Same test type (verified by QR type match check)
-- Same route
+- Same sample ID
 - Same operator
 - Same processing option
 

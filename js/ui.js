@@ -27,6 +27,11 @@ function renderCard(ch) {
                    renderCardGroupResult(ch) +
                    renderCardAction(ch);
 
+    const progressFill = el.querySelector('.progress-fill[data-progress]');
+    if (progressFill) {
+        progressFill.style.width = `${progressFill.dataset.progress}%`;
+    }
+
     bindCardEvents(ch);
 }
 
@@ -223,21 +228,21 @@ function renderCardStatus(ch) {
                 statusClass = ' is-single';
             } else {
                 statusHtml = `<span class="status-text status-waiting">Insert cassette</span>
-                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure</span>`;
+                              <span class="status-text status-secondary status-waiting">Tap Configure</span>`;
                 statusClass = ' is-dual';
             }
             break;
 
         case STATES.DETECTED:
             statusHtml = `<span class="status-text">Cassette detected</span>
-                          <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Tap Configure</span>`;
+                          <span class="status-text status-secondary status-waiting">Tap Configure</span>`;
             statusClass = ' is-dual';
             break;
 
         case STATES.ERROR_USED:
         case STATES.ERROR_USED_CONFIRMATION:
             statusHtml = `<span class="status-text status-error">Used cassette</span>
-                          <span class="status-text status-error" style="font-size:var(--font-xs)">Insert new cassette</span>`;
+                          <span class="status-text status-secondary status-error">Insert new cassette</span>`;
             statusClass = ' is-dual';
             break;
 
@@ -261,7 +266,7 @@ function renderCardStatus(ch) {
             const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
             statusHtml = `<span class="status-text status-processing">Incubating</span>
                           <span class="countdown-text">${timeStr}</span>
-                          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+                          <div class="progress-bar"><div class="progress-fill" data-progress="${pct.toFixed(2)}"></div></div>`;
             statusClass = ' is-meter';
             break;
         }
@@ -278,11 +283,11 @@ function renderCardStatus(ch) {
             const testNum = lastResult.testNumber;
             if (testNum === 1 && isPos) {
                 statusHtml = `<span class="status-text status-error">T1 positive</span>
-                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T2</span>`;
+                              <span class="status-text status-secondary status-waiting">Start T2</span>`;
                 statusClass = ' is-dual';
             } else if (testNum === 2 && !isPos) {
                 statusHtml = `<span class="status-text status-success">T2 negative</span>
-                              <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T3</span>`;
+                              <span class="status-text status-secondary status-waiting">Start T3</span>`;
                 statusClass = ' is-dual';
             }
             break;
@@ -292,7 +297,7 @@ function renderCardStatus(ch) {
             const nextTest = ch.currentTestNumber + 1;
             statusHtml = `${renderConfirmationHistory(ch)}
                           <span class="status-text">Insert new cassette</span>
-                          <span class="status-text status-waiting" style="font-size:var(--font-xs);margin-top:2px">Start T${nextTest}</span>`;
+                          <span class="status-text status-secondary status-waiting">Start T${nextTest}</span>`;
             statusClass = ' is-history';
             break;
         }
@@ -301,10 +306,10 @@ function renderCardStatus(ch) {
             const isCtrl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
             if (isCtrl) {
                 const controlLabel = ch.scenario === 'pos_control' ? 'Positive Control' : 'Animal Control';
-                statusHtml = `<span class="status-text" style="color:var(--gray-500)">${controlLabel}</span>`;
+                statusHtml = `<span class="status-text status-muted">${controlLabel}</span>`;
                 statusClass = ' is-single';
             } else if (ch.groupResult) {
-                statusHtml = `<span class="status-text" style="color:var(--gray-500)">Test flow</span>`;
+                statusHtml = `<span class="status-text status-muted">Test Flow</span>`;
                 statusClass = ' is-single';
             }
             break;
@@ -320,7 +325,7 @@ function renderCardStatus(ch) {
                 ? (ch.testResults[0].testTypeName || ch.testResults[0].cassetteType)
                 : (ch.testTypeName || '?');
             statusHtml = `<span class="status-text status-error">Wrong cassette type</span>
-                          <span class="status-text status-error" style="font-size:var(--font-xs)">Expected ${expected} &mdash; insert correct type and retry</span>`;
+                          <span class="status-text status-secondary status-error">Expected ${expected} &mdash; insert correct type and retry</span>`;
             statusClass = ' is-message';
             break;
         }
@@ -1464,9 +1469,12 @@ function getHistoryAnnotationShortLabel(annotation) {
     }
 }
 
+function renderToneBadge(label, tone, size = 'md') {
+    return `<span class="history-result-badge is-${tone}${size === 'lg' ? ' is-large' : ''}">${escapeHtml(label)}</span>`;
+}
+
 function renderHistoryResultBadge(result, size = 'md') {
-    const tone = getHistoryResultTone(result);
-    return `<span class="history-result-badge is-${tone}${size === 'lg' ? ' is-large' : ''}">${escapeHtml(formatHistoryResultLabel(result))}</span>`;
+    return renderToneBadge(formatHistoryResultLabel(result), getHistoryResultTone(result), size);
 }
 
 function renderHistoryUploadBadge(uploadStatus, inline = false) {
@@ -1495,7 +1503,10 @@ function renderHistorySequenceChips(flow) {
     return flow.tests.map(test => {
         const tone = getHistoryResultTone(test.overall);
         const label = test.overall === 'positive' ? 'POS' : 'NEG';
-        return `<span class="history-sequence-chip is-${tone}">${getHistoryAnnotationShortLabel(test.annotation)} ${label}</span>`;
+        return `<span class="history-sequence-chip is-${tone}">
+            <span class="history-sequence-chip-dot" aria-hidden="true"></span>
+            <span class="history-sequence-chip-text">${getHistoryAnnotationShortLabel(test.annotation)} ${label}</span>
+        </span>`;
     }).join('');
 }
 
@@ -1504,6 +1515,19 @@ function renderHistoryField(label, value) {
         <span class="history-field-label">${escapeHtml(label)}</span>
         <span class="history-field-value">${escapeHtml(value)}</span>
     </div>`;
+}
+
+function renderStructuredModalHeader(channelId, title, subtitle = '') {
+    return `
+        <div class="modal-header">
+            <div class="modal-header-row">
+                <div class="modal-channel-badge">${channelId}</div>
+                <div class="header-text">
+                    <h2>${escapeHtml(title)}</h2>
+                    ${subtitle ? `<span class="modal-subtitle">${escapeHtml(subtitle)}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
 }
 
 function renderHistoryLightIntensityChart(points) {
@@ -1576,7 +1600,10 @@ function renderHistoryListView(flows, page, totalPages) {
                                 <div class="history-flow-title">${escapeHtml(flow.testTypeName || flow.scenarioLabel)}</div>
                                 <div class="history-flow-meta">${renderHistoryFlowMeta(flow)}</div>
                             </div>
-                            <div class="history-flow-side">${renderHistoryResultBadge(flow.result)}</div>
+                            <div class="history-flow-side">
+                                <span class="history-side-label">Flow Result</span>
+                                ${renderHistoryResultBadge(flow.result)}
+                            </div>
                         </div>
                         <div class="history-flow-row-bottom">
                             <span class="history-sequence-label">Tests</span>
@@ -1639,6 +1666,7 @@ function renderHistoryFlowView(flow) {
                                 <div class="history-test-meta">${escapeHtml(getHistoryAnnotationLabel(test.annotation))} &middot; ${escapeHtml(formatHistoryDateTime(test.timestamp))}</div>
                             </div>
                             <div class="history-test-side">
+                                <span class="history-side-label">Result</span>
                                 ${renderHistoryResultBadge(test.overall)}
                             </div>
                         </button>
@@ -2114,55 +2142,63 @@ function showDecisionModal(ch, variant) {
 
     const lastResult = ch.testResults[ch.testResults.length - 1];
     const isPos = isTestPositive(lastResult.substances);
+    const resultKey = isPos ? 'positive' : 'negative';
+    const testTypeLabel = ch.testTypeName || ch.cassetteType || 'Test';
 
-    let resultLabel, resultValue, messageHtml;
+    let headerTitle, resultLabel, messageHtml, continueLabel;
 
     if (variant === 'a') {
-        // After T1 positive
-        resultLabel = 'Test 1';
-        resultValue = 'POSITIVE';
-        messageHtml = `<p>Confirmation required. Insert a new ${ch.testTypeName || ch.cassetteType} test, then start Test 2.</p>
-                       <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
+        headerTitle = 'Confirmation Required';
+        resultLabel = 'Test 1 Result';
+        continueLabel = 'Start Test 2';
+        messageHtml = `<p>Test 1 is positive. Insert a new ${testTypeLabel} cassette, then start Test 2.</p>
+                       <p class="decision-hint">Abort &rarr; Flow result inconclusive</p>`;
     } else {
-        // After T2 negative (variant b)
-        resultLabel = 'Test 2';
-        resultValue = 'NEGATIVE';
-        messageHtml = `<p>Tiebreaker needed. T1 positive, T2 negative &mdash; insert a new ${ch.testTypeName || ch.cassetteType} test, then start Test 3.</p>
-                       <p style="font-size:var(--font-sm);color:var(--gray-500);margin-top:4px">Abort &rarr; flow result Inconclusive</p>`;
+        headerTitle = 'Tiebreaker Required';
+        resultLabel = 'Test 2 Result';
+        continueLabel = 'Start Test 3';
+        messageHtml = `<p>Test 1 is positive and Test 2 is negative. Insert a new ${testTypeLabel} cassette, then start Test 3.</p>
+                       <p class="decision-hint">Abort &rarr; Flow result inconclusive</p>`;
     }
 
     const substancesHtml = lastResult.substances.map(s => {
-        const resClass = s.result === 'positive' ? 'sub-result-positive' : 'sub-result-negative';
-        return `<div class="substance-result-row">
-            <span class="sub-name">${s.name}</span>
-            <span class="sub-value">${escapeHtml(s.displayValue || '')}</span>
-            <span class="sub-result ${resClass}">${s.result.toUpperCase()}</span>
+        return `<div class="history-substance-row">
+            <span class="history-substance-name">${escapeHtml(s.name)}</span>
+            <span class="history-substance-value">${escapeHtml(s.displayValue || '')}</span>
+            <span class="history-substance-result is-${getHistoryResultTone(s.result)}">${escapeHtml(formatHistoryResultLabel(s.result))}</span>
         </div>`;
     }).join('');
 
-    const titleColor = isPos ? 'var(--danger)' : 'var(--success)';
-
     modal.innerHTML = `
-        <div class="modal-header">
-            <div class="modal-header-row">
-                <div class="modal-channel-badge">${ch.id}</div>
-                <div class="header-text">
-                    <h2 style="color:${titleColor}">${resultLabel}: ${resultValue}</h2>
-                    <div class="modal-meta">
-                        <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.sampleId || 'No sample ID'}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.operatorId || ''}</span></span>
+        ${renderStructuredModalHeader(ch.id, headerTitle, `Channel ${ch.id}`)}
+        <div class="modal-body modal-structured-body">
+            <section class="history-summary-card modal-summary-card is-${resultKey}">
+                <div class="history-summary-top">
+                    <div>
+                        <span class="history-summary-kicker">${resultLabel}</span>
+                        <h2>${escapeHtml(testTypeLabel)}</h2>
                     </div>
+                    ${renderHistoryResultBadge(resultKey, 'lg')}
                 </div>
-            </div>
-        </div>
-        <div class="modal-body">
-            <div class="substance-results">${substancesHtml}</div>
+                <div class="history-summary-grid">
+                    ${renderHistoryField('Sample ID', ch.sampleId || 'Not set')}
+                    ${renderHistoryField('Operator ID', ch.operatorId || 'Not set')}
+                </div>
+            </section>
+            <section class="history-section-card modal-section-card">
+                <div class="history-section-header">
+                    <h2>Substances</h2>
+                    <span>${lastResult.substances.length} result${lastResult.substances.length === 1 ? '' : 's'}</span>
+                </div>
+                <div class="history-substance-list">
+                    ${substancesHtml}
+                </div>
+            </section>
             <div class="decision-message">${messageHtml}</div>
         </div>
         <div class="modal-footer">
-            <button class="modal-btn btn-secondary" id="decision-abort">Abort &mdash; Inconclusive</button>
-            <button class="modal-btn btn-primary" id="decision-continue">Continue Testing &rarr;</button>
+            <button class="modal-btn btn-secondary" id="decision-abort">Abort Flow</button>
+            <button class="modal-btn btn-primary" id="decision-continue">${continueLabel}</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -2188,33 +2224,55 @@ function showStopConfirmationModal(ch) {
 
     const completedTests = ch.testResults.length;
     const testsHtml = ch.testResults.map(tr => {
-        const overall = isTestPositive(tr.substances) ? 'POSITIVE' : 'NEGATIVE';
-        const cls = overall === 'POSITIVE' ? 'sub-result-positive' : 'sub-result-negative';
-        return `<span class="${cls}" style="margin-right:8px">Test ${tr.testNumber}: ${overall}</span>`;
+        const resultKey = isTestPositive(tr.substances) ? 'positive' : 'negative';
+        const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
+        return `<div class="history-test-row history-test-row-static is-${resultKey}">
+            <div class="history-test-main">
+                <div class="history-test-title">Test ${tr.testNumber}</div>
+                <div class="history-test-meta">${escapeHtml(annotationLabel)} &middot; ${escapeHtml(formatHistoryDateTime(tr.completedAt, true))}</div>
+            </div>
+            <div class="history-test-side">
+                <span class="history-side-label">Result</span>
+                ${renderHistoryResultBadge(resultKey)}
+            </div>
+        </div>`;
     }).join('');
 
     modal.innerHTML = `
-        <div class="modal-header">
-            <div class="modal-header-row">
-                <div class="modal-channel-badge">${ch.id}</div>
-                <div class="header-text">
-                    <h2 style="color:var(--warning)">Abort Flow?</h2>
-                    <div class="modal-meta">
-                        <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.sampleId || 'No sample ID'}</span></span>
+        ${renderStructuredModalHeader(ch.id, 'Abort Flow', `Channel ${ch.id}`)}
+        <div class="modal-body modal-structured-body">
+            <section class="history-summary-card modal-summary-card is-warning">
+                <div class="history-summary-top">
+                    <div>
+                        <span class="history-summary-kicker">Flow Action</span>
+                        <h2>${escapeHtml(ch.testTypeName || ch.cassetteType || 'Test')}</h2>
                     </div>
+                    ${renderToneBadge('Inconclusive', 'inconclusive', 'lg')}
                 </div>
-            </div>
-        </div>
-        <div class="modal-body">
-            <div class="decision-message">
-                <p>Flow result will be marked <strong>INCONCLUSIVE</strong>.</p>
-                ${completedTests > 0 ? `<div class="prev-results">Completed: ${testsHtml}</div>` : ''}
+                <div class="history-summary-grid">
+                    ${renderHistoryField('Sample ID', ch.sampleId || 'Not set')}
+                    ${renderHistoryField('Operator ID', ch.operatorId || 'Not set')}
+                    ${renderHistoryField('Completed Tests', String(completedTests))}
+                </div>
+            </section>
+            ${completedTests > 0 ? `
+                <section class="history-section-card modal-section-card">
+                    <div class="history-section-header">
+                        <h2>Completed Tests</h2>
+                        <span>${completedTests} test${completedTests === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="history-test-list">
+                        ${testsHtml}
+                    </div>
+                </section>
+            ` : ''}
+            <div class="decision-message is-warning">
+                <p>Aborting now records this flow as inconclusive.</p>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="modal-btn btn-secondary" id="stop-cancel">Go Back</button>
-            <button class="modal-btn btn-secondary" id="stop-confirm">Abort &mdash; Inconclusive</button>
+            <button class="modal-btn btn-secondary" id="stop-cancel">Keep Flow</button>
+            <button class="modal-btn btn-warning" id="stop-confirm">Abort Flow</button>
         </div>`;
 
     overlay.classList.add('active');
@@ -2238,8 +2296,7 @@ function showDetailModal(ch) {
 
     activeModal = { type: 'detail', channelId: ch.id };
     const totalTests = ch.testResults.length;
-    const singleTest = totalTests <= 1;
-    modal.classList.toggle('single-test', singleTest);
+    modal.classList.toggle('single-test', totalTests <= 1);
 
     const isControl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
     const scenarioLabels = {
@@ -2248,48 +2305,38 @@ function showDetailModal(ch) {
         'animal_control': 'Animal Control'
     };
 
-    // Group result display
-    let groupResultHtml = '';
+    let summaryTone = 'inconclusive';
+    let summaryBadge = '';
     if (isControl) {
         const lastResult = ch.testResults[ch.testResults.length - 1];
         const isPos = isTestPositive(lastResult.substances);
-        const label = isPos ? 'POSITIVE' : 'NEGATIVE';
-        const color = isPos ? 'var(--danger)' : 'var(--success)';
-        const bgColor = isPos ? 'var(--danger-bg)' : 'var(--success-bg)';
-        groupResultHtml = `<div class="detail-group-result" style="background:${bgColor}">
-            <div class="detail-result-label">Result</div>
-            <div class="detail-result-value" style="color:${color}">${label}</div>
-        </div>`;
+        summaryTone = 'control';
+        summaryBadge = renderHistoryResultBadge(isPos ? 'positive' : 'negative', 'lg');
     } else if (ch.groupResult) {
-        const colors = {
-            'negative': { bg: 'var(--success-bg)', fg: 'var(--success)' },
-            'positive': { bg: 'var(--danger-bg)', fg: 'var(--danger)' },
-            'inconclusive': { bg: 'var(--warning-bg)', fg: 'var(--warning)' }
-        };
-        const c = colors[ch.groupResult];
-        groupResultHtml = `<div class="detail-group-result" style="background:${c.bg}">
-            <div class="detail-result-label">Flow Result</div>
-            <div class="detail-result-value" style="color:${c.fg}">${ch.groupResult.toUpperCase()}</div>
-        </div>`;
+        summaryTone = getHistoryResultTone(ch.groupResult);
+        summaryBadge = renderHistoryResultBadge(ch.groupResult, 'lg');
     }
 
-    // Test history
     const testsHtml = ch.testResults.map(tr => {
-        const overall = isTestPositive(tr.substances) ? 'POSITIVE' : 'NEGATIVE';
-        const overallClass = overall === 'POSITIVE' ? 'sub-result-positive' : 'sub-result-negative';
+        const resultKey = isTestPositive(tr.substances) ? 'positive' : 'negative';
+        const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
+        const timestampLabel = tr.completedAt ? formatHistoryDateTime(tr.completedAt, true) : 'Just completed';
         const subsHtml = tr.substances.map(s =>
-            `<div class="test-substance-row">
-                <span class="ts-name">${s.name}</span>
-                <span class="ts-value">${escapeHtml(s.displayValue || '')}</span>
-                <span class="ts-result ${s.result}">${s.result.toUpperCase()}</span>
+            `<div class="history-substance-row">
+                <span class="history-substance-name">${escapeHtml(s.name)}</span>
+                <span class="history-substance-value">${escapeHtml(s.displayValue || '')}</span>
+                <span class="history-substance-result is-${getHistoryResultTone(s.result)}">${escapeHtml(formatHistoryResultLabel(s.result))}</span>
             </div>`
         ).join('');
-        return `<div class="test-entry">
+        return `<div class="test-entry is-${isControl ? 'control' : resultKey}">
             <div class="test-entry-header">
-                <span class="test-num">Test ${tr.testNumber}</span>
-                <span class="test-overall ${overallClass}">${overall}</span>
+                <div class="test-entry-title-group">
+                    <span class="test-num">Test ${tr.testNumber}</span>
+                    <span class="test-entry-meta">${escapeHtml(annotationLabel)} &middot; ${escapeHtml(timestampLabel)}</span>
+                </div>
+                ${renderHistoryResultBadge(resultKey)}
             </div>
-            <div class="test-substances">${subsHtml}</div>
+            <div class="history-substance-list history-substance-list-compact">${subsHtml}</div>
         </div>`;
     }).join('');
 
@@ -2298,31 +2345,33 @@ function showDetailModal(ch) {
         'read_incubate': 'Read + Incubate'
     };
 
-    const historyTitle = singleTest
-        ? 'Test Result'
-        : `Test History (${totalTests} test${totalTests > 1 ? 's' : ''})`;
-
     modal.innerHTML = `
-        <div class="modal-header">
-            <div class="modal-header-row">
-                <div class="modal-channel-badge">${ch.id}</div>
-                <div class="header-text">
-                    <h2>${scenarioLabels[ch.scenario] || 'Test'} Details</h2>
-                    <div class="modal-meta">
-                        <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.sampleId || 'No sample ID'}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.operatorId}</span></span>
-                        <span class="meta-item"><span class="meta-value">${processingLabels[ch.processing] || ch.processing}</span></span>
+        ${renderStructuredModalHeader(ch.id, 'Flow Detail', `Channel ${ch.id}`)}
+        <div class="modal-body modal-structured-body">
+            <section class="history-summary-card modal-summary-card is-${summaryTone}">
+                <div class="history-summary-top">
+                    <div>
+                        <span class="history-summary-kicker">${escapeHtml(scenarioLabels[ch.scenario] || 'Test Flow')}</span>
+                        <h2>${escapeHtml(ch.testTypeName || ch.cassetteType || 'Test')}</h2>
                     </div>
+                    ${summaryBadge}
                 </div>
-            </div>
-        </div>
-        <div class="modal-body">
-            ${groupResultHtml}
-            <div class="test-history">
-                <h4 class="test-history-title">${historyTitle}</h4>
-                ${testsHtml}
-            </div>
+                <div class="history-summary-grid">
+                    ${renderHistoryField('Sample ID', ch.sampleId || 'Not set')}
+                    ${renderHistoryField('Operator ID', ch.operatorId || 'Not set')}
+                    ${renderHistoryField('Processing', processingLabels[ch.processing] || ch.processing || 'Not set')}
+                    ${renderHistoryField('Channel', String(ch.id))}
+                </div>
+            </section>
+            <section class="history-section-card modal-section-card">
+                <div class="history-section-header">
+                    <h2>Contained Tests</h2>
+                    <span>${totalTests} test${totalTests === 1 ? '' : 's'}</span>
+                </div>
+                <div class="test-history test-history-structured">
+                    ${testsHtml}
+                </div>
+            </section>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="detail-close-btn">Close</button>

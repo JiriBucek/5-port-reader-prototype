@@ -2,7 +2,7 @@
 
 ## Project Context
 
-This wireframe prototype is for a 5-slot milk testing device with a 7-inch integrated display (1280×800px). The device tests milk samples for antibiotics and other substances using cassettes that display visual test lines. This is a significant evolution from the single-slot predecessor, requiring careful UX design to manage multiple simultaneous tests on a small display.
+This wireframe prototype is for a 5-slot milk testing device with a 7-inch integrated display (`800×480px`). The device tests milk samples for antibiotics and other substances using cassettes that display visual test lines. This is a significant evolution from the single-slot predecessor, requiring careful UX design to manage multiple simultaneous tests on a small display.
 
 ## Core Challenge
 
@@ -14,7 +14,7 @@ The device must show:
 - Confirmation flow (up to 3 tests per group)
 - Previous test results in confirmation sequences
 - Overall group results
-- Test metadata (type, operator, route)
+- Test metadata (type, operator, sample ID)
 - Device status (temp, time, connectivity)
 
 ## Design Philosophy
@@ -63,26 +63,25 @@ When a test is positive, it must be confirmed with 2 additional tests:
 - Group status prevents confusion about overall result
 - Manual continuation ensures deliberate action
 
-### 3. Compact Grid Layout (Option A)
+### 3. Compact Grid Layout
 
-**Layout: 3×2 Grid**
+**Layout: Single Horizontal Row**
 ```
-┌─────────────────────────┐
-│  [CH1]  [CH2]  [CH3]   │
-│  [CH4]  [CH5]           │
-└─────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│ [CH1] [CH2] [CH3] [CH4] [CH5]                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 **Why This Layout:**
 - All 5 channels visible simultaneously
 - No scrolling required
 - Efficient use of landscape orientation
-- Room for device status at top and navigation at bottom
+- Matches the physical slot order on the device
 
 **Card Dimensions:**
-- ~240px wide × 300px tall
+- ~150px wide with full available card height
 - Large enough for cassette visual + all critical info
-- Compact enough to fit 5 cards comfortably
+- Compact enough to keep all 5 channels visible on `800×480`
 
 ### 4. Card Information Hierarchy
 
@@ -104,7 +103,7 @@ When a test is positive, it must be confirmed with 2 additional tests:
 
 **Why Full-Screen:**
 - QR code scanning + manual inputs require space
-- Route and Operator ID need autocomplete dropdowns
+- Sample ID and Operator ID need autocomplete dropdowns
 - Test scenario selection (Test vs Control)
 - Processing options (Read vs Read+Incubate)
 - Future fields: Sample ID, Notes, Batch ID, Temperature, Location, etc.
@@ -277,7 +276,7 @@ The architecture remains sound with these additions because:
 - Use CSS Grid for card layout (responsive)
 - CSS variables for colors (easy theming)
 - JavaScript state machine for confirmation flow
-- localStorage for recent routes/operators
+- localStorage for recent sample IDs/operators
 - Modal transitions: slide-up for Android feel
 - All touch targets minimum 60px (tablet-optimized)
 

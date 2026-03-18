@@ -28,7 +28,7 @@ flowchart TD
     %% ===== PHASE 2: CONFIGURATION (Test 1 only) =====
     DETECTED -->|User taps channel card| CONFIG
     DETECTED_M -->|User taps channel card| CONFIG
-    CONFIG[CONFIG MODAL<br/>Channel locked to slot<br/>Scenario: Test / Pos Control / Animal Control<br/>Test Type - Route - Operator ID<br/>Processing: Read vs Incubate]:::modal
+    CONFIG[CONFIG MODAL<br/>Channel locked to slot<br/>Scenario: Test / Pos Control / Animal Control<br/>Test Type - Sample ID - Operator ID<br/>Processing: Read vs Incubate]:::modal
     CONFIG -->|Cancel| DETECTED
     CONFIG -->|Start - Scenario: Test| PROC{Processing<br/>option?}
 
@@ -83,7 +83,7 @@ flowchart TD
     TYPE_C2 -->|No| ERR_TYPE_C2[WARNING:<br/>Type mismatch]:::errState
     ERR_TYPE_C2 -->|Cassette removed| SW2
     TYPE_C2 -->|Yes| READY_C2
-    READY_C2[READY FOR TEST 2<br/>Tap to start<br/>Config from Test 1:<br/>Same type, route,<br/>operator, processing]:::active
+    READY_C2[READY FOR TEST 2<br/>Tap to start<br/>Config from Test 1:<br/>Same type, sample ID,<br/>operator, processing]:::active
     READY_C2 -->|User taps Start| PROC
 
     %% ----- TEST 2 -----
@@ -110,7 +110,7 @@ flowchart TD
     TYPE_C3 -->|No| ERR_TYPE_C3[WARNING:<br/>Type mismatch]:::errState
     ERR_TYPE_C3 -->|Cassette removed| SW3
     TYPE_C3 -->|Yes| READY_C3
-    READY_C3[READY FOR TEST 3<br/>Tap to start<br/>Config from Test 1:<br/>Same type, route,<br/>operator, processing]:::active
+    READY_C3[READY FOR TEST 3<br/>Tap to start<br/>Config from Test 1:<br/>Same type, sample ID,<br/>operator, processing]:::active
     READY_C3 -->|User taps Start| PROC
 
     %% ----- TEST 3 -----

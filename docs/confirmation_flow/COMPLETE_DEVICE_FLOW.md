@@ -10,7 +10,7 @@
 | Control type selection | Choose upfront: Test / Positive Control / Animal Control in the config modal |
 | Channel clear behavior | Immediate clear when cassette is physically removed |
 | Confirmation slot | Always the same physical slot as Test 1 |
-| Confirmation config | Same test type, route, operator - no reconfiguration needed |
+| Confirmation config | Same test type, sample ID, operator - no reconfiguration needed |
 | Confirmation scope | Whole test - if any substance is positive, the entire test is positive |
 | Multi-channel | Completely independent, all shown simultaneously on one screen |
 | Modal interruptions | Events queue, wait until previous modal is closed |
@@ -76,7 +76,7 @@ A channel (physical slot + screen area) can be in one of these states:
    │ Test Type: [from QR / manual]    │
    │ Scenario: ○ Test  ○ Pos Control  │
    │           ○ Animal Control       │
-   │ Route: [text + recent chips]     │
+   │ Sample ID: [text + recent chips] │
    │ Operator: [text + recent chips]  │
    │ Processing: ○ Read+Incubate      │
    │             ○ Read Only          │
@@ -85,7 +85,7 @@ A channel (physical slot + screen area) can be in one of these states:
    └──────────────────────────────────┘
    │
    ├─ User selects "Test" scenario
-   ├─ User fills Route, Operator
+   ├─ User fills Sample ID, Operator
    ├─ User selects processing option
    ├─ User taps "Start Test"
    │

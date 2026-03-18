@@ -10,16 +10,19 @@
 </head>
 <body>
 
+<button class="prototype-shell-toggle" id="prototype-shell-toggle" aria-pressed="false">Presentation Mode</button>
+
 <div class="prototype-layout">
     <aside class="prototype-info-panel">
         <div class="prototype-info-card">
+            <div class="prototype-panel-kicker">Prototype Tools</div>
             <h1>5-Port Reader Prototype</h1>
 
             <div class="prototype-info-section">
                 <h2>What this is</h2>
                 <ul>
                     <li>A working prototype for the main 5-cassette reader flow.</li>
-                    <li>Use it to check the dashboard, config modals, confirmation flow, result states, and cassette handling.</li>
+                    <li>Use it to check the dashboard, config modals, history flow, confirmation flow, result states, and cassette handling.</li>
                     <li>It is here to show how the operator works with the reader, not to present final visuals.</li>
                 </ul>
             </div>
@@ -39,14 +42,14 @@
                     <li>5-channel dashboard and channel states</li>
                     <li>Test type selection, QR lock, and quantitative curves</li>
                     <li>Temperature, QR, and microswitch settings</li>
-                    <li>Result screens, detail view, and confirmation flow</li>
+                    <li>History list, flow detail, test detail, and confirmation flow</li>
                 </ul>
             </div>
 
             <div class="prototype-info-section">
                 <h2>What is not final</h2>
                 <ul>
-                    <li>History and verification are placeholders.</li>
+                    <li>Verification is reserved for a later pass.</li>
                     <li>Most settings are layout-only.</li>
                     <li>The final design, wording, and some flows will still change.</li>
                 </ul>
@@ -177,8 +180,9 @@
 
     <!-- ===== Simulation Control Panel ===== -->
     <div class="simulation-panel">
+        <div class="prototype-panel-kicker">Prototype Tools</div>
         <h2>Simulation Controls</h2>
-        <div class="sim-subtitle">Simulate cassette insertion and physical removal</div>
+        <div class="sim-subtitle">Development-only controls for cassette insertion and test outcomes</div>
 
         <div class="sim-channels">
             <!-- 1 -->

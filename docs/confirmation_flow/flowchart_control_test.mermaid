@@ -25,7 +25,7 @@ flowchart TD
     %% ===== PHASE 2: CONFIGURATION =====
     DETECTED -->|User taps channel card| CONFIG
     DETECTED_M -->|User taps channel card| CONFIG
-    CONFIG[CONFIG MODAL<br/>Channel locked to slot<br/>Scenario: Test / Pos Control / Animal Control<br/>Test Type - Route - Operator ID<br/>Processing: Read vs Incubate]:::modal
+    CONFIG[CONFIG MODAL<br/>Channel locked to slot<br/>Scenario: Test / Pos Control / Animal Control<br/>Test Type - Sample ID - Operator ID<br/>Processing: Read vs Incubate]:::modal
     CONFIG -->|Cancel| DETECTED
     CONFIG -->|Start - Scenario: Control| PROC{Processing<br/>option?}
 

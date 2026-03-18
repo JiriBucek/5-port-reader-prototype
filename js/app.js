@@ -13,6 +13,7 @@ function init() {
     setInterval(renderStatusBar, 30000);
     bindSimulationEvents();
     bindStatusBarEvents();
+    bindPrototypeChromeEvents();
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -35,6 +36,33 @@ function bindStatusBarEvents() {
             showSettingsScreen();
         });
     }
+}
+
+const PRESENTATION_MODE_STORAGE_KEY = 'prototype.presentationMode';
+
+function applyPresentationMode(enabled) {
+    document.body.classList.toggle('presentation-mode', enabled);
+
+    const toggleBtn = document.getElementById('prototype-shell-toggle');
+    if (!toggleBtn) return;
+
+    toggleBtn.classList.toggle('is-active', enabled);
+    toggleBtn.setAttribute('aria-pressed', String(enabled));
+    toggleBtn.textContent = enabled ? 'Show Prototype Tools' : 'Presentation Mode';
+}
+
+function bindPrototypeChromeEvents() {
+    const toggleBtn = document.getElementById('prototype-shell-toggle');
+    if (!toggleBtn) return;
+
+    const savedValue = window.localStorage.getItem(PRESENTATION_MODE_STORAGE_KEY) === 'true';
+    applyPresentationMode(savedValue);
+
+    toggleBtn.addEventListener('click', () => {
+        const nextValue = !document.body.classList.contains('presentation-mode');
+        applyPresentationMode(nextValue);
+        window.localStorage.setItem(PRESENTATION_MODE_STORAGE_KEY, String(nextValue));
+    });
 }
 
 function handleHistoryClose() {

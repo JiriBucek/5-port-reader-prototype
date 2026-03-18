@@ -14,7 +14,7 @@ The screen has these top-level components:
 | 2 | **Channel Card** | 5 | One per physical slot - shows cassette state, progress, results |
 | 3 | **Config Modal** | 0-1 | Opens when user configures a test |
 | 4 | **Decision Modal** | 0-1 | Auto-opens when a result needs a user decision |
-| 5 | **Bottom Navigation** | 1 | History, Settings, etc. |
+| 5 | **Full-Screen Views** | 0-1 | History, Settings, verification placeholder, curve loading |
 
 Only one modal can be open at a time. If a new modal-triggering event occurs while one is open, it queues.
 
@@ -26,7 +26,7 @@ All 5 channel cards are in a **single horizontal row**, matching the physical ar
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  Status Bar: 🕐 14:23        🌡️ 35.0°C        📶          ☰  │
+│  Status Bar: 🕐 14:23   🌡️ 35.0°C   📶   [History] [Settings] │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
 │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  │
@@ -38,12 +38,10 @@ All 5 channel cards are in a **single horizontal row**, matching the physical ar
 │  │        │  │        │  │        │  │        │  │        │  │
 │  └────────┘  └────────┘  └────────┘  └────────┘  └────────┘  │
 │                                                                │
-├────────────────────────────────────────────────────────────────┤
-│  [History]            [Settings]            [Verify]           │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-At 1280px wide with margins, each card is approximately **220-230px wide**. Cards use the full available height between the status bar and bottom nav.
+At `800px` wide with margins, each card is approximately **150px wide**. Cards use the full available height below the status bar.
 
 ---
 
@@ -482,7 +480,7 @@ Opens when user taps "Configure" on a DETECTED card. Blocks interaction with oth
 | **Channel** | Display only | Auto-assigned from tapped slot | — |
 | **Scenario** | Segmented control | User picks: Test / Pos Control / Animal Control | Yes |
 | **Test Type** | Dropdown or chips | Auto-filled from QR, or manual selection (2BC, 3BTC, 4BTCS) | Yes |
-| **Route** | Text input + recent chips | User types or taps recent | Yes |
+| **Sample ID** | Text input + recent chips | User types or taps recent | Yes |
 | **Operator ID** | Text input + recent chips | User types or taps recent | Yes |
 | **Processing** | Segmented control | Read Only / Read + Incubate | Yes |
 
@@ -507,9 +505,9 @@ Opens when user taps "Configure" on a DETECTED card. Blocks interaction with oth
 │  Test Type                           │
 │  [ 3BTC            ▼ ]              │
 │                                      │
-│  Route                               │
+│  Sample ID                           │
 │  [ __________________________ ]      │
-│  Recent: [Farm A] [Route 12]         │
+│  Recent: [Sample 1048] [Farm A]      │
 │                                      │
 │  Operator                            │
 │  [ __________________________ ]      │
@@ -601,7 +599,7 @@ Opens when user taps "View Details" on a completed card. This is a regular modal
 |---------|---------|
 | **Header** | Channel, test type, scenario, group result badge |
 | **Test History** | Each test with timestamp, substance-level results, individual outcome |
-| **Config Summary** | Route, operator, processing mode used |
+| **Config Summary** | Sample ID, operator, processing mode used |
 | **Group Result** | Final result prominently displayed |
 
 ### Buttons
@@ -613,15 +611,15 @@ Opens when user taps "View Details" on a completed card. This is a regular modal
 
 ---
 
-## 6. Bottom Navigation
+## 6. Home Navigation
 
-Always visible at the bottom of the screen.
+History and Settings are available from the right side of the status bar on the home screen.
 
 | Button | Purpose |
 |--------|---------|
-| **History** | View past test results |
-| **Settings** | Device settings (QR on/off, calibration, etc.) |
-| **Verify** | Device verification / diagnostic |
+| **History** | View past test flows on this device |
+| **Settings** | Device settings, verification entry point, and curve loading |
+| **Verification** | Separate workflow reserved for a later pass |
 
 ---
 
@@ -652,130 +650,26 @@ Always visible at the bottom of the screen.
 
 ### Screen Budget
 
-**Device**: 1280 x 800 pixels (landscape, 7-inch screen)
+**Device**: `800 × 480` pixels (landscape, 7-inch screen)
 
-```
-Total height: 800px
-─ Status bar:       ~40px
-─ Bottom nav:       ~50px
-─ Top/bottom pad:   ~20px (10px each)
-─────────────────────────
-Available for cards: ~690px
-```
+- Status bar: `48px`
+- Channel area: approximately `420px` high after padding
+- Five cards in one row: approximately `150px` wide per card after gaps and screen padding
 
-```
-Total width: 1280px
-─ Left/right margin: ~20px (10px each)
-─ Gaps between cards: ~40px (4 × 10px)
-─────────────────────────
-Available for cards: ~1220px
-Per card width:      ~244px (1220 / 5)
-```
+### Design Implications
 
-### Card Section Height Budget (~690px available)
-
-| Section | Height | Notes |
-|---------|-------:|-------|
-| ① Header | ~40px | Channel label + type badge + scenario badge. Single row. |
-| ② Cassette Area | ~380px | Largest section. Cassette graphic + result lines + mini-history strip. |
-| ③ Status Area | ~80px | 1-2 lines of text + countdown/progress bar. |
-| ④ Group Result | ~50px | Badge only. Hidden in most states (collapses to 0). |
-| ⑤ Action Button | ~50px | 44px min touch target + padding. Hidden in many states. |
-| Padding/borders | ~40px | Internal spacing between sections. |
-| **Total** | **~640px** | **Fits within 690px with ~50px spare.** |
-
-When Group Result and Action Button are both hidden (most in-progress states), the Cassette Area and Status Area can expand to use the freed ~100px.
-
-### Width Constraints at 244px
-
-| Element | Fits? | Notes |
-|---------|:-----:|-------|
-| Header text "CH 1 · 3BTC · Test" | Yes | ~150px at 12-14px font. Room for all badges. |
-| Cassette graphic with 4 lines (4BTCS) | Yes | Lines are simple horizontal bars. ~200px wide cassette works. |
-| Mini-cassette history (T1 + T2 + current) | Yes | Each mini-cassette ~60px wide. 3 × 60 = 180px fits in 244px. During T2: 2 × 80px = 160px. |
-| Status text "Waiting for temperature..." | Yes | Wraps to 2 lines at 14px font. 80px height handles this. |
-| Status text "Remove cassette, insert new for Test 2" | Tight | Longest status message. Wraps to 2-3 lines at 13px font. Fits in 80px. |
-| Two buttons side-by-side (ERROR state) | Yes | "Retry" (~60px) + "Abort" (~60px) + gap = ~130px. Fits in 244px. Can also stack vertically if needed. |
-| "Start Test 2" button | Yes | Single button ~130px wide, centered. |
-| Group result badge "INCONCLUSIVE" | Tight | Longest label at ~110px. Fits in 244px with padding. Use abbreviation "INCONCL." if needed. |
-
-### Touch Target Compliance
-
-| Element | Size | Meets 44×44 minimum? |
-|---------|------|:--------------------:|
-| Channel card (tap to configure) | 244 × 690px | Yes |
-| Action button | 244 × 50px | Yes (full card width) |
-| Stop button (WAITING_FOR_SWAP) | ~130 × 44px | Yes |
-| Retry / Abort buttons (ERROR) | ~110 × 44px each | Yes |
-| Bottom nav buttons | ~400 × 50px each | Yes |
-| Config modal buttons | ~160 × 44px each | Yes |
-| Decision modal buttons | ~200 × 44px each | Yes |
-
-### Cassette Area Detail (380px height)
-
-The cassette area is the most complex section. Here's how it breaks down during the most demanding state — Test 3 with history:
-
-```
-┌──────────────────────────┐
-│                          │
-│   ┌──────────────────┐   │  ← Current cassette: ~220px tall
-│   │                  │   │    Houses up to 4 substance lines
-│   │  ┃  ┃  ╏  ╏     │   │    (4BTCS cassette)
-│   │                  │   │
-│   └──────────────────┘   │
-│          T3              │  ← Test number label: ~20px
-│                          │
-│   ┌──────┐  ┌──────┐    │  ← Mini-history: ~80px tall
-│   │T1┃┃╏╏│  │T2┃┃╏╏│   │    2 previous cassettes at ~60×60px
-│   │ POS  │  │ NEG  │    │    with mini result label underneath
-│   └──────┘  └──────┘    │
-│                          │
-│ Total: ~340px            │  ← Fits in 380px with padding
-└──────────────────────────┘
-```
-
-For simpler states (T1 only, no history), the main cassette graphic can be larger.
-
-### Modal Sizing
-
-Modals overlay the full screen. They don't need to fit within a single card.
-
-| Modal | Estimated Size | Fits? |
-|-------|---------------|:-----:|
-| Config Modal | ~500 × 600px | Yes. Centered, leaves card edges visible. |
-| Decision Modal | ~500 × 550px | Yes. Similar sizing. |
-| Detail View | ~600 × 650px | Yes. Larger to show full test history. |
-
-At 1280×800, a 500px-wide modal leaves 390px on each side — enough to see parts of the cards behind the overlay for spatial context.
-
-### Critical Text Lengths
-
-| Text | Characters | Fits at 244px? |
-|------|:----------:|:--------------:|
-| "CH 1" | 4 | Yes |
-| "3BTC" | 4 | Yes |
-| "Pos Control" | 11 | Yes |
-| "Cassette detected" | 18 | Yes |
-| "Incubating - 1:42" | 18 | Yes |
-| "Waiting for temperature..." | 27 | Wraps to 2 lines |
-| "Remove cassette, insert new for Test 2" | 39 | Wraps to 2-3 lines |
-| "Already used - remove cassette" | 31 | Wraps to 2 lines |
-| "Wrong type - expected 3BTC" | 27 | Wraps to 2 lines |
-| "NEGATIVE" | 8 | Yes |
-| "POSITIVE" | 8 | Yes |
-| "INCONCLUSIVE" | 13 | Yes |
-
-All text fits. Longest messages wrap to 2-3 lines which the 80px Status Area can accommodate at 13-14px font size.
+- The home screen must stay extremely compact and use progressive disclosure.
+- Channel headers should stay to one line of identity information.
+- Status copy should stay short enough to fit in one strong line plus one helper line.
+- The cassette visual remains the dominant object on each card.
+- Full metadata and history belong in full-screen views and modals, not on the home screen.
 
 ### Feasibility Verdict
 
-**The layout fits on the 7-inch 1280×800 display.** Key findings:
+**The layout fits on the `800 × 480` display** if the prototype keeps its current priorities:
 
-1. **5 cards at ~244px wide** — enough for all content including the widest cassette type (4BTCS with 4 lines)
-2. **690px card height** — section budget totals ~640px, leaving room for breathing
-3. **Mini-cassette history** — fits within the cassette area even at T3 (showing T1 + T2 + current)
-4. **All text fits** — longest labels wrap to 2-3 lines, accommodated by the Status Area height
-5. **Touch targets** — all interactive elements meet the 44×44px minimum
-6. **Modals** — have ample room at ~500×600px centered on 1280×800
-
-**One area to watch during implementation:** The Status Area text during AWAITING_CONFIRMATION states is verbose. Consider abbreviating to "Swap cassette for Test 2" if wrapping becomes visually cramped.
+1. One horizontal row of five compact cards.
+2. Short, direct status messages.
+3. One primary action area per card.
+4. Flow and test details moved into dedicated secondary screens.
+5. Confirmation history shown as compact supporting context, not the main focus.
