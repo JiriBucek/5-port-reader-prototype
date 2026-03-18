@@ -145,7 +145,7 @@ const TIMING = {
 };
 
 // Recent values for config form
-const RECENT_ROUTES = ['Farm A', 'Route 12', 'North Barn', 'South Field'];
+const RECENT_SAMPLE_IDS = ['S-1042', 'BULK-17', 'LOT-883', 'SHIFT-B'];
 const RECENT_OPERATORS = ['OP-001', 'OP-042', 'OP-103'];
 const PRELOADED_QUANT_CURVES = [
     { id: 501, testTypeId: 20, name: '25022811', source: 'qr', createdAt: '2026-02-28T08:15:00.000Z' },
@@ -155,6 +155,18 @@ const PRELOADED_QUANT_CURVES = [
     { id: 505, testTypeId: 20, name: '25021415', source: 'qr', createdAt: '2026-02-14T07:50:00.000Z' }
 ];
 const SIMULATION_TEST_TYPE_IDS = [43, 37, 8, 20, 57];
+const HISTORY_ANNOTATION_LABELS = {
+    original: 'Original',
+    rejected: 'Rejected',
+    first_confirmation: 'First Confirmation',
+    second_confirmation: 'Second Confirmation',
+    animal_control: 'Animal Control',
+    positive_control: 'Positive Control'
+};
+const ACTIVE_USER = {
+    signedIn: true,
+    name: 'Anna Novak'
+};
 
 // ---- Global State ----
 
@@ -164,6 +176,7 @@ let modalQueue = [];       // Queued modal events
 let usedCassetteIds = new Set();
 let cassetteIdCounter = 1;
 let sessionHistory = [];
+let historyEntryIdCounter = 1;
 let recentTestTypeIds = [];
 let savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
 let recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
@@ -220,7 +233,8 @@ function createChannel(id) {
         cassetteType: null,
         scenario: null,         // 'test', 'pos_control', 'animal_control'
         processing: null,       // 'read_only', 'read_incubate'
-        route: '',
+        sampleId: '',
+        userName: '',
         operatorId: '',
         currentTestNumber: 0,
         testResults: [],        // [{substances: [{name, result}], overall, testNumber}]
@@ -238,7 +252,8 @@ function createChannel(id) {
 function initChannels() {
     channels = [];
     usedCassetteIds = new Set();
-    sessionHistory = [];
+    sessionHistory = buildMockHistory();
+    historyEntryIdCounter = sessionHistory.reduce((maxId, entry) => Math.max(maxId, entry.historyId || 0), 0) + 1;
     recentTestTypeIds = DEFAULT_RECENT_TEST_TYPE_IDS.filter(id => TEST_TYPES.some(tt => tt.id === id));
     savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
     recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
@@ -247,6 +262,394 @@ function initChannels() {
     for (let i = 1; i <= 5; i++) {
         channels.push(createChannel(i));
     }
+}
+
+function getActiveUserName() {
+    return ACTIVE_USER.signedIn ? ACTIVE_USER.name : '';
+}
+
+function nextHistoryEntryId() {
+    return historyEntryIdCounter++;
+}
+
+function getScenarioLabel(scenario) {
+    switch (scenario) {
+        case 'pos_control':
+            return 'Positive Control';
+        case 'animal_control':
+            return 'Animal Control';
+        default:
+            return 'Test Flow';
+    }
+}
+
+function getHistoryAnnotationForTest(scenario, testNumber) {
+    if (scenario === 'pos_control') return 'positive_control';
+    if (scenario === 'animal_control') return 'animal_control';
+    if (testNumber === 2) return 'first_confirmation';
+    if (testNumber === 3) return 'second_confirmation';
+    return 'original';
+}
+
+function getHistoryAnnotationLabel(annotation) {
+    return HISTORY_ANNOTATION_LABELS[annotation] || 'Original';
+}
+
+function buildLightIntensitySeries({ seed = 0, positive = false, quantitative = false } = {}) {
+    const points = [];
+    const totalPoints = 32;
+    const baseAmplitude = positive ? 13.5 : 9.5;
+    const amplitude = quantitative ? baseAmplitude + 2.5 : baseAmplitude;
+    const baseline = quantitative ? 46 : 48;
+    const phase = seed * 0.37;
+
+    for (let index = 0; index < totalPoints; index++) {
+        const angle = (index / (totalPoints - 1)) * Math.PI * 2.2;
+        const envelope = 0.84 + Math.sin((index / (totalPoints - 1)) * Math.PI) * 0.16;
+        const ripple = Math.sin(angle * 2.4 + phase) * (positive ? 1.6 : 1.1);
+        const value = baseline + Math.sin(angle + phase) * amplitude * envelope + ripple;
+        points.push(Number(value.toFixed(2)));
+    }
+
+    return points;
+}
+
+function buildMockSubstancesForTestType(testTypeId, cassetteType, outcome, variantIndex = 0) {
+    const selectedTestType = getTestTypeById(testTypeId);
+    const substances = getSubstancesForTestType(testTypeId, cassetteType);
+    const positiveIndex = variantIndex % Math.max(substances.length, 1);
+
+    if (selectedTestType?.quantitative) {
+        const quantitativeRange = selectedTestType.quantitativeRange || null;
+        const baseValue = outcome === 'positive'
+            ? (quantitativeRange?.negativeRangeMax || 50) + 18 + variantIndex * 4
+            : (quantitativeRange?.negativeRangeMin || 15) + 10 + variantIndex * 3;
+
+        return substances.map((name, index) => {
+            const measuredValue = baseValue + index * 4;
+            return {
+                name,
+                result: getQuantitativeResultForValue(measuredValue, quantitativeRange),
+                measuredValue,
+                displayValue: formatQuantitativeMeasuredValue(measuredValue, quantitativeRange)
+            };
+        });
+    }
+
+    return substances.map((name, index) => {
+        const result = outcome === 'positive' && (index === positiveIndex || index === 0)
+            ? 'positive'
+            : 'negative';
+        const measuredValue = result === 'positive'
+            ? 0.72 + index * 0.04 + variantIndex * 0.02
+            : 1.17 + index * 0.08 + variantIndex * 0.03;
+
+        return {
+            name,
+            result,
+            measuredValue,
+            displayValue: formatQualitativeMeasuredValue(measuredValue)
+        };
+    });
+}
+
+function createHistoryFlowRecord({
+    historyId = nextHistoryEntryId(),
+    historySource = 'archive',
+    channelId = null,
+    reason = 'seed',
+    scenario = 'test',
+    testTypeId = null,
+    testTypeName = '',
+    curveId = null,
+    curveName = '',
+    curveSource = '',
+    cassetteType = null,
+    sampleId = '',
+    userName = '',
+    operatorId = '',
+    processing = 'read_only',
+    result = null,
+    synced = false,
+    flowId = null,
+    timestamp = new Date().toISOString(),
+    tests = []
+} = {}) {
+    const numericHistoryId = Number(historyId);
+    const seedBase = Number.isFinite(numericHistoryId)
+        ? numericHistoryId
+        : (Number(channelId) || 0) + 90;
+    const normalizedTests = tests.map((test, index) => {
+        const testNumber = test.testNumber || index + 1;
+        const resolvedTestTypeId = normalizeTestTypeId(test.testTypeId ?? testTypeId);
+        const resolvedTestType = getTestTypeById(resolvedTestTypeId);
+        const resolvedCassetteType = test.cassetteType || cassetteType || resolvedTestType?.cassetteType || null;
+        const substances = (test.substances && test.substances.length > 0)
+            ? test.substances.map(substance => ({ ...substance }))
+            : buildMockSubstancesForTestType(
+                resolvedTestTypeId,
+                resolvedCassetteType,
+                test.overall || 'negative',
+                testNumber - 1
+            );
+        const overall = test.overall || (isTestPositive(substances) ? 'positive' : 'negative');
+
+        return {
+            testNumber,
+            overall,
+            annotation: test.annotation || getHistoryAnnotationForTest(scenario, testNumber),
+            timestamp: test.timestamp || timestamp,
+            cassetteType: resolvedCassetteType,
+            testTypeId: resolvedTestTypeId,
+            testTypeName: test.testTypeName || testTypeName || resolvedTestType?.name || '',
+            lightIntensity: Array.isArray(test.lightIntensity) && test.lightIntensity.length > 0
+                ? [...test.lightIntensity]
+                : buildLightIntensitySeries({
+                    seed: seedBase * 10 + testNumber,
+                    positive: overall === 'positive',
+                    quantitative: Boolean(resolvedTestType?.quantitative)
+                }),
+            substances
+        };
+    });
+
+    const lastTimestamp = normalizedTests[normalizedTests.length - 1]?.timestamp || timestamp;
+    const resolvedResult = result || normalizedTests[normalizedTests.length - 1]?.overall || null;
+
+    return {
+        historyId,
+        historyKey: historySource === 'live' ? `live-${channelId}` : `history-${historyId}`,
+        historySource,
+        channelId,
+        reason,
+        scenario,
+        scenarioLabel: getScenarioLabel(scenario),
+        testTypeId: normalizeTestTypeId(testTypeId),
+        testTypeName,
+        curveId,
+        curveName,
+        curveSource,
+        cassetteType,
+        sampleId,
+        userName,
+        operatorId,
+        processing,
+        result: resolvedResult,
+        synced: Boolean(synced),
+        uploadStatus: synced ? 'synced' : 'not_synced',
+        flowId: synced ? flowId : null,
+        testCount: normalizedTests.length,
+        tests: normalizedTests,
+        timestamp: lastTimestamp
+    };
+}
+
+function buildMockHistory() {
+    return [
+        createHistoryFlowRecord({
+            historyId: 1,
+            scenario: 'test',
+            channelId: 4,
+            testTypeId: 43,
+            testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
+            cassetteType: '4L',
+            sampleId: 'S-1048',
+            userName: 'Anna Novak',
+            operatorId: 'OP-042',
+            processing: 'read_incubate',
+            result: 'positive',
+            synced: true,
+            flowId: 144577,
+            tests: [
+                { testNumber: 1, overall: 'positive', timestamp: '2026-03-18T08:42:00.000Z' },
+                { testNumber: 2, overall: 'negative', timestamp: '2026-03-18T08:49:00.000Z' },
+                { testNumber: 3, overall: 'positive', timestamp: '2026-03-18T08:56:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 2,
+            scenario: 'test',
+            channelId: 2,
+            testTypeId: 37,
+            testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
+            cassetteType: '4L',
+            sampleId: 'S-1047',
+            userName: 'Anna Novak',
+            operatorId: 'OP-001',
+            processing: 'read_only',
+            result: 'negative',
+            synced: true,
+            flowId: 144576,
+            tests: [
+                { testNumber: 1, overall: 'positive', timestamp: '2026-03-18T07:14:00.000Z' },
+                { testNumber: 2, overall: 'negative', timestamp: '2026-03-18T07:21:00.000Z' },
+                { testNumber: 3, overall: 'negative', timestamp: '2026-03-18T07:28:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 3,
+            scenario: 'animal_control',
+            channelId: 5,
+            testTypeId: 57,
+            testTypeName: 'Bioeasy 3IN1 BST',
+            cassetteType: '3L',
+            sampleId: 'AN-023',
+            userName: '',
+            operatorId: 'OP-103',
+            processing: 'read_only',
+            result: 'negative',
+            synced: false,
+            tests: [
+                { testNumber: 1, overall: 'negative', timestamp: '2026-03-18T06:33:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 4,
+            scenario: 'pos_control',
+            channelId: 1,
+            testTypeId: 43,
+            testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
+            cassetteType: '4L',
+            sampleId: 'PC-221',
+            userName: 'Anna Novak',
+            operatorId: 'OP-042',
+            processing: 'read_incubate',
+            result: 'positive',
+            synced: true,
+            flowId: 144575,
+            tests: [
+                { testNumber: 1, overall: 'positive', timestamp: '2026-03-17T14:20:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 5,
+            scenario: 'test',
+            channelId: 3,
+            testTypeId: 20,
+            testTypeName: 'MilkSafe™ Afla M1',
+            cassetteType: '1L',
+            sampleId: 'AF-022',
+            userName: '',
+            operatorId: 'OP-001',
+            processing: 'read_only',
+            result: 'negative',
+            synced: false,
+            tests: [
+                { testNumber: 1, overall: 'negative', timestamp: '2026-03-17T11:08:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 6,
+            scenario: 'test',
+            channelId: 2,
+            testTypeId: 43,
+            testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
+            cassetteType: '4L',
+            sampleId: 'S-1043',
+            userName: 'Anna Novak',
+            operatorId: 'OP-103',
+            processing: 'read_incubate',
+            result: 'inconclusive',
+            synced: false,
+            tests: [
+                {
+                    testNumber: 1,
+                    overall: 'positive',
+                    annotation: 'rejected',
+                    timestamp: '2026-03-17T09:16:00.000Z'
+                }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 7,
+            scenario: 'test',
+            channelId: 4,
+            testTypeId: 37,
+            testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
+            cassetteType: '4L',
+            sampleId: 'S-1038',
+            userName: '',
+            operatorId: 'OP-042',
+            processing: 'read_only',
+            result: 'positive',
+            synced: true,
+            flowId: 144572,
+            tests: [
+                { testNumber: 1, overall: 'positive', timestamp: '2026-03-16T15:05:00.000Z' },
+                { testNumber: 2, overall: 'positive', timestamp: '2026-03-16T15:11:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 8,
+            scenario: 'test',
+            channelId: 1,
+            testTypeId: 57,
+            testTypeName: 'Bioeasy 3IN1 BST',
+            cassetteType: '3L',
+            sampleId: 'BULK-14',
+            userName: 'Anna Novak',
+            operatorId: 'OP-001',
+            processing: 'read_only',
+            result: 'negative',
+            synced: true,
+            flowId: 144568,
+            tests: [
+                { testNumber: 1, overall: 'negative', timestamp: '2026-03-16T09:47:00.000Z' }
+            ]
+        })
+    ];
+}
+
+function buildHistoryFlowFromChannel(ch) {
+    if (!ch || ch.state !== STATES.COMPLETE || ch.testResults.length === 0) return null;
+
+    return createHistoryFlowRecord({
+        historyId: `live-${ch.id}`,
+        historySource: 'live',
+        channelId: ch.id,
+        reason: 'live',
+        scenario: ch.scenario || 'test',
+        testTypeId: ch.testTypeId,
+        testTypeName: ch.testTypeName,
+        curveId: ch.curveId,
+        curveName: ch.curveName,
+        curveSource: ch.curveSource,
+        cassetteType: ch.cassetteType,
+        sampleId: ch.sampleId,
+        userName: ch.userName || getActiveUserName(),
+        operatorId: ch.operatorId,
+        processing: ch.processing,
+        result: ch.groupResult || ch.testResults[ch.testResults.length - 1]?.overall || null,
+        synced: false,
+        tests: ch.testResults.map((testResult, index) => ({
+            testNumber: testResult.testNumber || index + 1,
+            overall: testResult.overall || (isTestPositive(testResult.substances) ? 'positive' : 'negative'),
+            annotation: testResult.annotation || getHistoryAnnotationForTest(ch.scenario, testResult.testNumber || index + 1),
+            timestamp: testResult.completedAt || new Date().toISOString(),
+            cassetteType: testResult.cassetteType || ch.cassetteType,
+            testTypeId: testResult.testTypeId || ch.testTypeId,
+            testTypeName: testResult.testTypeName || ch.testTypeName,
+            lightIntensity: Array.isArray(testResult.lightIntensity) && testResult.lightIntensity.length > 0
+                ? [...testResult.lightIntensity]
+                : buildLightIntensitySeries({
+                    seed: ch.id * 10 + index + 1,
+                    positive: (testResult.overall || '').toLowerCase() === 'positive',
+                    quantitative: Boolean(getTestTypeById(testResult.testTypeId || ch.testTypeId)?.quantitative)
+                }),
+            substances: testResult.substances.map(substance => ({ ...substance }))
+        }))
+    });
+}
+
+function getHistoryFlows() {
+    return [
+        ...sessionHistory,
+        ...channels.map(ch => buildHistoryFlowFromChannel(ch)).filter(Boolean)
+    ].sort((left, right) => new Date(right.timestamp) - new Date(left.timestamp));
+}
+
+function findHistoryFlowByKey(historyKey) {
+    return getHistoryFlows().find(flow => flow.historyKey === historyKey) || null;
 }
 
 function getChannel(id) {
@@ -658,7 +1061,8 @@ function resetChannel(ch) {
     ch.cassetteType = null;
     ch.scenario = null;
     ch.processing = null;
-    ch.route = '';
+    ch.sampleId = '';
+    ch.userName = '';
     ch.operatorId = '';
     ch.currentTestNumber = 0;
     ch.testResults = [];
@@ -722,7 +1126,9 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
     if (!hasData) return;
 
     const finalResult = forcedGroupResult || ch.groupResult || null;
-    sessionHistory.push({
+    sessionHistory.push(createHistoryFlowRecord({
+        historyId: nextHistoryEntryId(),
+        historySource: 'archive',
         channelId: ch.id,
         reason,
         scenario: ch.scenario,
@@ -732,23 +1138,30 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
         curveName: ch.curveName,
         curveSource: ch.curveSource,
         cassetteType: ch.cassetteType,
-        route: ch.route,
+        sampleId: ch.sampleId,
+        userName: ch.userName || getActiveUserName(),
         operatorId: ch.operatorId,
+        processing: ch.processing,
         result: finalResult,
-        testCount: ch.testResults.length,
+        synced: false,
+        timestamp: ch.testResults[ch.testResults.length - 1]?.completedAt || new Date().toISOString(),
         tests: ch.testResults.map(tr => ({
             testNumber: tr.testNumber,
             overall: tr.overall,
+            annotation: tr.annotation,
+            timestamp: tr.completedAt,
             cassetteType: tr.cassetteType,
+            testTypeId: tr.testTypeId,
+            testTypeName: tr.testTypeName,
+            lightIntensity: tr.lightIntensity,
             substances: tr.substances.map(s => ({
                 name: s.name,
                 result: s.result,
                 measuredValue: s.measuredValue,
                 displayValue: s.displayValue
             }))
-        })),
-        timestamp: new Date().toISOString()
-    });
+        }))
+    }));
 }
 
 function nextCassetteId() {

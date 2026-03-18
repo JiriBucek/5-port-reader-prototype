@@ -274,7 +274,8 @@ function handleConfigStart(channelId, config) {
     ch.curveName = selectedTestType?.quantitative ? (selectedCurve?.name || '') : '';
     ch.curveSource = selectedTestType?.quantitative ? (selectedCurve?.source || '') : '';
     ch.cassetteType = selectedTestType ? selectedTestType.cassetteType : normalizeLoadedCassetteType(config.testType);
-    ch.route = config.route;
+    ch.sampleId = config.sampleId;
+    ch.userName = getActiveUserName();
     ch.operatorId = config.operatorId;
     ch.processing = (config.processing === 'read_incubate' && !isIncubationEnabled())
         ? 'read_only'
@@ -512,14 +513,25 @@ function completeReading(ch) {
     const results = generateSubstanceResults(ch.testTypeId, ch.cassetteType, outcome);
     const overall = isTestPositive(results) ? 'positive' : 'negative';
     const testNumber = ch.currentTestNumber;
+    const selectedTestType = getTestTypeById(ch.testTypeId);
+    const completedAt = new Date().toISOString();
+    const annotation = getHistoryAnnotationForTest(ch.scenario, testNumber);
+    const lightIntensity = buildLightIntensitySeries({
+        seed: ch.id * 10 + testNumber,
+        positive: overall === 'positive',
+        quantitative: Boolean(selectedTestType?.quantitative)
+    });
 
     ch.testResults.push({
         substances: results,
         overall,
         testNumber,
+        annotation,
+        completedAt,
         cassetteType: ch.cassetteType,
         testTypeId: ch.testTypeId,
-        testTypeName: ch.testTypeName
+        testTypeName: ch.testTypeName,
+        lightIntensity
     });
 
     if (ch.loadedCassetteId !== null) {

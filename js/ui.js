@@ -578,7 +578,7 @@ function buildConfigDraft(ch) {
     return {
         scenario: ch.scenario || 'test',
         testTypeId: defaultManualTestType?.id || getDefaultManualTestType()?.id || null,
-        route: ch.route || '',
+        sampleId: ch.sampleId || '',
         operatorId: ch.operatorId || '',
         fallbackCassetteType,
         lockedToQr: Boolean(qrPrefillType),
@@ -595,7 +595,7 @@ function collectConfigDraft(modal, ch, previousDraft) {
     return {
         ...previousDraft,
         scenario: modal.querySelector('#cfg-scenario .seg-option.selected')?.dataset.value || previousDraft.scenario || 'test',
-        route: modal.querySelector('#cfg-route')?.value || '',
+        sampleId: modal.querySelector('#cfg-sample-id')?.value || '',
         operatorId: modal.querySelector('#cfg-operator')?.value || '',
         fallbackCassetteType: ch.loadedCassetteType || ch.cassetteType || previousDraft.fallbackCassetteType || CASSETTE_TYPES[0],
         lockedToQr: previousDraft.lockedToQr,
@@ -676,7 +676,7 @@ function setConfigKeyboardState(modal, fieldId = '') {
 function bindConfigKeyboardPlaceholder(modal) {
     if (!modal) return;
 
-    const inputs = modal.querySelectorAll('#cfg-route, #cfg-operator');
+    const inputs = modal.querySelectorAll('#cfg-sample-id, #cfg-operator');
     if (!inputs.length) return;
 
     inputs.forEach(input => {
@@ -687,7 +687,7 @@ function bindConfigKeyboardPlaceholder(modal) {
         input.addEventListener('blur', () => {
             window.setTimeout(() => {
                 const activeId = document.activeElement?.id;
-                if (activeId === 'cfg-route' || activeId === 'cfg-operator') {
+                if (activeId === 'cfg-sample-id' || activeId === 'cfg-operator') {
                     setConfigKeyboardState(modal, activeId);
                     return;
                 }
@@ -716,7 +716,7 @@ function buildSettingsCurveDraft() {
     return {
         scenario: 'test',
         testTypeId: selectedType?.id || null,
-        route: '',
+        sampleId: '',
         operatorId: '',
         fallbackCassetteType: selectedType?.cassetteType || CASSETTE_TYPES[0],
         lockedToQr: false,
@@ -1243,9 +1243,9 @@ function showConfigModal(ch, draft = null, view = 'form') {
                 </div>
                 <div class="form-field">
                     <label>Sample ID</label>
-                    <input type="text" class="form-input" id="cfg-route" placeholder="Type or scan sample ID" value="${escapeHtml(nextDraft.route)}">
-                    <div class="recent-chips" id="cfg-route-chips">
-                        ${RECENT_ROUTES.slice(0, 2).map(r => `<span class="recent-chip" data-target="cfg-route" data-value="${r}">${r}</span>`).join('')}
+                    <input type="text" class="form-input" id="cfg-sample-id" placeholder="Type or scan sample ID" value="${escapeHtml(nextDraft.sampleId)}">
+                    <div class="recent-chips" id="cfg-sample-id-chips">
+                        ${RECENT_SAMPLE_IDS.slice(0, 2).map(sampleId => `<span class="recent-chip" data-target="cfg-sample-id" data-value="${sampleId}">${sampleId}</span>`).join('')}
                     </div>
                 </div>
                 <div class="form-field">
@@ -1357,7 +1357,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
             testTypeName: currentSelection?.name,
             curveId: getDraftCurve(latestDraft, currentSelection)?.id || null,
             testType: currentSelection?.cassetteType || normalizeLoadedCassetteType(latestDraft.fallbackCassetteType),
-            route: latestDraft.route || 'Default Route',
+            sampleId: latestDraft.sampleId || '',
             operatorId: latestDraft.operatorId || 'OP-000',
             processing
         });
@@ -1393,31 +1393,380 @@ function hideModal() {
 
 // ---- History Screen ----
 
-function showHistoryScreen() {
-    const screen = document.getElementById('history-screen');
-    if (!screen) return;
+const HISTORY_PAGE_SIZE = 4;
 
-    activeModal = { type: 'history' };
+function clampHistoryPage(page, totalPages) {
+    return Math.min(Math.max(page, 0), Math.max(totalPages - 1, 0));
+}
 
-    screen.innerHTML = `
+function formatHistoryDateTime(value, withYear = false) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Unknown time';
+
+    return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        ...(withYear ? { year: 'numeric' } : {}),
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function getHistoryResultTone(result) {
+    switch (result) {
+        case 'positive':
+            return 'positive';
+        case 'negative':
+            return 'negative';
+        default:
+            return 'inconclusive';
+    }
+}
+
+function formatHistoryResultLabel(result) {
+    switch (result) {
+        case 'positive':
+            return 'Positive';
+        case 'negative':
+            return 'Negative';
+        default:
+            return 'Inconclusive';
+    }
+}
+
+function formatUploadStatusLabel(uploadStatus) {
+    return uploadStatus === 'synced' ? 'Synced' : 'Not Synced';
+}
+
+function getHistoryAnnotationShortLabel(annotation) {
+    switch (annotation) {
+        case 'first_confirmation':
+            return '1C';
+        case 'second_confirmation':
+            return '2C';
+        case 'animal_control':
+            return 'AC';
+        case 'positive_control':
+            return 'PC';
+        case 'rejected':
+            return 'REJ';
+        default:
+            return 'ORG';
+    }
+}
+
+function renderHistoryResultBadge(result, size = 'md') {
+    const tone = getHistoryResultTone(result);
+    return `<span class="history-result-badge is-${tone}${size === 'lg' ? ' is-large' : ''}">${escapeHtml(formatHistoryResultLabel(result))}</span>`;
+}
+
+function renderHistoryUploadBadge(uploadStatus) {
+    const tone = uploadStatus === 'synced' ? 'synced' : 'pending';
+    return `<span class="history-sync-badge is-${tone}">${escapeHtml(formatUploadStatusLabel(uploadStatus))}</span>`;
+}
+
+function renderHistorySequenceChips(flow) {
+    return flow.tests.map(test => {
+        const tone = getHistoryResultTone(test.overall);
+        const label = test.overall === 'positive' ? 'POS' : 'NEG';
+        return `<span class="history-sequence-chip is-${tone}">${getHistoryAnnotationShortLabel(test.annotation)} ${label}</span>`;
+    }).join('');
+}
+
+function renderHistoryField(label, value) {
+    return `<div class="history-field">
+        <span class="history-field-label">${escapeHtml(label)}</span>
+        <span class="history-field-value">${escapeHtml(value)}</span>
+    </div>`;
+}
+
+function renderHistoryLightIntensityChart(points) {
+    const series = Array.isArray(points) && points.length > 1
+        ? points
+        : buildLightIntensitySeries();
+    const width = 680;
+    const height = 120;
+    const paddingX = 8;
+    const paddingY = 10;
+    const min = Math.min(...series);
+    const max = Math.max(...series);
+    const range = Math.max(max - min, 1);
+    const polyline = series.map((point, index) => {
+        const x = paddingX + (index / (series.length - 1)) * (width - paddingX * 2);
+        const y = paddingY + (1 - ((point - min) / range)) * (height - paddingY * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    return `
+        <div class="history-curve-card">
+            <div class="history-curve-header">
+                <h3>Light Intensity</h3>
+                <span>Prototype curve</span>
+            </div>
+            <svg class="history-curve-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="Light intensity curve">
+                <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" class="history-curve-axis"></line>
+                <line x1="${paddingX}" y1="${height / 2}" x2="${width - paddingX}" y2="${height / 2}" class="history-curve-grid"></line>
+                <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" class="history-curve-grid"></line>
+                <polyline class="history-curve-line" points="${polyline}"></polyline>
+            </svg>
+        </div>`;
+}
+
+function renderHistoryListView(flows, page, totalPages) {
+    if (flows.length === 0) {
+        return `
+            <div class="history-screen-header">
+                <div>
+                    <h1>History</h1>
+                    <p>No test flows recorded on this reader yet.</p>
+                </div>
+                <button class="history-close-btn" data-history-action="close">Close</button>
+            </div>
+            <div class="history-screen-body">
+                <div class="history-placeholder-panel history-placeholder-panel-simple">
+                    <strong>No history yet</strong>
+                    <p>Run a test or clear a completed flow to add it here.</p>
+                </div>
+            </div>`;
+    }
+
+    const start = page * HISTORY_PAGE_SIZE;
+    const pageFlows = flows.slice(start, start + HISTORY_PAGE_SIZE);
+
+    return `
         <div class="history-screen-header">
             <div>
                 <h1>History</h1>
-                <p>History is not implemented in this prototype.</p>
+                <p>Latest test flows first. Tap a flow to open its tests.</p>
             </div>
-            <button class="history-close-btn" id="history-screen-close">Close</button>
+            <button class="history-close-btn" data-history-action="close">Close</button>
+        </div>
+        <div class="history-screen-body history-list-body">
+            <div class="history-flow-list">
+                ${pageFlows.map(flow => `
+                    <button class="history-flow-row" data-history-action="open-flow" data-history-key="${flow.historyKey}">
+                        <div class="history-flow-row-top">
+                            <div class="history-flow-main">
+                                <div class="history-flow-title">${escapeHtml(flow.testTypeName || flow.scenarioLabel)}</div>
+                                <div class="history-flow-meta">${escapeHtml(formatHistoryDateTime(flow.timestamp))}${flow.sampleId ? ` &middot; ${escapeHtml(flow.sampleId)}` : ''}</div>
+                            </div>
+                            <div class="history-flow-side">
+                                ${renderHistoryResultBadge(flow.result)}
+                                ${renderHistoryUploadBadge(flow.uploadStatus)}
+                            </div>
+                        </div>
+                        <div class="history-flow-row-bottom">
+                            <div class="history-sequence-row">${renderHistorySequenceChips(flow)}</div>
+                            <span class="history-flow-open">Open</span>
+                        </div>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+        <div class="history-screen-footer">
+            <button class="history-page-btn" data-history-action="prev-page"${page === 0 ? ' disabled' : ''}>Previous</button>
+            <span class="history-page-indicator">Page ${page + 1} / ${totalPages}</span>
+            <button class="history-page-btn" data-history-action="next-page"${page >= totalPages - 1 ? ' disabled' : ''}>Next</button>
+        </div>`;
+}
+
+function renderHistoryFlowView(flow) {
+    return `
+        <div class="history-screen-header">
+            <div class="history-screen-title-row">
+                <button class="history-back-btn" data-history-action="back">Back</button>
+                <div>
+                    <h1>Flow Detail</h1>
+                    <p>${escapeHtml(formatHistoryDateTime(flow.timestamp, true))}</p>
+                </div>
+            </div>
+            <button class="history-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
-            <div class="history-placeholder-panel history-placeholder-panel-simple">
-                <strong>History not implemented</strong>
-                <p>This screen is only here to reserve the navigation position in the prototype.</p>
-            </div>
+            <section class="history-summary-card">
+                <div class="history-summary-top">
+                    <div>
+                        <span class="history-summary-kicker">${escapeHtml(flow.scenarioLabel)}</span>
+                        <h2>${escapeHtml(flow.testTypeName || 'Test')}</h2>
+                    </div>
+                    ${renderHistoryResultBadge(flow.result, 'lg')}
+                </div>
+                <div class="history-summary-grid">
+                    ${renderHistoryField('Sample ID', flow.sampleId || 'Not set')}
+                    ${renderHistoryField('Operator ID', flow.operatorId || 'Not set')}
+                    ${flow.userName ? renderHistoryField('User', flow.userName) : ''}
+                    ${renderHistoryField('Upload Status', formatUploadStatusLabel(flow.uploadStatus))}
+                    ${flow.flowId ? renderHistoryField('Flow ID', String(flow.flowId)) : ''}
+                </div>
+            </section>
+            <section class="history-section-card">
+                <div class="history-section-header">
+                    <h2>Contained Tests</h2>
+                    <span>${flow.testCount} test${flow.testCount === 1 ? '' : 's'}</span>
+                </div>
+                <div class="history-test-list">
+                    ${flow.tests.map(test => `
+                        <button class="history-test-row" data-history-action="open-test" data-history-key="${flow.historyKey}" data-history-test="${test.testNumber}">
+                            <div class="history-test-main">
+                                <div class="history-test-title">Test ${test.testNumber}</div>
+                                <div class="history-test-meta">${escapeHtml(getHistoryAnnotationLabel(test.annotation))} &middot; ${escapeHtml(formatHistoryDateTime(test.timestamp))}</div>
+                            </div>
+                            <div class="history-test-side">
+                                ${renderHistoryResultBadge(test.overall)}
+                            </div>
+                        </button>
+                    `).join('')}
+                </div>
+            </section>
         </div>`;
+}
 
+function renderHistoryTestView(flow, test) {
+    return `
+        <div class="history-screen-header">
+            <div class="history-screen-title-row">
+                <button class="history-back-btn" data-history-action="back">Back</button>
+                <div>
+                    <h1>Test Detail</h1>
+                    <p>${escapeHtml(getHistoryAnnotationLabel(test.annotation))}</p>
+                </div>
+            </div>
+            <button class="history-close-btn" data-history-action="close">Close</button>
+        </div>
+        <div class="history-screen-body">
+            <section class="history-summary-card">
+                <div class="history-summary-top">
+                    <div>
+                        <span class="history-summary-kicker">Test ${test.testNumber}</span>
+                        <h2>${escapeHtml(flow.testTypeName || test.testTypeName || 'Test')}</h2>
+                    </div>
+                    ${renderHistoryResultBadge(test.overall, 'lg')}
+                </div>
+                <div class="history-summary-grid">
+                    ${renderHistoryField('Test Type', flow.testTypeName || test.testTypeName || 'Not set')}
+                    ${renderHistoryField('Date & Time', formatHistoryDateTime(test.timestamp, true))}
+                    ${flow.userName ? renderHistoryField('User', flow.userName) : ''}
+                    ${renderHistoryField('Sample ID', flow.sampleId || 'Not set')}
+                    ${renderHistoryField('Operator ID', flow.operatorId || 'Not set')}
+                    ${renderHistoryField('Upload Status', formatUploadStatusLabel(flow.uploadStatus))}
+                    ${renderHistoryField('Annotation', getHistoryAnnotationLabel(test.annotation))}
+                    ${flow.flowId ? renderHistoryField('Flow ID', String(flow.flowId)) : ''}
+                </div>
+            </section>
+            <section class="history-section-card">
+                <div class="history-section-header">
+                    <h2>Substances</h2>
+                    <span>${test.substances.length} result${test.substances.length === 1 ? '' : 's'}</span>
+                </div>
+                <div class="history-substance-list">
+                    ${test.substances.map(substance => `
+                        <div class="history-substance-row">
+                            <span class="history-substance-name">${escapeHtml(substance.name)}</span>
+                            <span class="history-substance-value">${escapeHtml(substance.displayValue || '')}</span>
+                            <span class="history-substance-result is-${getHistoryResultTone(substance.result)}">${escapeHtml(formatHistoryResultLabel(substance.result))}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </section>
+            ${renderHistoryLightIntensityChart(test.lightIntensity)}
+        </div>`;
+}
+
+function showHistoryScreen(nextState = {}) {
+    const screen = document.getElementById('history-screen');
+    if (!screen) return;
+
+    const flows = getHistoryFlows();
+    const totalPages = Math.max(Math.ceil(flows.length / HISTORY_PAGE_SIZE), 1);
+    const currentState = activeModal && activeModal.type === 'history' ? activeModal : {};
+    const historyState = {
+        type: 'history',
+        view: nextState.view || currentState.view || 'list',
+        page: clampHistoryPage(nextState.page ?? currentState.page ?? 0, totalPages),
+        flowKey: nextState.flowKey ?? currentState.flowKey ?? null,
+        testNumber: nextState.testNumber ?? currentState.testNumber ?? null
+    };
+
+    let content = '';
+
+    if (historyState.view === 'flow') {
+        const flow = findHistoryFlowByKey(historyState.flowKey);
+        if (!flow) {
+            historyState.view = 'list';
+            content = renderHistoryListView(flows, historyState.page, totalPages);
+        } else {
+            content = renderHistoryFlowView(flow);
+        }
+    } else if (historyState.view === 'test') {
+        const flow = findHistoryFlowByKey(historyState.flowKey);
+        const test = flow?.tests.find(item => String(item.testNumber) === String(historyState.testNumber));
+        if (!flow || !test) {
+            historyState.view = flow ? 'flow' : 'list';
+            content = flow ? renderHistoryFlowView(flow) : renderHistoryListView(flows, historyState.page, totalPages);
+        } else {
+            content = renderHistoryTestView(flow, test);
+        }
+    } else {
+        historyState.view = 'list';
+        content = renderHistoryListView(flows, historyState.page, totalPages);
+    }
+
+    activeModal = historyState;
+    screen.innerHTML = content;
     screen.classList.add('active');
 
-    document.getElementById('history-screen-close').addEventListener('click', () => {
-        handleHistoryClose();
+    screen.querySelectorAll('[data-history-action]').forEach(button => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.historyAction;
+            switch (action) {
+                case 'close':
+                    handleHistoryClose();
+                    break;
+                case 'back':
+                    if (historyState.view === 'test') {
+                        showHistoryScreen({
+                            view: 'flow',
+                            page: historyState.page,
+                            flowKey: historyState.flowKey
+                        });
+                    } else if (historyState.view === 'flow') {
+                        showHistoryScreen({
+                            view: 'list',
+                            page: historyState.page
+                        });
+                    } else {
+                        handleHistoryClose();
+                    }
+                    break;
+                case 'prev-page':
+                    showHistoryScreen({
+                        view: 'list',
+                        page: historyState.page - 1
+                    });
+                    break;
+                case 'next-page':
+                    showHistoryScreen({
+                        view: 'list',
+                        page: historyState.page + 1
+                    });
+                    break;
+                case 'open-flow':
+                    showHistoryScreen({
+                        view: 'flow',
+                        page: historyState.page,
+                        flowKey: button.dataset.historyKey
+                    });
+                    break;
+                case 'open-test':
+                    showHistoryScreen({
+                        view: 'test',
+                        page: historyState.page,
+                        flowKey: button.dataset.historyKey,
+                        testNumber: button.dataset.historyTest
+                    });
+                    break;
+            }
+        });
     });
 }
 
@@ -1767,7 +2116,7 @@ function showDecisionModal(ch, variant) {
                     <h2 style="color:${titleColor}">${resultLabel}: ${resultValue}</h2>
                     <div class="modal-meta">
                         <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.route || 'Test'}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.sampleId || 'No sample ID'}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.operatorId || ''}</span></span>
                     </div>
                 </div>
@@ -1818,7 +2167,7 @@ function showStopConfirmationModal(ch) {
                     <h2 style="color:var(--warning)">Abort Flow?</h2>
                     <div class="modal-meta">
                         <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.route || 'Test'}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.sampleId || 'No sample ID'}</span></span>
                     </div>
                 </div>
             </div>
@@ -1927,7 +2276,7 @@ function showDetailModal(ch) {
                     <h2>${scenarioLabels[ch.scenario] || 'Test'} Details</h2>
                     <div class="modal-meta">
                         <span class="meta-item"><span class="meta-value">${ch.testTypeName || ch.cassetteType}</span></span>
-                        <span class="meta-item"><span class="meta-value">${ch.route}</span></span>
+                        <span class="meta-item"><span class="meta-value">${ch.sampleId || 'No sample ID'}</span></span>
                         <span class="meta-item"><span class="meta-value">${ch.operatorId}</span></span>
                         <span class="meta-item"><span class="meta-value">${processingLabels[ch.processing] || ch.processing}</span></span>
                     </div>
