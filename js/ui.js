@@ -1394,6 +1394,7 @@ function hideModal() {
 // ---- History Screen ----
 
 const HISTORY_PAGE_SIZE = 4;
+const HISTORY_PAGE_JUMP = 5;
 
 function clampHistoryPage(page, totalPages) {
     return Math.min(Math.max(page, 0), Math.max(totalPages - 1, 0));
@@ -1421,6 +1422,14 @@ function getHistoryResultTone(result) {
         default:
             return 'inconclusive';
     }
+}
+
+function isHistoryControlFlow(flow) {
+    return flow?.scenario === 'pos_control' || flow?.scenario === 'animal_control';
+}
+
+function getHistoryFlowTone(flow) {
+    return isHistoryControlFlow(flow) ? 'control' : getHistoryResultTone(flow?.result);
 }
 
 function formatHistoryResultLabel(result) {
@@ -1460,9 +1469,26 @@ function renderHistoryResultBadge(result, size = 'md') {
     return `<span class="history-result-badge is-${tone}${size === 'lg' ? ' is-large' : ''}">${escapeHtml(formatHistoryResultLabel(result))}</span>`;
 }
 
-function renderHistoryUploadBadge(uploadStatus) {
+function renderHistoryUploadBadge(uploadStatus, inline = false) {
     const tone = uploadStatus === 'synced' ? 'synced' : 'pending';
-    return `<span class="history-sync-badge is-${tone}">${escapeHtml(formatUploadStatusLabel(uploadStatus))}</span>`;
+    return `<span class="history-sync-badge is-${tone}${inline ? ' is-inline' : ''}">${escapeHtml(formatUploadStatusLabel(uploadStatus))}</span>`;
+}
+
+function renderHistoryFlowMeta(flow) {
+    const parts = [
+        `<span class="history-meta-text">${escapeHtml(formatHistoryDateTime(flow.timestamp))}</span>`
+    ];
+
+    if (flow.sampleId) {
+        parts.push(`<span class="history-meta-text">Sample ${escapeHtml(flow.sampleId)}</span>`);
+    }
+
+    if (flow.flowId) {
+        parts.push(`<span class="history-meta-text">Flow ${escapeHtml(String(flow.flowId))}</span>`);
+    }
+
+    parts.push(renderHistoryUploadBadge(flow.uploadStatus, true));
+    return parts.join('');
 }
 
 function renderHistorySequenceChips(flow) {
@@ -1537,40 +1563,41 @@ function renderHistoryListView(flows, page, totalPages) {
         <div class="history-screen-header">
             <div>
                 <h1>History</h1>
-                <p>Latest test flows first. Tap a flow to open its tests.</p>
+                <p>${flows.length} flow${flows.length === 1 ? '' : 's'} on this reader. Latest first.</p>
             </div>
             <button class="history-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body history-list-body">
             <div class="history-flow-list">
                 ${pageFlows.map(flow => `
-                    <button class="history-flow-row" data-history-action="open-flow" data-history-key="${flow.historyKey}">
+                    <button class="history-flow-row is-${getHistoryFlowTone(flow)}" data-history-action="open-flow" data-history-key="${flow.historyKey}">
                         <div class="history-flow-row-top">
                             <div class="history-flow-main">
                                 <div class="history-flow-title">${escapeHtml(flow.testTypeName || flow.scenarioLabel)}</div>
-                                <div class="history-flow-meta">${escapeHtml(formatHistoryDateTime(flow.timestamp))}${flow.sampleId ? ` &middot; ${escapeHtml(flow.sampleId)}` : ''}</div>
+                                <div class="history-flow-meta">${renderHistoryFlowMeta(flow)}</div>
                             </div>
-                            <div class="history-flow-side">
-                                ${renderHistoryResultBadge(flow.result)}
-                                ${renderHistoryUploadBadge(flow.uploadStatus)}
-                            </div>
+                            <div class="history-flow-side">${renderHistoryResultBadge(flow.result)}</div>
                         </div>
                         <div class="history-flow-row-bottom">
+                            <span class="history-sequence-label">Tests</span>
                             <div class="history-sequence-row">${renderHistorySequenceChips(flow)}</div>
-                            <span class="history-flow-open">Open</span>
                         </div>
                     </button>
                 `).join('')}
             </div>
         </div>
         <div class="history-screen-footer">
+            <button class="history-page-btn history-page-btn-jump" data-history-action="prev-page-jump"${page === 0 ? ' disabled' : ''}>Prev 5</button>
             <button class="history-page-btn" data-history-action="prev-page"${page === 0 ? ' disabled' : ''}>Previous</button>
             <span class="history-page-indicator">Page ${page + 1} / ${totalPages}</span>
             <button class="history-page-btn" data-history-action="next-page"${page >= totalPages - 1 ? ' disabled' : ''}>Next</button>
+            <button class="history-page-btn history-page-btn-jump" data-history-action="next-page-jump"${page >= totalPages - 1 ? ' disabled' : ''}>Next 5</button>
         </div>`;
 }
 
 function renderHistoryFlowView(flow) {
+    const tone = getHistoryFlowTone(flow);
+    const summaryKicker = isHistoryControlFlow(flow) ? flow.scenarioLabel : 'Flow Result';
     return `
         <div class="history-screen-header">
             <div class="history-screen-title-row">
@@ -1583,10 +1610,10 @@ function renderHistoryFlowView(flow) {
             <button class="history-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
-            <section class="history-summary-card">
+            <section class="history-summary-card is-${tone}">
                 <div class="history-summary-top">
                     <div>
-                        <span class="history-summary-kicker">${escapeHtml(flow.scenarioLabel)}</span>
+                        <span class="history-summary-kicker">${escapeHtml(summaryKicker)}</span>
                         <h2>${escapeHtml(flow.testTypeName || 'Test')}</h2>
                     </div>
                     ${renderHistoryResultBadge(flow.result, 'lg')}
@@ -1606,7 +1633,7 @@ function renderHistoryFlowView(flow) {
                 </div>
                 <div class="history-test-list">
                     ${flow.tests.map(test => `
-                        <button class="history-test-row" data-history-action="open-test" data-history-key="${flow.historyKey}" data-history-test="${test.testNumber}">
+                        <button class="history-test-row is-${isHistoryControlFlow(flow) ? 'control' : getHistoryResultTone(test.overall)}" data-history-action="open-test" data-history-key="${flow.historyKey}" data-history-test="${test.testNumber}">
                             <div class="history-test-main">
                                 <div class="history-test-title">Test ${test.testNumber}</div>
                                 <div class="history-test-meta">${escapeHtml(getHistoryAnnotationLabel(test.annotation))} &middot; ${escapeHtml(formatHistoryDateTime(test.timestamp))}</div>
@@ -1622,6 +1649,7 @@ function renderHistoryFlowView(flow) {
 }
 
 function renderHistoryTestView(flow, test) {
+    const tone = isHistoryControlFlow(flow) ? 'control' : getHistoryResultTone(test.overall);
     return `
         <div class="history-screen-header">
             <div class="history-screen-title-row">
@@ -1634,7 +1662,7 @@ function renderHistoryTestView(flow, test) {
             <button class="history-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
-            <section class="history-summary-card">
+            <section class="history-summary-card is-${tone}">
                 <div class="history-summary-top">
                     <div>
                         <span class="history-summary-kicker">Test ${test.testNumber}</span>
@@ -1643,14 +1671,8 @@ function renderHistoryTestView(flow, test) {
                     ${renderHistoryResultBadge(test.overall, 'lg')}
                 </div>
                 <div class="history-summary-grid">
-                    ${renderHistoryField('Test Type', flow.testTypeName || test.testTypeName || 'Not set')}
                     ${renderHistoryField('Date & Time', formatHistoryDateTime(test.timestamp, true))}
-                    ${flow.userName ? renderHistoryField('User', flow.userName) : ''}
-                    ${renderHistoryField('Sample ID', flow.sampleId || 'Not set')}
-                    ${renderHistoryField('Operator ID', flow.operatorId || 'Not set')}
-                    ${renderHistoryField('Upload Status', formatUploadStatusLabel(flow.uploadStatus))}
                     ${renderHistoryField('Annotation', getHistoryAnnotationLabel(test.annotation))}
-                    ${flow.flowId ? renderHistoryField('Flow ID', String(flow.flowId)) : ''}
                 </div>
             </section>
             <section class="history-section-card">
@@ -1682,9 +1704,9 @@ function showHistoryScreen(nextState = {}) {
     const historyState = {
         type: 'history',
         view: nextState.view || currentState.view || 'list',
-        page: clampHistoryPage(nextState.page ?? currentState.page ?? 0, totalPages),
         flowKey: nextState.flowKey ?? currentState.flowKey ?? null,
-        testNumber: nextState.testNumber ?? currentState.testNumber ?? null
+        testNumber: nextState.testNumber ?? currentState.testNumber ?? null,
+        page: clampHistoryPage(nextState.page ?? currentState.page ?? 0, totalPages)
     };
 
     let content = '';
@@ -1726,8 +1748,8 @@ function showHistoryScreen(nextState = {}) {
                     if (historyState.view === 'test') {
                         showHistoryScreen({
                             view: 'flow',
-                            page: historyState.page,
-                            flowKey: historyState.flowKey
+                            flowKey: historyState.flowKey,
+                            page: historyState.page
                         });
                     } else if (historyState.view === 'flow') {
                         showHistoryScreen({
@@ -1744,25 +1766,37 @@ function showHistoryScreen(nextState = {}) {
                         page: historyState.page - 1
                     });
                     break;
+                case 'prev-page-jump':
+                    showHistoryScreen({
+                        view: 'list',
+                        page: historyState.page - HISTORY_PAGE_JUMP
+                    });
+                    break;
                 case 'next-page':
                     showHistoryScreen({
                         view: 'list',
                         page: historyState.page + 1
                     });
                     break;
+                case 'next-page-jump':
+                    showHistoryScreen({
+                        view: 'list',
+                        page: historyState.page + HISTORY_PAGE_JUMP
+                    });
+                    break;
                 case 'open-flow':
                     showHistoryScreen({
                         view: 'flow',
-                        page: historyState.page,
-                        flowKey: button.dataset.historyKey
+                        flowKey: button.dataset.historyKey,
+                        page: historyState.page
                     });
                     break;
                 case 'open-test':
                     showHistoryScreen({
                         view: 'test',
-                        page: historyState.page,
                         flowKey: button.dataset.historyKey,
-                        testNumber: button.dataset.historyTest
+                        testNumber: button.dataset.historyTest,
+                        page: historyState.page
                     });
                     break;
             }

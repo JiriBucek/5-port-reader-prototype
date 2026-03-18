@@ -504,6 +504,23 @@ function buildMockHistory() {
             ]
         }),
         createHistoryFlowRecord({
+            historyId: 9,
+            scenario: 'pos_control',
+            channelId: 3,
+            testTypeId: 37,
+            testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
+            cassetteType: '4L',
+            sampleId: 'PC-224',
+            userName: 'Anna Novak',
+            operatorId: 'OP-001',
+            processing: 'read_only',
+            result: 'positive',
+            synced: false,
+            tests: [
+                { testNumber: 1, overall: 'positive', timestamp: '2026-03-18T05:48:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
             historyId: 4,
             scenario: 'pos_control',
             channelId: 1,
@@ -519,6 +536,24 @@ function buildMockHistory() {
             flowId: 144575,
             tests: [
                 { testNumber: 1, overall: 'positive', timestamp: '2026-03-17T14:20:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 10,
+            scenario: 'animal_control',
+            channelId: 4,
+            testTypeId: 43,
+            testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
+            cassetteType: '4L',
+            sampleId: 'AN-024',
+            userName: '',
+            operatorId: 'OP-042',
+            processing: 'read_incubate',
+            result: 'negative',
+            synced: true,
+            flowId: 144574,
+            tests: [
+                { testNumber: 1, overall: 'negative', timestamp: '2026-03-17T16:42:00.000Z' }
             ]
         }),
         createHistoryFlowRecord({
@@ -595,6 +630,41 @@ function buildMockHistory() {
             flowId: 144568,
             tests: [
                 { testNumber: 1, overall: 'negative', timestamp: '2026-03-16T09:47:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 11,
+            scenario: 'pos_control',
+            channelId: 5,
+            testTypeId: 57,
+            testTypeName: 'Bioeasy 3IN1 BST',
+            cassetteType: '3L',
+            sampleId: 'PC-218',
+            userName: 'Anna Novak',
+            operatorId: 'OP-103',
+            processing: 'read_only',
+            result: 'positive',
+            synced: true,
+            flowId: 144569,
+            tests: [
+                { testNumber: 1, overall: 'positive', timestamp: '2026-03-16T12:03:00.000Z' }
+            ]
+        }),
+        createHistoryFlowRecord({
+            historyId: 12,
+            scenario: 'animal_control',
+            channelId: 2,
+            testTypeId: 37,
+            testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
+            cassetteType: '4L',
+            sampleId: 'AN-021',
+            userName: '',
+            operatorId: 'OP-001',
+            processing: 'read_only',
+            result: 'negative',
+            synced: false,
+            tests: [
+                { testNumber: 1, overall: 'negative', timestamp: '2026-03-15T18:22:00.000Z' }
             ]
         })
     ];
