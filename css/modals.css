@@ -429,6 +429,15 @@
     color: #b91c1c;
 }
 
+.config-note-blocking {
+    grid-column: 1 / -1;
+    padding: 10px 12px;
+    border: 1px solid #fca5a5;
+    border-radius: 2px;
+    background: var(--danger-bg);
+    color: #991b1b;
+}
+
 .config-temp-status {
     border: 1px solid var(--gray-300);
     border-radius: 2px;
@@ -583,13 +592,15 @@
 
 .type-picker-row {
     width: 100%;
-    padding: 8px 10px;
+    min-height: var(--touch-target-default);
+    padding: 10px 12px;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
     background: var(--white);
     display: flex;
     flex-direction: column;
     gap: 3px;
+    justify-content: center;
     text-align: left;
     cursor: pointer;
 }

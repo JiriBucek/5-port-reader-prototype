@@ -388,10 +388,31 @@ body {
     margin-bottom: 4px;
 }
 
+.simulation-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 10px;
+}
+
 .simulation-panel .sim-subtitle {
     font-size: var(--font-sm);
     color: var(--gray-400);
-    margin-bottom: 10px;
+    margin-bottom: 0;
+}
+
+.prototype-launch-btn {
+    min-height: var(--touch-target-default);
+    padding: 10px 16px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--white);
+    border-radius: 2px;
+    font-size: var(--font-base);
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .sim-channels {

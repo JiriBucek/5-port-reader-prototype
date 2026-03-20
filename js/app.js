@@ -13,6 +13,7 @@ function init() {
     setInterval(renderStatusBar, 30000);
     bindSimulationEvents();
     bindStatusBarEvents();
+    bindPrototypeToolEvents();
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -24,7 +25,7 @@ function bindStatusBarEvents() {
     if (historyBtn && !historyBtn.hidden) {
         historyBtn.addEventListener('click', () => {
             if (activeModal) return;
-            showHistoryScreen();
+            showHistoryScreen({ filter: 'all' });
         });
     }
 
@@ -32,7 +33,17 @@ function bindStatusBarEvents() {
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             if (activeModal) return;
-            showSettingsScreen();
+            showSettingsPasswordScreen();
+        });
+    }
+}
+
+function bindPrototypeToolEvents() {
+    const onboardingBtn = document.getElementById('start-onboarding-btn');
+    if (onboardingBtn) {
+        onboardingBtn.addEventListener('click', () => {
+            if (activeModal) return;
+            showOnboardingScreen();
         });
     }
 }
@@ -47,6 +58,30 @@ function handleSettingsCancel() {
     processModalQueue();
 }
 
+function handleSettingsPasswordCancel() {
+    hideSettingsPasswordScreen();
+    processModalQueue();
+}
+
+function handleSettingsPasswordSubmit(password) {
+    if (String(password || '').trim() === SETTINGS_PASSWORD) {
+        hideSettingsPasswordScreen();
+        showSettingsScreen();
+        return;
+    }
+
+    showSettingsPasswordScreen('Wrong password. Use 2026.');
+}
+
+function handleSettingsDetailClose(returnToSettings = true, focusSection = '') {
+    hideSettingsDetailScreen();
+    if (returnToSettings) {
+        showSettingsScreen(focusSection);
+        return;
+    }
+    processModalQueue();
+}
+
 function handleVerificationClose() {
     hideVerificationScreen();
     showSettingsScreen();
@@ -57,14 +92,65 @@ function handleSettingsCurveClose() {
     showSettingsScreen();
 }
 
+function handleOnboardingComplete(draft) {
+    applyOnboardingDraft(draft);
+    hideOnboardingScreen();
+    renderAllCards();
+    renderStatusBar();
+    renderSimulationButtons();
+}
+
 function handleSettingsApply(nextSettings) {
     const prevMicroswitch = deviceSettings.microswitchEnabled;
     const prevQr = deviceSettings.qrScanningEnabled;
     const prevDeviceTemperature = normalizeDeviceTemperature(deviceSettings.deviceTemperature);
 
-    deviceSettings.microswitchEnabled = !!nextSettings.microswitchEnabled;
-    deviceSettings.qrScanningEnabled = !!nextSettings.qrScanningEnabled;
-    deviceSettings.deviceTemperature = normalizeDeviceTemperature(nextSettings.deviceTemperature);
+    if ('microswitchEnabled' in nextSettings) {
+        deviceSettings.microswitchEnabled = !!nextSettings.microswitchEnabled;
+    }
+    if ('qrScanningEnabled' in nextSettings) {
+        deviceSettings.qrScanningEnabled = !!nextSettings.qrScanningEnabled;
+    }
+    if ('deviceTemperature' in nextSettings) {
+        deviceSettings.deviceTemperature = normalizeDeviceTemperature(nextSettings.deviceTemperature);
+    }
+    if ('printerEnabled' in nextSettings) {
+        deviceSettings.printerEnabled = !!nextSettings.printerEnabled;
+    }
+    if ('commentsEnabled' in nextSettings) {
+        deviceSettings.commentsEnabled = !!nextSettings.commentsEnabled;
+    }
+    if ('sampleIdEnabled' in nextSettings) {
+        deviceSettings.sampleIdEnabled = !!nextSettings.sampleIdEnabled;
+    }
+    if ('operatorIdEnabled' in nextSettings) {
+        deviceSettings.operatorIdEnabled = !!nextSettings.operatorIdEnabled;
+    }
+    if ('limsEnabled' in nextSettings) {
+        deviceSettings.limsEnabled = !!nextSettings.limsEnabled;
+    }
+    if ('soundEnabled' in nextSettings) {
+        deviceSettings.soundEnabled = !!nextSettings.soundEnabled;
+    }
+    if ('language' in nextSettings && nextSettings.language) {
+        deviceSettings.language = nextSettings.language;
+    }
+    if ('timezone' in nextSettings && nextSettings.timezone) {
+        deviceSettings.timezone = nextSettings.timezone;
+    }
+    if ('verificationThreshold' in nextSettings) {
+        deviceSettings.verificationThreshold = sanitizeVerificationThreshold(nextSettings.verificationThreshold);
+    }
+    if ('testSelectionMode' in nextSettings && nextSettings.testSelectionMode) {
+        deviceSettings.testSelectionMode = nextSettings.testSelectionMode;
+    }
+    if ('connectivity' in nextSettings && nextSettings.connectivity) {
+        deviceSettings.connectivity = nextSettings.connectivity;
+        deviceSettings.wifiNetwork = nextSettings.connectivity === 'wifi'
+            ? (nextSettings.wifiNetwork || deviceSettings.wifiNetwork || getDefaultWifiNetworkName())
+            : '';
+        deviceSettings.ethernetConnected = nextSettings.connectivity === 'ethernet';
+    }
     const incubationEnabled = isIncubationEnabled();
     const temperatureChanged = prevDeviceTemperature !== deviceSettings.deviceTemperature;
 
@@ -266,6 +352,7 @@ function handleConfigStart(channelId, config) {
 
     const selectedTestType = getTestTypeById(config.testTypeId);
     const selectedCurve = getCurveById(config.curveId);
+    const isStripTest = selectedTestType?.category === 'Strip';
 
     ch.scenario = config.scenario;
     ch.testTypeId = selectedTestType ? selectedTestType.id : null;
@@ -274,10 +361,12 @@ function handleConfigStart(channelId, config) {
     ch.curveName = selectedTestType?.quantitative ? (selectedCurve?.name || '') : '';
     ch.curveSource = selectedTestType?.quantitative ? (selectedCurve?.source || '') : '';
     ch.cassetteType = selectedTestType ? selectedTestType.cassetteType : normalizeLoadedCassetteType(config.testType);
-    ch.sampleId = config.sampleId;
+    ch.sampleId = deviceSettings.sampleIdEnabled ? config.sampleId : '';
     ch.userName = getActiveUserName();
-    ch.operatorId = config.operatorId;
-    ch.processing = (config.processing === 'read_incubate' && !isIncubationEnabled())
+    ch.operatorId = deviceSettings.operatorIdEnabled ? config.operatorId : '';
+    ch.accountMode = isSignedIn() ? 'signed_in' : 'anonymous';
+    ch.comment = '';
+    ch.processing = ((config.processing === 'read_incubate' && !isIncubationEnabled()) || isStripTest)
         ? 'read_only'
         : config.processing;
     ch.currentTestNumber = 1;
@@ -331,6 +420,13 @@ function hasReadableCassette(ch) {
 }
 
 function validateCassetteForCurrentTest(ch) {
+    if (ch.testTypeId && !isTestTypeEnabledForCurrentUser(ch.testTypeId)) {
+        return {
+            ok: false,
+            message: `${ch.testTypeName || 'Selected test type'} is disabled in this reader profile.`
+        };
+    }
+
     const temperatureValidation = getTemperatureValidation(ch.testTypeId, ch.cassetteType);
     if (!temperatureValidation.ok) {
         const selectedTestType = ch.testTypeName || ch.cassetteType;
@@ -574,6 +670,10 @@ function completeReading(ch) {
             ch.state = STATES.COMPLETE;
             ch.groupResult = overall === 'positive' ? 'positive' : 'negative';
             break;
+    }
+
+    if (ch.state === STATES.COMPLETE && ch.scenario === 'test') {
+        incrementVerificationCount(ch.id);
     }
 
     renderCard(ch);

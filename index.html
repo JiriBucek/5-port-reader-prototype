@@ -28,6 +28,7 @@
             <div class="prototype-info-section">
                 <h2>How to use it</h2>
                 <ul>
+                    <li>Use <strong>Start Onboarding</strong> to walk through the first-use setup.</li>
                     <li>Use the Simulation Controls below the reader to insert a cassette.</li>
                     <li>Open Configure on a channel and step through the test flow.</li>
                     <li>Try different test types, QR behavior, temperature modes, and confirmation cases to double-check that the workflow behaves correctly.</li>
@@ -38,9 +39,10 @@
                 <h2>What works here</h2>
                 <ul>
                     <li>5-channel dashboard and channel states</li>
+                    <li>First-use onboarding, cloud account mode, and internet state</li>
                     <li>Test type selection, QR lock, and quantitative curves</li>
-                    <li>Temperature, QR, and microswitch settings</li>
-                    <li>History list, flow detail, test detail, and confirmation flow</li>
+                    <li>Settings sections with prototype-level device controls</li>
+                    <li>History list, flow detail, test detail, comments, and confirmation flow</li>
                 </ul>
             </div>
 
@@ -51,6 +53,14 @@
                     <li>Most settings are layout-only.</li>
                     <li>This prototype is for function and operator workflow validation, not final styling.</li>
                     <li>The final design, wording, Christian Hansen colors, and visual polish will still change.</li>
+                </ul>
+            </div>
+
+            <div class="prototype-info-section">
+                <h2>Prototype Access</h2>
+                <ul>
+                    <li>Settings password: <strong>2026</strong></li>
+                    <li>Verification flow remains reserved for the next pass.</li>
                 </ul>
             </div>
         </div>
@@ -64,6 +74,9 @@
 
             <!-- Status Bar -->
             <div class="status-bar">
+                <div class="sb-left">
+                    <span class="sb-account-status" id="status-bar-account-status">milk_tester</span>
+                </div>
                 <div class="sb-center">
                     <span class="sb-time" id="status-bar-time">--:--</span>
                     <span class="sb-temp">
@@ -91,7 +104,10 @@
             </div>
 
             <!-- Full Screen Settings -->
+            <div class="onboarding-screen" id="onboarding-screen"></div>
+            <div class="settings-password-screen" id="settings-password-screen"></div>
             <div class="settings-screen" id="settings-screen"></div>
+            <div class="settings-detail-screen" id="settings-detail-screen"></div>
             <div class="history-screen" id="history-screen"></div>
             <div class="verification-screen" id="verification-screen"></div>
             <div class="settings-curve-screen" id="settings-curve-screen"></div>
@@ -180,8 +196,13 @@
     <!-- ===== Simulation Control Panel ===== -->
     <div class="simulation-panel">
         <div class="prototype-panel-kicker">Prototype Tools</div>
-        <h2>Simulation Controls</h2>
-        <div class="sim-subtitle">Development-only controls for cassette insertion and test outcomes</div>
+        <div class="simulation-panel-header">
+            <div>
+                <h2>Simulation Controls</h2>
+                <div class="sim-subtitle">Development-only controls for cassette insertion and test outcomes</div>
+            </div>
+            <button class="prototype-launch-btn" id="start-onboarding-btn">Start Onboarding</button>
+        </div>
 
         <div class="sim-channels">
             <!-- 1 -->

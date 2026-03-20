@@ -163,10 +163,113 @@ const HISTORY_ANNOTATION_LABELS = {
     animal_control: 'Animal Control',
     positive_control: 'Positive Control'
 };
-const ACTIVE_USER = {
-    signedIn: true,
-    name: 'Anna Novak'
+const SETTINGS_PASSWORD = '2026';
+const DEFAULT_SITE_TEST_TYPE_IDS = [8, 17, 18, 19, 20, 23, 25, 37, 40, 43, 45, 53, 57];
+const DEFAULT_LANGUAGE_OPTIONS = [
+    'English',
+    'French (France)',
+    'German (Germany)',
+    'Spanish (Spain)',
+    'Portuguese (Portugal)',
+    'Russian',
+    'Hungarian',
+    'Italian',
+    'Slovak',
+    'Ukrainian',
+    'Polish',
+    'Danish',
+    'Estonian',
+    'Lithuanian',
+    'Greek',
+    'Finnish'
+];
+const DEFAULT_TIMEZONE_OPTIONS = (
+    typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function'
+        ? Intl.supportedValuesOf('timeZone')
+        : [
+            'UTC',
+            'Europe/Prague',
+            'Europe/London',
+            'Europe/Paris',
+            'Europe/Berlin',
+            'America/New_York',
+            'America/Chicago',
+            'America/Denver',
+            'America/Los_Angeles',
+            'Asia/Tokyo',
+            'Asia/Shanghai',
+            'Australia/Sydney'
+        ]
+).slice().sort((left, right) => left.localeCompare(right));
+const DEFAULT_CLOUD_USERNAME = 'milk_tester';
+const DEFAULT_CLOUD_PASSWORD = 'milksafe';
+const CURRENT_SOFTWARE_VERSION = '1.5.677';
+const LATEST_SOFTWARE_VERSION = '1.6.102';
+const DEFAULT_WIFI_NETWORKS = [
+    { ssid: 'MilkSafe Factory', security: 'WPA2', signal: 'Excellent', password: 'reader2026' },
+    { ssid: 'MilkSafe QA Lab', security: 'WPA2', signal: 'Excellent', password: 'reader2026' },
+    { ssid: 'Office Wi-Fi', security: 'WPA2', signal: 'Good', password: 'office2026' },
+    { ssid: 'Packaging Hall', security: 'WPA2', signal: 'Good', password: 'packaging' },
+    { ssid: 'Warehouse Mesh', security: 'WPA2', signal: 'Fair', password: 'warehouse' },
+    { ssid: 'Service Reader', security: 'WPA2', signal: 'Excellent', password: 'service2026' },
+    { ssid: 'Maintenance AP', security: 'WPA2', signal: 'Fair', password: 'maint-guest' },
+    { ssid: 'Milk Collection', security: 'WPA2', signal: 'Good', password: 'collection' },
+    { ssid: 'Quality Floor 1', security: 'WPA2', signal: 'Good', password: 'qualityfloor' },
+    { ssid: 'Quality Floor 2', security: 'WPA2', signal: 'Fair', password: 'qualityfloor' },
+    { ssid: 'Reader Backup', security: 'WPA2', signal: 'Weak', password: 'backupreader' },
+    { ssid: 'Lab Guest', security: 'WPA2', signal: 'Weak', password: 'guestreader' }
+];
+const DEFAULT_CHANNEL_VERIFICATION_COUNTS = {
+    1: 184,
+    2: 251,
+    3: 96,
+    4: 228,
+    5: 61
 };
+
+function createDefaultAccountState() {
+    return {
+        signedIn: true,
+        name: DEFAULT_CLOUD_USERNAME,
+        username: DEFAULT_CLOUD_USERNAME,
+        siteName: 'Prague Dairy',
+        anonymousBacklog: 2
+    };
+}
+
+function createDefaultDeviceSettings() {
+    return {
+        microswitchEnabled: true,
+        qrScanningEnabled: true,
+        deviceTemperature: 40,
+        curveScannerConnected: true,
+        storageCardMounted: true,
+        printerEnabled: true,
+        printerName: 'Thermal Printer',
+        commentsEnabled: true,
+        sampleIdEnabled: true,
+        operatorIdEnabled: true,
+        limsEnabled: false,
+        soundEnabled: true,
+        language: 'English',
+        timezone: 'UTC',
+        connectivity: 'offline',
+        wifiNetwork: '',
+        ethernetConnected: false,
+        verificationThreshold: 250,
+        verificationCounts: { ...DEFAULT_CHANNEL_VERIFICATION_COUNTS },
+        testSelectionMode: 'all',
+        softwareVersion: CURRENT_SOFTWARE_VERSION
+    };
+}
+
+function createDefaultPrototypeRuntime() {
+    return {
+        onboardingCompleted: false,
+        lastHistoryActionMessage: '',
+        pendingSettingsFocus: ''
+    };
+}
 
 // ---- Global State ----
 
@@ -181,13 +284,126 @@ let recentTestTypeIds = [];
 let savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
 let recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
 let quantCurveIdCounter = Math.max(...savedQuantCurves.map(curve => curve.id)) + 1;
-let deviceSettings = {
-    microswitchEnabled: true,
-    qrScanningEnabled: true,
-    deviceTemperature: 40,
-    curveScannerConnected: true,
-    storageCardMounted: true
-};
+let activeAccount = createDefaultAccountState();
+let deviceSettings = createDefaultDeviceSettings();
+let prototypeRuntime = createDefaultPrototypeRuntime();
+let siteEnabledTestTypeIds = DEFAULT_SITE_TEST_TYPE_IDS.slice();
+let anonymousEnabledTestTypeIds = TEST_TYPES.map(testType => testType.id);
+
+function isSignedIn() {
+    return activeAccount.signedIn;
+}
+
+function isAnonymousSession() {
+    return !isSignedIn();
+}
+
+function getActiveAccountLabel() {
+    return isSignedIn() ? activeAccount.username : 'Anonymous';
+}
+
+function getCurrentEnabledTestTypeIds() {
+    return isSignedIn() ? siteEnabledTestTypeIds : anonymousEnabledTestTypeIds;
+}
+
+function isTestTypeEnabledForCurrentUser(testTypeId) {
+    const normalizedId = normalizeTestTypeId(testTypeId);
+    if (normalizedId == null) return false;
+    return getCurrentEnabledTestTypeIds().includes(normalizedId);
+}
+
+function isFastQrOnlyMode() {
+    return deviceSettings.testSelectionMode === 'fast_qr_only';
+}
+
+function getConnectivityLabel(connection = deviceSettings.connectivity) {
+    if (connection === 'wifi') {
+        return deviceSettings.wifiNetwork ? `Wi-Fi ${deviceSettings.wifiNetwork}` : 'Wi-Fi';
+    }
+    if (connection === 'ethernet') return 'Ethernet';
+    return 'Offline';
+}
+
+function getDefaultWifiNetworkName() {
+    return DEFAULT_WIFI_NETWORKS[0]?.ssid || '';
+}
+
+function getWifiNetworkBySsid(ssid) {
+    return DEFAULT_WIFI_NETWORKS.find(network => network.ssid === ssid) || null;
+}
+
+function getCloudCredentialHint() {
+    return `${DEFAULT_CLOUD_USERNAME} / ${DEFAULT_CLOUD_PASSWORD}`;
+}
+
+function isCloudCredentialValid(username, password) {
+    return String(username || '').trim() === DEFAULT_CLOUD_USERNAME &&
+        String(password || '').trim() === DEFAULT_CLOUD_PASSWORD;
+}
+
+function compareSoftwareVersions(left, right) {
+    const leftParts = String(left || '').split('.').map(part => Number(part) || 0);
+    const rightParts = String(right || '').split('.').map(part => Number(part) || 0);
+    const maxLength = Math.max(leftParts.length, rightParts.length);
+
+    for (let index = 0; index < maxLength; index += 1) {
+        const delta = (leftParts[index] || 0) - (rightParts[index] || 0);
+        if (delta > 0) return 1;
+        if (delta < 0) return -1;
+    }
+
+    return 0;
+}
+
+function getVerificationCountForChannel(channelId) {
+    return Number(deviceSettings.verificationCounts?.[channelId] || 0);
+}
+
+function incrementVerificationCount(channelId) {
+    deviceSettings.verificationCounts[channelId] = getVerificationCountForChannel(channelId) + 1;
+}
+
+function getVerificationWarningChannels(thresholdValue = deviceSettings.verificationThreshold) {
+    const threshold = Number(thresholdValue || 250);
+    return channels
+        .map(channel => ({
+            id: channel.id,
+            count: getVerificationCountForChannel(channel.id),
+            threshold
+        }))
+        .filter(item => item.count > item.threshold);
+}
+
+function getVerificationOutstandingCount(thresholdValue = deviceSettings.verificationThreshold) {
+    return getVerificationWarningChannels(thresholdValue).length;
+}
+
+function getVerificationSummaryLabel(thresholdValue = deviceSettings.verificationThreshold) {
+    const outstandingCount = getVerificationOutstandingCount(thresholdValue);
+    return outstandingCount > 0 ? `${outstandingCount} / ${channels.length} Outstanding` : 'All Clear';
+}
+
+function getSelectedTimezone() {
+    return deviceSettings.timezone || 'UTC';
+}
+
+function buildOnboardingDraftFromState() {
+    const onboardingCompleted = Boolean(prototypeRuntime.onboardingCompleted);
+    return {
+        language: deviceSettings.language,
+        printerEnabled: deviceSettings.printerEnabled,
+        connectivity: deviceSettings.connectivity,
+        wifiNetwork: deviceSettings.wifiNetwork,
+        wifiPassword: '',
+        wifiStage: deviceSettings.connectivity === 'wifi' && deviceSettings.wifiNetwork ? 'wifi_success' : 'mode',
+        wifiError: '',
+        accountMode: onboardingCompleted ? (isSignedIn() ? 'signed_in' : 'anonymous') : '',
+        username: activeAccount.username,
+        password: '',
+        signInState: onboardingCompleted && isSignedIn() ? 'success' : 'idle',
+        signInError: ''
+    };
+}
 
 function normalizeDeviceTemperature(value) {
     if (value === 40 || value === '40') return 40;
@@ -233,9 +449,11 @@ function createChannel(id) {
         cassetteType: null,
         scenario: null,         // 'test', 'pos_control', 'animal_control'
         processing: null,       // 'read_only', 'read_incubate'
+        accountMode: 'signed_in',
         sampleId: '',
         userName: '',
         operatorId: '',
+        comment: '',
         currentTestNumber: 0,
         testResults: [],        // [{substances: [{name, result}], overall, testNumber}]
         groupResult: null,      // 'negative', 'positive', 'inconclusive'
@@ -265,7 +483,7 @@ function initChannels() {
 }
 
 function getActiveUserName() {
-    return ACTIVE_USER.signedIn ? ACTIVE_USER.name : '';
+    return isSignedIn() ? activeAccount.username : '';
 }
 
 function nextHistoryEntryId() {
@@ -368,6 +586,9 @@ function createHistoryFlowRecord({
     sampleId = '',
     userName = '',
     operatorId = '',
+    accountMode = userName ? 'signed_in' : 'anonymous',
+    comment = '',
+    commentUpdatedAt = '',
     processing = 'read_only',
     result = null,
     synced = false,
@@ -375,6 +596,7 @@ function createHistoryFlowRecord({
     timestamp = new Date().toISOString(),
     tests = []
 } = {}) {
+    const resolvedAccountMode = accountMode === 'anonymous' ? 'anonymous' : 'signed_in';
     const numericHistoryId = Number(historyId);
     const seedBase = Number.isFinite(numericHistoryId)
         ? numericHistoryId
@@ -415,6 +637,7 @@ function createHistoryFlowRecord({
 
     const lastTimestamp = normalizedTests[normalizedTests.length - 1]?.timestamp || timestamp;
     const resolvedResult = result || normalizedTests[normalizedTests.length - 1]?.overall || null;
+    const canUseBackendFlowId = resolvedAccountMode === 'signed_in' && Boolean(synced);
 
     return {
         historyId,
@@ -433,11 +656,14 @@ function createHistoryFlowRecord({
         sampleId,
         userName,
         operatorId,
+        accountMode: resolvedAccountMode,
+        comment: String(comment || '').trim(),
+        commentUpdatedAt: commentUpdatedAt || '',
         processing,
         result: resolvedResult,
-        synced: Boolean(synced),
-        uploadStatus: synced ? 'synced' : 'not_synced',
-        flowId: synced ? flowId : null,
+        synced: canUseBackendFlowId,
+        uploadStatus: canUseBackendFlowId ? 'synced' : 'not_synced',
+        flowId: canUseBackendFlowId ? flowId : null,
         testCount: normalizedTests.length,
         tests: normalizedTests,
         timestamp: lastTimestamp
@@ -454,12 +680,14 @@ function buildMockHistory() {
             testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
             cassetteType: '4L',
             sampleId: 'S-1048',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-042',
             processing: 'read_incubate',
             result: 'positive',
             synced: true,
             flowId: 144577,
+            comment: 'Repeat confirmation flow kept because T3 returned positive again.',
+            commentUpdatedAt: '2026-03-18T09:02:00.000Z',
             tests: [
                 { testNumber: 1, overall: 'positive', timestamp: '2026-03-18T08:42:00.000Z' },
                 { testNumber: 2, overall: 'negative', timestamp: '2026-03-18T08:49:00.000Z' },
@@ -474,7 +702,7 @@ function buildMockHistory() {
             testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
             cassetteType: '4L',
             sampleId: 'S-1047',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-001',
             processing: 'read_only',
             result: 'negative',
@@ -496,6 +724,7 @@ function buildMockHistory() {
             sampleId: 'AN-023',
             userName: '',
             operatorId: 'OP-103',
+            accountMode: 'anonymous',
             processing: 'read_only',
             result: 'negative',
             synced: false,
@@ -511,11 +740,12 @@ function buildMockHistory() {
             testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
             cassetteType: '4L',
             sampleId: 'PC-224',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-001',
             processing: 'read_only',
             result: 'positive',
             synced: false,
+            comment: 'Control strip stored for review before the next production shift.',
             tests: [
                 { testNumber: 1, overall: 'positive', timestamp: '2026-03-18T05:48:00.000Z' }
             ]
@@ -528,7 +758,7 @@ function buildMockHistory() {
             testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
             cassetteType: '4L',
             sampleId: 'PC-221',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-042',
             processing: 'read_incubate',
             result: 'positive',
@@ -566,6 +796,7 @@ function buildMockHistory() {
             sampleId: 'AF-022',
             userName: '',
             operatorId: 'OP-001',
+            accountMode: 'anonymous',
             processing: 'read_only',
             result: 'negative',
             synced: false,
@@ -581,11 +812,12 @@ function buildMockHistory() {
             testTypeName: 'MilkSafe™ FAST 3BTS (2.0)',
             cassetteType: '4L',
             sampleId: 'S-1043',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-103',
             processing: 'read_incubate',
             result: 'inconclusive',
             synced: false,
+            comment: 'Cassette changed after first positive. Record left pending for supervisor review.',
             tests: [
                 {
                     testNumber: 1,
@@ -605,6 +837,7 @@ function buildMockHistory() {
             sampleId: 'S-1038',
             userName: '',
             operatorId: 'OP-042',
+            accountMode: 'anonymous',
             processing: 'read_only',
             result: 'positive',
             synced: true,
@@ -622,7 +855,7 @@ function buildMockHistory() {
             testTypeName: 'Bioeasy 3IN1 BST',
             cassetteType: '3L',
             sampleId: 'BULK-14',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-001',
             processing: 'read_only',
             result: 'negative',
@@ -640,7 +873,7 @@ function buildMockHistory() {
             testTypeName: 'Bioeasy 3IN1 BST',
             cassetteType: '3L',
             sampleId: 'PC-218',
-            userName: 'Anna Novak',
+            userName: DEFAULT_CLOUD_USERNAME,
             operatorId: 'OP-103',
             processing: 'read_only',
             result: 'positive',
@@ -688,6 +921,8 @@ function buildHistoryFlowFromChannel(ch) {
         sampleId: ch.sampleId,
         userName: ch.userName || getActiveUserName(),
         operatorId: ch.operatorId,
+        accountMode: ch.accountMode || (ch.userName ? 'signed_in' : 'anonymous'),
+        comment: ch.comment || '',
         processing: ch.processing,
         result: ch.groupResult || ch.testResults[ch.testResults.length - 1]?.overall || null,
         synced: false,
@@ -738,8 +973,12 @@ function getTestTypeById(testTypeId) {
     return TEST_TYPES.find(testType => testType.id === normalizedId) || null;
 }
 
+function getEnabledTestTypesForCurrentUser() {
+    return TEST_TYPES.filter(testType => isTestTypeEnabledForCurrentUser(testType.id));
+}
+
 function getDefaultManualTestType() {
-    return TEST_TYPES[0] || null;
+    return getEnabledTestTypesForCurrentUser()[0] || TEST_TYPES[0] || null;
 }
 
 function normalizeLoadedCassetteType(cassetteType) {
@@ -776,7 +1015,7 @@ function getQrPrefillTestType(cassetteTypeHint) {
 function getRecentTestTypes() {
     return recentTestTypeIds
         .map(getTestTypeById)
-        .filter(Boolean);
+        .filter(testType => Boolean(testType) && isTestTypeEnabledForCurrentUser(testType.id));
 }
 
 function rememberRecentTestType(testTypeId) {
@@ -883,11 +1122,11 @@ function getRequiredTemperatureForSelection(testTypeId, cassetteType) {
 
 function getDisplayTestType(testTypeId, cassetteType, allowQrPrefill = false) {
     const selectedTestType = getTestTypeById(testTypeId);
-    if (selectedTestType) return selectedTestType;
+    if (selectedTestType && isTestTypeEnabledForCurrentUser(selectedTestType.id)) return selectedTestType;
 
     if (allowQrPrefill) {
         const qrPrefillType = getQrPrefillTestType(cassetteType);
-        if (qrPrefillType) return qrPrefillType;
+        if (qrPrefillType && isTestTypeEnabledForCurrentUser(qrPrefillType.id)) return qrPrefillType;
     }
 
     const recentTestType = getRecentTestTypes()[0];
@@ -1131,9 +1370,11 @@ function resetChannel(ch) {
     ch.cassetteType = null;
     ch.scenario = null;
     ch.processing = null;
+    ch.accountMode = 'signed_in';
     ch.sampleId = '';
     ch.userName = '';
     ch.operatorId = '';
+    ch.comment = '';
     ch.currentTestNumber = 0;
     ch.testResults = [];
     ch.groupResult = null;
@@ -1211,6 +1452,8 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
         sampleId: ch.sampleId,
         userName: ch.userName || getActiveUserName(),
         operatorId: ch.operatorId,
+        accountMode: ch.accountMode || (ch.userName ? 'signed_in' : 'anonymous'),
+        comment: ch.comment || '',
         processing: ch.processing,
         result: finalResult,
         synced: false,
@@ -1232,6 +1475,76 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
             }))
         }))
     }));
+}
+
+function updateHistoryFlowComment(historyKey, comment) {
+    const nextComment = String(comment || '').trim();
+
+    if (String(historyKey).startsWith('live-')) {
+        const channelId = Number(String(historyKey).replace('live-', ''));
+        const channel = getChannel(channelId);
+        if (channel) {
+            channel.comment = nextComment;
+        }
+        return;
+    }
+
+    const historyId = Number(String(historyKey).replace('history-', ''));
+    const targetRecord = sessionHistory.find(entry => Number(entry.historyId) === historyId);
+    if (targetRecord) {
+        targetRecord.comment = nextComment;
+        targetRecord.commentUpdatedAt = nextComment ? new Date().toISOString() : '';
+    }
+}
+
+function setAnonymousTestTypeEnabled(testTypeId, enabled) {
+    const normalizedId = normalizeTestTypeId(testTypeId);
+    if (normalizedId == null) return;
+
+    if (enabled) {
+        anonymousEnabledTestTypeIds = [...new Set([...anonymousEnabledTestTypeIds, normalizedId])].sort((left, right) => left - right);
+        return;
+    }
+
+    anonymousEnabledTestTypeIds = anonymousEnabledTestTypeIds.filter(id => id !== normalizedId);
+}
+
+function applyAccountMode(accountMode, details = {}) {
+    if (accountMode === 'anonymous') {
+        activeAccount = {
+            ...activeAccount,
+            signedIn: false
+        };
+        return;
+    }
+
+    activeAccount = {
+        ...activeAccount,
+        signedIn: true,
+        name: String(details.username || activeAccount.username || DEFAULT_CLOUD_USERNAME).trim() || DEFAULT_CLOUD_USERNAME,
+        username: String(details.username || activeAccount.username || DEFAULT_CLOUD_USERNAME).trim() || DEFAULT_CLOUD_USERNAME
+    };
+}
+
+function applyOnboardingDraft(draft) {
+    deviceSettings.language = draft.language || deviceSettings.language;
+    deviceSettings.printerEnabled = Boolean(draft.printerEnabled);
+    deviceSettings.connectivity = draft.connectivity || deviceSettings.connectivity;
+    deviceSettings.wifiNetwork = draft.connectivity === 'wifi' ? (draft.wifiNetwork || getDefaultWifiNetworkName()) : '';
+    deviceSettings.ethernetConnected = draft.connectivity === 'ethernet';
+    applyAccountMode(draft.accountMode, {
+        username: draft.username
+    });
+    prototypeRuntime.onboardingCompleted = true;
+}
+
+function resetPrototypeToFactoryDefaults() {
+    activeAccount = createDefaultAccountState();
+    deviceSettings = createDefaultDeviceSettings();
+    prototypeRuntime = createDefaultPrototypeRuntime();
+    siteEnabledTestTypeIds = DEFAULT_SITE_TEST_TYPE_IDS.slice();
+    anonymousEnabledTestTypeIds = TEST_TYPES.map(testType => testType.id);
+    initChannels();
 }
 
 function nextCassetteId() {

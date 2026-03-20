@@ -40,10 +40,10 @@ Aflatoxin workflow will be similar to the current Desktop Reader.
 
  –
 Do we ignore the test type temperature in the test type and just let the user set the temperature manually on the device?
-No; Should be ruled by the test type selected; There’s only 1 heating plate, so the temperature will be the same for all channels at the same time. 
+The device temperature is set manually on the reader to Off, 40 C, or 50 C. The reader then validates the selected device temperature against the test type requirement before the test can start. There is only 1 heating plate, so the same temperature applies to all channels at the same time. 
  ✓
 Do we take the incubation time from the test type configuration only or we allow the user to set the incubation time manually on the device? 
-Same answer as above, the user should not decide incubation time. This is ruled by the test type. 
+The user should not decide incubation time manually. Incubation time is ruled by the test type. 
  –
 Does the device have a microswitch on and off setting like in DRC?  
 Yes, we want the possibility to switch on and off.
@@ -234,7 +234,7 @@ Device Temperature
 Upon turning on, the default incubation temperature should be 50 degrees Celcius; 
 The device incubation temperature is set manually by the user. The device temperature is NOT set based on the test type configuration (as opposed to Desktop and Truck reader).
 
-The user can manually set the temperature to 40 or 50 degrees Celsius. 
+The user can manually set the temperature to Off, 40, or 50 degrees Celsius. 
 
 When the user inserts the cassette and the reader reads the test type from its QR code, the reader checks the current device temperature is within a 2 degrees range of the test type configuration temperature. 
 
