@@ -4786,20 +4786,22 @@ function showDecisionModal(ch, variant) {
     const resultKey = isPos ? 'positive' : 'negative';
     const testTypeLabel = ch.testTypeName || ch.cassetteType || 'Test';
 
-    let headerTitle, resultLabel, messageHtml, continueLabel;
+    let headerTitle, resultLabel, messageHtml, continueLabel, stepLabel;
 
     if (variant === 'a') {
         headerTitle = 'Confirmation Required';
         resultLabel = 'Test 1 Result';
-        continueLabel = 'Start Test 2';
+        continueLabel = 'Continue Confirmation Flow';
+        stepLabel = 'First Test';
         messageHtml = `<p>Test 1 is positive. Insert a new ${testTypeLabel} cassette, then start Test 2.</p>
-                       <p class="decision-hint">Abort &rarr; Flow result inconclusive</p>`;
+                       <p class="decision-hint">Aborting the flow will lead to an inconclusive flow result.</p>`;
     } else {
         headerTitle = 'Tiebreaker Required';
         resultLabel = 'Test 2 Result';
-        continueLabel = 'Start Test 3';
+        continueLabel = 'Continue Confirmation Flow';
+        stepLabel = 'First Confirmation Test';
         messageHtml = `<p>Test 1 is positive and Test 2 is negative. Insert a new ${testTypeLabel} cassette, then start Test 3.</p>
-                       <p class="decision-hint">Abort &rarr; Flow result inconclusive</p>`;
+                       <p class="decision-hint">Aborting the flow will lead to an inconclusive flow result.</p>`;
     }
 
     const substancesHtml = lastResult.substances.map(s => {
@@ -4816,16 +4818,13 @@ function showDecisionModal(ch, variant) {
             <section class="history-summary-card modal-summary-card is-${resultKey}">
                 <div class="history-summary-top">
                     <div>
-                        <span class="history-summary-kicker">${resultLabel}</span>
+                        <span class="history-summary-kicker">${stepLabel}</span>
                         <h2>${escapeHtml(testTypeLabel)}</h2>
                     </div>
                     ${renderHistoryResultBadge(resultKey, 'lg')}
                 </div>
-                <div class="history-summary-grid">
-                    ${renderHistoryField('Sample ID', ch.sampleId || 'Not set')}
-                    ${renderHistoryField('Operator ID', ch.operatorId || 'Not set')}
-                </div>
             </section>
+            <div class="decision-message">${messageHtml}</div>
             <section class="history-section-card modal-section-card">
                 <div class="history-section-header">
                     <h2>Substances</h2>
@@ -4835,7 +4834,6 @@ function showDecisionModal(ch, variant) {
                     ${substancesHtml}
                 </div>
             </section>
-            <div class="decision-message">${messageHtml}</div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="decision-abort">Abort Flow</button>
