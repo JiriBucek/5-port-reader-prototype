@@ -3737,7 +3737,6 @@ function showSettingsScreen(focusSection = '') {
             <button class="topbar-close-btn" id="settings-screen-close">Close</button>
         </div>
         <div class="settings-screen-body">
-            ${renderScreenIntroCopy(isSignedIn() ? `${activeAccount.username} · ${activeAccount.siteName}` : 'Anonymous reader mode')}
             ${renderSettingsSection('Reader Controls', [
                 renderSettingsToggleRow({
                     title: 'Temperature',
@@ -3769,20 +3768,6 @@ function showSettingsScreen(focusSection = '') {
                         { value: 'on', label: 'On' },
                         { value: 'off', label: 'Off' }
                     ]
-                }),
-                renderSettingsActionRow({
-                    title: 'Language',
-                    detail: 'Open the full device language list on a dedicated screen.',
-                    value: deviceSettings.language,
-                    buttonLabel: 'Open',
-                    action: 'open-language'
-                }),
-                renderSettingsActionRow({
-                    title: 'Screen Brightness',
-                    detail: 'Set the display brightness from the dimmest to the brightest step.',
-                    value: getScreenBrightnessLabel(),
-                    buttonLabel: 'Open',
-                    action: 'open-brightness'
                 })
             ].join(''), 'Live settings that apply right away.', 'settings-reader-controls')}
             ${renderSettingsSection('Verification', [
@@ -3833,6 +3818,20 @@ function showSettingsScreen(focusSection = '') {
                     value: deviceSettings.timezone,
                     buttonLabel: 'Manage',
                     action: 'open-date-time'
+                }),
+                renderSettingsActionRow({
+                    title: 'Language',
+                    detail: 'Open the full device language list on a dedicated screen.',
+                    value: deviceSettings.language,
+                    buttonLabel: 'Open',
+                    action: 'open-language'
+                }),
+                renderSettingsActionRow({
+                    title: 'Screen Brightness',
+                    detail: 'Set the display brightness from the dimmest to the brightest step.',
+                    value: getScreenBrightnessLabel(),
+                    buttonLabel: 'Open',
+                    action: 'open-brightness'
                 }),
                 renderSettingsActionRow({
                     title: 'Load Quant Curve',
@@ -3906,12 +3905,12 @@ function showSettingsScreen(focusSection = '') {
             }
             if (action === 'open-language') {
                 hideSettingsScreen();
-                showSettingsDetailScreen('language', { focusSection: 'settings-reader-controls' });
+                showSettingsDetailScreen('language', { focusSection: 'settings-setup' });
                 return;
             }
             if (action === 'open-brightness') {
                 hideSettingsScreen();
-                showSettingsDetailScreen('brightness', { focusSection: 'settings-reader-controls' });
+                showSettingsDetailScreen('brightness', { focusSection: 'settings-setup' });
                 return;
             }
             if (action === 'open-verification-threshold') {
