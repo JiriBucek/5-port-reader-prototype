@@ -479,8 +479,14 @@ function renderStatusBar() {
     const tempEl = document.getElementById('status-bar-temp-value');
     if (tempEl) tempEl.innerHTML = formatStatusBarTemperatureLabel();
 
+    const connectivityLabel = getConnectivityLabel();
+    const internetWrapEl = document.getElementById('status-bar-internet');
     const internetEl = document.getElementById('status-bar-internet-status');
-    if (internetEl) internetEl.textContent = getConnectivityLabel();
+    if (internetEl) internetEl.textContent = '';
+    if (internetWrapEl) {
+        internetWrapEl.setAttribute('aria-label', connectivityLabel);
+        internetWrapEl.setAttribute('title', connectivityLabel);
+    }
 
     const accountEl = document.getElementById('status-bar-account-status');
     if (accountEl) {
@@ -774,13 +780,17 @@ function showSettingsCurveScreen(draft = null) {
 
     screen.innerHTML = `
         <div class="settings-curve-screen-header">
-            <div class="settings-screen-title-wrap">
-                <h1>Load Quant Curve</h1>
-                <p>Last five quantitative curves are stored on the device.</p>
+            <div class="history-screen-title-row">
+                <button class="topbar-back-btn" id="settings-curve-close" aria-label="Back">
+                    <span class="topbar-back-arrow" aria-hidden="true">←</span>
+                </button>
+                <div class="settings-screen-title-wrap">
+                    <h1>Load Quant Curve</h1>
+                </div>
             </div>
-            <button class="history-close-btn" id="settings-curve-close">Back</button>
         </div>
         <div class="settings-curve-screen-body">
+            ${renderScreenIntroCopy('Last five quantitative curves are stored on the device.')}
             <section class="settings-section">
                 <div class="settings-section-header">
                     <h2>Load New</h2>
@@ -1564,6 +1574,11 @@ function renderHistoryNotice(notice) {
     return `<div class="history-notice">${escapeHtml(notice)}</div>`;
 }
 
+function renderScreenIntroCopy(text, className = '') {
+    if (!text) return '';
+    return `<p class="screen-intro-copy${className ? ` ${className}` : ''}">${escapeHtml(text)}</p>`;
+}
+
 function renderHistoryFlowMeta(flow) {
     const parts = [
         `<span class="history-meta-text">${escapeHtml(formatHistoryDateTime(flow.timestamp))}</span>`,
@@ -1653,9 +1668,8 @@ function renderHistoryListView(flows, page, totalPages, notice = '') {
             <div class="history-screen-header">
                 <div>
                     <h1>History</h1>
-                    <p>No test flows recorded on this reader yet.</p>
                 </div>
-                <button class="history-close-btn" data-history-action="close">Close</button>
+                <button class="topbar-close-btn" data-history-action="close">Close</button>
             </div>
             <div class="history-screen-body">
                 ${renderHistoryNotice(notice)}
@@ -1673,9 +1687,8 @@ function renderHistoryListView(flows, page, totalPages, notice = '') {
         <div class="history-screen-header">
             <div>
                 <h1>History</h1>
-                <p>${flows.length} flow${flows.length === 1 ? '' : 's'} on this reader. Latest first.</p>
             </div>
-            <button class="history-close-btn" data-history-action="close">Close</button>
+            <button class="topbar-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body history-list-body">
             ${renderHistoryNotice(notice)}
@@ -1761,16 +1774,18 @@ function renderHistoryFlowView(flow, historyState) {
     return `
         <div class="history-screen-header">
             <div class="history-screen-title-row">
-                <button class="history-back-btn" data-history-action="back">Back</button>
+                <button class="topbar-back-btn" data-history-action="back" aria-label="Back">
+                    <span class="topbar-back-arrow" aria-hidden="true">←</span>
+                </button>
                 <div>
                     <h1>Flow Detail</h1>
-                    <p>${escapeHtml(formatHistoryDateTime(flow.timestamp, true))}</p>
                 </div>
             </div>
-            <button class="history-close-btn" data-history-action="close">Close</button>
+            <button class="topbar-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
             ${renderHistoryNotice(historyState.notice)}
+            ${renderScreenIntroCopy(formatHistoryDateTime(flow.timestamp, true))}
             <section class="history-summary-card is-${tone}">
                 <div class="history-summary-top">
                     <div>
@@ -1825,13 +1840,14 @@ function renderHistoryTestView(flow, test, notice = '') {
     return `
         <div class="history-screen-header">
             <div class="history-screen-title-row">
-                <button class="history-back-btn" data-history-action="back">Back</button>
+                <button class="topbar-back-btn" data-history-action="back" aria-label="Back">
+                    <span class="topbar-back-arrow" aria-hidden="true">←</span>
+                </button>
                 <div>
                     <h1>Test Detail</h1>
-                    <p>${escapeHtml(getHistoryAnnotationLabel(test.annotation))}</p>
                 </div>
             </div>
-            <button class="history-close-btn" data-history-action="close">Close</button>
+            <button class="topbar-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
             ${renderHistoryNotice(notice)}
@@ -2737,7 +2753,6 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
         <div class="onboarding-screen-header">
             <div class="settings-screen-title-wrap">
                 <h1>First-Time Setup</h1>
-                <p>Complete the first-time setup for the reader.</p>
             </div>
         </div>
         <div class="onboarding-screen-body">
@@ -3014,7 +3029,7 @@ function showSettingsDetailScreen(view, state = {}) {
 
     if (view === 'connectivity') {
         title = 'Connect To Internet';
-        subtitle = 'Wi-Fi, Ethernet, and offline mode share one reusable reader flow.';
+        subtitle = 'Choose Wi-Fi, Ethernet, or Offline.';
         body = `
             <section class="settings-section">
                 ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
@@ -3022,7 +3037,7 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'language') {
         title = 'Language';
-        subtitle = 'Choose the device language.';
+        subtitle = '';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
@@ -3065,7 +3080,7 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'brightness') {
         title = 'Screen Brightness';
-        subtitle = 'Choose the display brightness level.';
+        subtitle = '';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
@@ -3086,7 +3101,7 @@ function showSettingsDetailScreen(view, state = {}) {
             ? 'Choose the brand.'
             : (detailState.testTypeState.step === 'category'
                 ? 'Choose cassette or strip tests.'
-                : `${detailState.testTypeState.brandFilter} ${detailState.testTypeState.categoryFilter === 'cassette' ? 'Cassette' : 'Strip'} test types.`);
+                : 'Toggle the loaded test types.');
         body = `
             <section class="settings-section">
                 ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
@@ -3094,7 +3109,7 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'cloud') {
         title = 'MilkSafe Cloud';
-        subtitle = 'Sign in with username and password. If already signed in, you can log out here.';
+        subtitle = 'Sign in or continue as anonymous.';
         body = `
             <section class="settings-section">
                 ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
@@ -3106,7 +3121,7 @@ function showSettingsDetailScreen(view, state = {}) {
     } else if (view === 'date_time') {
         const previewDate = new Date(buildDeviceDateTimeIso(detailState.dateInput, detailState.timeInput));
         title = 'Date And Time';
-        subtitle = 'Set the reader date, time, and timezone.';
+        subtitle = '';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
@@ -3129,7 +3144,7 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'timezone') {
         title = 'Time Zone';
-        subtitle = 'Choose the reader time zone.';
+        subtitle = '';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
@@ -3139,14 +3154,14 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'software') {
         title = 'Software Update';
-        subtitle = 'Check the cloud, download the latest software package, install it, and restart the reader.';
+        subtitle = 'Install software from cloud or USB.';
         body = `
             <section class="settings-section">
                 ${renderSoftwarePanel(detailState.softwareState)}
             </section>`;
     } else if (view === 'factory_reset') {
         title = 'Factory Reset';
-        subtitle = 'Factory reset is protected by the reader password.';
+        subtitle = 'Factory reset requires the reader password.';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
@@ -3163,7 +3178,7 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else {
         title = 'About';
-        subtitle = 'Reader identifiers and software details.';
+        subtitle = '';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
@@ -3179,13 +3194,16 @@ function showSettingsDetailScreen(view, state = {}) {
 
     screen.innerHTML = `
         <div class="settings-detail-screen-header">
-            <div class="settings-screen-title-wrap">
-                <h1>${escapeHtml(title)}</h1>
-                <p>${escapeHtml(subtitle)}</p>
+            <div class="history-screen-title-row">
+                <button class="topbar-back-btn" id="settings-detail-back" aria-label="Back">
+                    <span class="topbar-back-arrow" aria-hidden="true">←</span>
+                </button>
+                <div class="settings-screen-title-wrap">
+                    <h1>${escapeHtml(title)}</h1>
+                </div>
             </div>
-            <button class="history-close-btn" id="settings-detail-back">Back</button>
         </div>
-        <div class="settings-detail-screen-body">${body}</div>
+        <div class="settings-detail-screen-body">${renderScreenIntroCopy(subtitle)}${body}</div>
         ${view === 'factory_reset' ? '<div class="settings-screen-footer"><button class="modal-btn btn-secondary" id="settings-detail-back-footer">Back</button></div>' : ''}`;
 
     screen.classList.add('active');
@@ -3715,11 +3733,11 @@ function showSettingsScreen(focusSection = '') {
         <div class="settings-screen-header">
             <div class="settings-screen-title-wrap">
                 <h1>Settings</h1>
-                <p>${escapeHtml(isSignedIn() ? `${activeAccount.username} · ${activeAccount.siteName}` : 'Anonymous reader mode')}</p>
             </div>
-            <button class="history-close-btn" id="settings-screen-close">Close</button>
+            <button class="topbar-close-btn" id="settings-screen-close">Close</button>
         </div>
         <div class="settings-screen-body">
+            ${renderScreenIntroCopy(isSignedIn() ? `${activeAccount.username} · ${activeAccount.siteName}` : 'Anonymous reader mode')}
             ${renderSettingsSection('Reader Controls', [
                 renderSettingsToggleRow({
                     title: 'Temperature',
@@ -4029,12 +4047,12 @@ function renderVerificationCriteriaChips(record) {
     `).join('');
 }
 
-function renderVerificationHeader({ title, subtitle, backAction = '', backLabel = 'Back', showInfoButton = false }) {
+function renderVerificationHeader({ title, backAction = '', backLabel = 'Back', showInfoButton = false }) {
     const backButton = backAction
-        ? `<button class="history-back-btn" data-verification-action="${backAction}">${escapeHtml(backLabel)}</button>`
+        ? `<button class="topbar-back-btn" data-verification-action="${backAction}" aria-label="${escapeHtml(backLabel)}"><span class="topbar-back-arrow" aria-hidden="true">←</span></button>`
         : '';
     const infoButton = showInfoButton
-        ? '<button class="verification-help-btn" data-verification-action="toggle-info" aria-label="Verification info">?</button>'
+        ? '<button class="topbar-icon-btn verification-help-btn" data-verification-action="toggle-info" aria-label="Verification info">?</button>'
         : '';
 
     return `
@@ -4043,12 +4061,11 @@ function renderVerificationHeader({ title, subtitle, backAction = '', backLabel 
                 ${backButton}
                 <div>
                     <h1>${escapeHtml(title)}</h1>
-                    <p>${escapeHtml(subtitle)}</p>
                 </div>
             </div>
             <div class="verification-header-actions">
                 ${infoButton}
-                <button class="history-close-btn" data-verification-action="close">Close</button>
+                <button class="topbar-close-btn" data-verification-action="close">Close</button>
             </div>
         </div>`;
 }
@@ -4072,8 +4089,7 @@ function renderVerificationSetupView(state) {
 
     return `
         ${renderVerificationHeader({
-            title: 'Verification',
-            subtitle: 'Select the port and target temperature.'
+            title: 'Verification'
         })}
         <div class="verification-screen-body">
             ${renderVerificationMessages(state)}
@@ -4111,7 +4127,6 @@ function renderVerificationWarmupView(state) {
     return `
         ${renderVerificationHeader({
             title: 'Verification Temperature',
-            subtitle: `Port ${state.channelId} · ${state.targetTemperature} C`,
             backAction: 'back-to-setup'
         })}
         <div class="verification-screen-body">
@@ -4143,7 +4158,6 @@ function renderVerificationMeasureView(state) {
     return `
         ${renderVerificationHeader({
             title: 'Measured Temperature',
-            subtitle: `Port ${state.channelId} · Target ${state.targetTemperature} C`,
             backAction: 'back-to-warmup'
         })}
         <div class="verification-screen-body">
@@ -4170,7 +4184,6 @@ function renderVerificationInsertView(state) {
     return `
         ${renderVerificationHeader({
             title: 'Insert Verification Cassette',
-            subtitle: `Port ${state.channelId}`,
             backAction: 'back-to-measure'
         })}
         <div class="verification-screen-body">
@@ -4198,8 +4211,7 @@ function renderVerificationReadingView(state) {
         : 'Reading verification cassette...';
     return `
         ${renderVerificationHeader({
-            title: 'Verification Test',
-            subtitle: `Port ${state.channelId} · ${state.targetTemperature} C`
+            title: 'Verification Test'
         })}
         <div class="verification-screen-body">
             ${renderVerificationMessages(state)}
@@ -4299,7 +4311,6 @@ function renderVerificationDetailView(record, state) {
     return `
         ${renderVerificationHeader({
             title: 'Verification Result',
-            subtitle: escapeHtml(formatHistoryDateTime(record.timestamp, true)),
             backAction,
             showInfoButton: true
         })}
@@ -4339,7 +4350,6 @@ function renderVerificationHistoryList(records, page, totalPages, notice = '') {
         return `
             ${renderVerificationHeader({
                 title: 'Verification History',
-                subtitle: 'No verifications recorded on this reader yet.',
                 backAction: 'back-to-setup'
             })}
             <div class="verification-screen-body">
@@ -4357,7 +4367,6 @@ function renderVerificationHistoryList(records, page, totalPages, notice = '') {
     return `
         ${renderVerificationHeader({
             title: 'Verification History',
-            subtitle: `${records.length} verification${records.length === 1 ? '' : 's'} on this reader. Latest first.`,
             backAction: 'back-to-setup'
         })}
         <div class="verification-screen-body history-list-body">
