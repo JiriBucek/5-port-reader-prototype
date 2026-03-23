@@ -610,6 +610,33 @@
     background: var(--primary-light);
 }
 
+.type-picker-row.settings-test-type-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+    min-height: 68px;
+}
+
+.type-picker-row.settings-test-type-row .settings-test-type-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.type-picker-row.settings-test-type-row .type-picker-row-meta {
+    margin-top: 1px;
+}
+
+.type-picker-row.settings-test-type-row .settings-binary-toggle {
+    width: 112px;
+    justify-self: end;
+    align-self: center;
+}
+
 .type-picker-row-name {
     font-size: var(--font-base);
     font-weight: 700;

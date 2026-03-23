@@ -202,22 +202,26 @@ const DEFAULT_TIMEZONE_OPTIONS = (
         ]
 ).slice().sort((left, right) => left.localeCompare(right));
 const DEFAULT_CLOUD_USERNAME = 'milk_tester';
-const DEFAULT_CLOUD_PASSWORD = 'milksafe';
+const DEFAULT_CLOUD_PASSWORD = '2026';
 const CURRENT_SOFTWARE_VERSION = '1.5.677';
 const LATEST_SOFTWARE_VERSION = '1.6.102';
+const DEVICE_SERIAL_NUMBER = 'MS5P-260323-0142';
+const LAN_MAC_ADDRESS = '00:1B:44:11:3A:B7';
+const WLAN_MAC_ADDRESS = '3C:52:82:4F:91:2D';
+const SCREEN_BRIGHTNESS_FILTERS = [0.55, 0.65, 0.75, 0.85, 0.95, 1.05, 1.15];
 const DEFAULT_WIFI_NETWORKS = [
-    { ssid: 'MilkSafe Factory', security: 'WPA2', signal: 'Excellent', password: 'reader2026' },
-    { ssid: 'MilkSafe QA Lab', security: 'WPA2', signal: 'Excellent', password: 'reader2026' },
-    { ssid: 'Office Wi-Fi', security: 'WPA2', signal: 'Good', password: 'office2026' },
-    { ssid: 'Packaging Hall', security: 'WPA2', signal: 'Good', password: 'packaging' },
-    { ssid: 'Warehouse Mesh', security: 'WPA2', signal: 'Fair', password: 'warehouse' },
-    { ssid: 'Service Reader', security: 'WPA2', signal: 'Excellent', password: 'service2026' },
-    { ssid: 'Maintenance AP', security: 'WPA2', signal: 'Fair', password: 'maint-guest' },
-    { ssid: 'Milk Collection', security: 'WPA2', signal: 'Good', password: 'collection' },
-    { ssid: 'Quality Floor 1', security: 'WPA2', signal: 'Good', password: 'qualityfloor' },
-    { ssid: 'Quality Floor 2', security: 'WPA2', signal: 'Fair', password: 'qualityfloor' },
-    { ssid: 'Reader Backup', security: 'WPA2', signal: 'Weak', password: 'backupreader' },
-    { ssid: 'Lab Guest', security: 'WPA2', signal: 'Weak', password: 'guestreader' }
+    { ssid: 'MilkSafe Factory', security: 'WPA2', signal: 'Excellent', password: '2026' },
+    { ssid: 'MilkSafe QA Lab', security: 'WPA2', signal: 'Excellent', password: '2026' },
+    { ssid: 'Office Wi-Fi', security: 'WPA2', signal: 'Good', password: '2026' },
+    { ssid: 'Packaging Hall', security: 'WPA2', signal: 'Good', password: '2026' },
+    { ssid: 'Warehouse Mesh', security: 'WPA2', signal: 'Fair', password: '2026' },
+    { ssid: 'Service Reader', security: 'WPA2', signal: 'Excellent', password: '2026' },
+    { ssid: 'Maintenance AP', security: 'WPA2', signal: 'Fair', password: '2026' },
+    { ssid: 'Milk Collection', security: 'WPA2', signal: 'Good', password: '2026' },
+    { ssid: 'Quality Floor 1', security: 'WPA2', signal: 'Good', password: '2026' },
+    { ssid: 'Quality Floor 2', security: 'WPA2', signal: 'Fair', password: '2026' },
+    { ssid: 'Reader Backup', security: 'WPA2', signal: 'Weak', password: '2026' },
+    { ssid: 'Lab Guest', security: 'WPA2', signal: 'Weak', password: '2026' }
 ];
 const DEFAULT_CHANNEL_VERIFICATION_COUNTS = {
     1: 184,
@@ -229,7 +233,7 @@ const DEFAULT_CHANNEL_VERIFICATION_COUNTS = {
 
 function createDefaultAccountState() {
     return {
-        signedIn: true,
+        signedIn: false,
         name: DEFAULT_CLOUD_USERNAME,
         username: DEFAULT_CLOUD_USERNAME,
         siteName: 'Prague Dairy',
@@ -249,7 +253,7 @@ function createDefaultDeviceSettings() {
         commentsEnabled: true,
         sampleIdEnabled: true,
         operatorIdEnabled: true,
-        limsEnabled: false,
+        limsEnabled: true,
         soundEnabled: true,
         language: 'English',
         timezone: 'UTC',
@@ -259,7 +263,10 @@ function createDefaultDeviceSettings() {
         verificationThreshold: 250,
         verificationCounts: { ...DEFAULT_CHANNEL_VERIFICATION_COUNTS },
         testSelectionMode: 'all',
-        softwareVersion: CURRENT_SOFTWARE_VERSION
+        softwareVersion: CURRENT_SOFTWARE_VERSION,
+        screenBrightnessStep: 5,
+        deviceDateTimeIso: new Date().toISOString(),
+        dateTimeSetAt: new Date().toISOString()
     };
 }
 
@@ -387,19 +394,124 @@ function getSelectedTimezone() {
     return deviceSettings.timezone || 'UTC';
 }
 
+function normalizeScreenBrightnessStep(value) {
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) return 5;
+    return Math.min(7, Math.max(1, Math.round(parsedValue)));
+}
+
+function getScreenBrightnessStep(value = deviceSettings.screenBrightnessStep) {
+    return normalizeScreenBrightnessStep(value);
+}
+
+function getScreenBrightnessFilterValue(step = deviceSettings.screenBrightnessStep) {
+    const normalizedStep = getScreenBrightnessStep(step);
+    return SCREEN_BRIGHTNESS_FILTERS[normalizedStep - 1] || 1;
+}
+
+function getScreenBrightnessLabel(step = deviceSettings.screenBrightnessStep) {
+    return `${getScreenBrightnessStep(step)} / 7`;
+}
+
+function getTimeZoneDateParts(date, timeZone = getSelectedTimezone()) {
+    const safeDate = date instanceof Date ? date : new Date(date);
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+    });
+    const parts = formatter.formatToParts(safeDate).reduce((accumulator, part) => {
+        if (part.type !== 'literal') {
+            accumulator[part.type] = part.value;
+        }
+        return accumulator;
+    }, {});
+
+    return {
+        year: Number(parts.year),
+        month: Number(parts.month),
+        day: Number(parts.day),
+        hour: Number(parts.hour),
+        minute: Number(parts.minute)
+    };
+}
+
+function getDeviceNow() {
+    const baseIso = deviceSettings.deviceDateTimeIso || new Date().toISOString();
+    const setAtIso = deviceSettings.dateTimeSetAt || baseIso;
+    const baseMs = Date.parse(baseIso);
+    const setAtMs = Date.parse(setAtIso);
+    const elapsedMs = Number.isFinite(baseMs) && Number.isFinite(setAtMs)
+        ? Math.max(Date.now() - setAtMs, 0)
+        : 0;
+    return new Date((Number.isFinite(baseMs) ? baseMs : Date.now()) + elapsedMs);
+}
+
+function formatDeviceDateInputValue(date = getDeviceNow(), timeZone = getSelectedTimezone()) {
+    const parts = getTimeZoneDateParts(date, timeZone);
+    return `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+}
+
+function formatDeviceTimeInputValue(date = getDeviceNow(), timeZone = getSelectedTimezone()) {
+    const parts = getTimeZoneDateParts(date, timeZone);
+    return `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
+}
+
+function formatDeviceDateLabel(date = getDeviceNow(), timeZone = getSelectedTimezone()) {
+    return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        timeZone
+    });
+}
+
+function formatDeviceTimeLabel(date = getDeviceNow(), timeZone = getSelectedTimezone()) {
+    return date.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone
+    });
+}
+
+function buildDeviceDateTimeIso(dateValue, timeValue, timeZone = getSelectedTimezone()) {
+    const [year, month, day] = String(dateValue || '').split('-').map(Number);
+    const [hour, minute] = String(timeValue || '').split(':').map(Number);
+    if ([year, month, day, hour, minute].some(value => !Number.isFinite(value))) {
+        return new Date().toISOString();
+    }
+
+    const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+    const actual = getTimeZoneDateParts(utcGuess, timeZone);
+    const desiredMs = Date.UTC(year, month - 1, day, hour, minute, 0);
+    const actualMs = Date.UTC(actual.year, actual.month - 1, actual.day, actual.hour, actual.minute, 0);
+    return new Date(utcGuess.getTime() + (desiredMs - actualMs)).toISOString();
+}
+
 function buildOnboardingDraftFromState() {
     const onboardingCompleted = Boolean(prototypeRuntime.onboardingCompleted);
+    const defaultWifiNetwork = deviceSettings.wifiNetwork || getDefaultWifiNetworkName();
+    const defaultWifiPassword = getWifiNetworkBySsid(defaultWifiNetwork)?.password || SETTINGS_PASSWORD;
     return {
         language: deviceSettings.language,
-        printerEnabled: deviceSettings.printerEnabled,
+        screenBrightnessStep: getScreenBrightnessStep(),
+        soundEnabled: deviceSettings.soundEnabled,
+        timezone: getSelectedTimezone(),
+        dateInput: formatDeviceDateInputValue(),
+        timeInput: formatDeviceTimeInputValue(),
         connectivity: deviceSettings.connectivity,
         wifiNetwork: deviceSettings.wifiNetwork,
-        wifiPassword: '',
+        wifiPassword: defaultWifiPassword,
         wifiStage: deviceSettings.connectivity === 'wifi' && deviceSettings.wifiNetwork ? 'wifi_success' : 'mode',
         wifiError: '',
-        accountMode: onboardingCompleted ? (isSignedIn() ? 'signed_in' : 'anonymous') : '',
+        accountMode: onboardingCompleted ? (isSignedIn() ? 'signed_in' : 'anonymous') : 'anonymous',
         username: activeAccount.username,
-        password: '',
+        password: DEFAULT_CLOUD_PASSWORD,
         signInState: onboardingCompleted && isSignedIn() ? 'success' : 'idle',
         signInError: ''
     };
@@ -1528,11 +1640,18 @@ function applyAccountMode(accountMode, details = {}) {
 
 function applyOnboardingDraft(draft) {
     deviceSettings.language = draft.language || deviceSettings.language;
-    deviceSettings.printerEnabled = Boolean(draft.printerEnabled);
+    deviceSettings.screenBrightnessStep = normalizeScreenBrightnessStep(draft.screenBrightnessStep);
+    deviceSettings.soundEnabled = Boolean(draft.soundEnabled);
+    deviceSettings.timezone = draft.timezone || deviceSettings.timezone;
+    deviceSettings.deviceDateTimeIso = buildDeviceDateTimeIso(draft.dateInput, draft.timeInput, draft.timezone || deviceSettings.timezone);
+    deviceSettings.dateTimeSetAt = new Date().toISOString();
+    deviceSettings.printerEnabled = true;
+    deviceSettings.commentsEnabled = true;
+    deviceSettings.limsEnabled = true;
     deviceSettings.connectivity = draft.connectivity || deviceSettings.connectivity;
     deviceSettings.wifiNetwork = draft.connectivity === 'wifi' ? (draft.wifiNetwork || getDefaultWifiNetworkName()) : '';
     deviceSettings.ethernetConnected = draft.connectivity === 'ethernet';
-    applyAccountMode(draft.accountMode, {
+    applyAccountMode(draft.connectivity === 'offline' ? 'anonymous' : draft.accountMode, {
         username: draft.username
     });
     prototypeRuntime.onboardingCompleted = true;

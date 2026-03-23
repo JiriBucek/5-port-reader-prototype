@@ -223,6 +223,8 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
+    filter: brightness(var(--screen-brightness, 1));
+    transition: filter 0.2s ease;
 }
 
 /* ---- Physical Slot Visualization ---- */

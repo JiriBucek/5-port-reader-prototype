@@ -114,21 +114,6 @@ function handleSettingsApply(nextSettings) {
     if ('deviceTemperature' in nextSettings) {
         deviceSettings.deviceTemperature = normalizeDeviceTemperature(nextSettings.deviceTemperature);
     }
-    if ('printerEnabled' in nextSettings) {
-        deviceSettings.printerEnabled = !!nextSettings.printerEnabled;
-    }
-    if ('commentsEnabled' in nextSettings) {
-        deviceSettings.commentsEnabled = !!nextSettings.commentsEnabled;
-    }
-    if ('sampleIdEnabled' in nextSettings) {
-        deviceSettings.sampleIdEnabled = !!nextSettings.sampleIdEnabled;
-    }
-    if ('operatorIdEnabled' in nextSettings) {
-        deviceSettings.operatorIdEnabled = !!nextSettings.operatorIdEnabled;
-    }
-    if ('limsEnabled' in nextSettings) {
-        deviceSettings.limsEnabled = !!nextSettings.limsEnabled;
-    }
     if ('soundEnabled' in nextSettings) {
         deviceSettings.soundEnabled = !!nextSettings.soundEnabled;
     }
@@ -141,6 +126,15 @@ function handleSettingsApply(nextSettings) {
     if ('verificationThreshold' in nextSettings) {
         deviceSettings.verificationThreshold = sanitizeVerificationThreshold(nextSettings.verificationThreshold);
     }
+    if ('screenBrightnessStep' in nextSettings) {
+        deviceSettings.screenBrightnessStep = normalizeScreenBrightnessStep(nextSettings.screenBrightnessStep);
+    }
+    if ('deviceDateTimeIso' in nextSettings && nextSettings.deviceDateTimeIso) {
+        deviceSettings.deviceDateTimeIso = nextSettings.deviceDateTimeIso;
+    }
+    if ('dateTimeSetAt' in nextSettings && nextSettings.dateTimeSetAt) {
+        deviceSettings.dateTimeSetAt = nextSettings.dateTimeSetAt;
+    }
     if ('testSelectionMode' in nextSettings && nextSettings.testSelectionMode) {
         deviceSettings.testSelectionMode = nextSettings.testSelectionMode;
     }
@@ -150,7 +144,16 @@ function handleSettingsApply(nextSettings) {
             ? (nextSettings.wifiNetwork || deviceSettings.wifiNetwork || getDefaultWifiNetworkName())
             : '';
         deviceSettings.ethernetConnected = nextSettings.connectivity === 'ethernet';
+        if (nextSettings.connectivity === 'offline') {
+            applyAccountMode('anonymous');
+        }
     }
+
+    // These outputs are always available on the reader.
+    deviceSettings.printerEnabled = true;
+    deviceSettings.commentsEnabled = true;
+    deviceSettings.limsEnabled = true;
+
     const incubationEnabled = isIncubationEnabled();
     const temperatureChanged = prevDeviceTemperature !== deviceSettings.deviceTemperature;
 
@@ -361,9 +364,9 @@ function handleConfigStart(channelId, config) {
     ch.curveName = selectedTestType?.quantitative ? (selectedCurve?.name || '') : '';
     ch.curveSource = selectedTestType?.quantitative ? (selectedCurve?.source || '') : '';
     ch.cassetteType = selectedTestType ? selectedTestType.cassetteType : normalizeLoadedCassetteType(config.testType);
-    ch.sampleId = deviceSettings.sampleIdEnabled ? config.sampleId : '';
+    ch.sampleId = config.sampleId;
     ch.userName = getActiveUserName();
-    ch.operatorId = deviceSettings.operatorIdEnabled ? config.operatorId : '';
+    ch.operatorId = config.operatorId;
     ch.accountMode = isSignedIn() ? 'signed_in' : 'anonymous';
     ch.comment = '';
     ch.processing = ((config.processing === 'read_incubate' && !isIncubationEnabled()) || isStripTest)

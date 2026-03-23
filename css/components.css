@@ -1159,6 +1159,20 @@
     padding-right: 2px;
 }
 
+.onboarding-inline-stack {
+    gap: 8px;
+}
+
+.onboarding-screen .onboarding-brightness-control.settings-toggle-wide {
+    width: 100%;
+}
+
+.onboarding-screen .onboarding-brightness-control .seg-option {
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: var(--font-base);
+}
+
 .onboarding-stepper {
     display: flex;
     justify-content: center;
@@ -1209,6 +1223,10 @@
     color: var(--gray-500);
 }
 
+.settings-count-panel-compact {
+    padding: 10px;
+}
+
 .settings-count-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1238,6 +1256,27 @@
     font-size: var(--font-base);
     font-weight: 700;
     color: var(--gray-700);
+}
+
+.settings-count-grid-compact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.settings-count-grid-compact .settings-count-row {
+    min-height: 60px;
+    padding: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+}
+
+.settings-count-grid-compact .settings-count-port,
+.settings-count-grid-compact .settings-count-value {
+    font-size: var(--font-sm);
+    line-height: 1.15;
 }
 
 .settings-selection-grid,
@@ -1297,6 +1336,64 @@
     color: var(--gray-800);
 }
 
+.settings-threshold-section {
+    flex: 1;
+    min-height: 0;
+}
+
+.settings-threshold-body {
+    height: 100%;
+    gap: 6px;
+}
+
+.settings-threshold-bubble-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.settings-threshold-bubble {
+    min-height: 52px;
+    padding: 9px 12px;
+    border: 1px solid rgba(14, 116, 144, 0.18);
+    border-radius: 2px;
+    background: var(--info-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.settings-threshold-bubble.is-warning {
+    border-color: #f59e0b;
+    background: var(--warning-bg);
+}
+
+.settings-threshold-bubble span {
+    font-size: var(--font-sm);
+    color: var(--gray-500);
+}
+
+.settings-threshold-bubble strong {
+    font-size: var(--font-base);
+    color: var(--gray-800);
+}
+
+.settings-threshold-control-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: end;
+}
+
+.settings-threshold-input {
+    min-width: 0;
+}
+
+.settings-detail-screen[data-view="verification_threshold"] .settings-detail-screen-body {
+    overflow: hidden;
+}
+
 .settings-type-list {
     display: flex;
     flex-direction: column;
@@ -1337,10 +1434,6 @@
 
 .settings-language-list .type-picker-results {
     max-height: 300px;
-}
-
-.settings-timezone-list .type-picker-results {
-    max-height: 260px;
 }
 
 .settings-test-type-row {
@@ -1693,30 +1786,6 @@
     letter-spacing: 0.4px;
 }
 
-.history-filter-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.history-filter-btn {
-    min-height: 36px;
-    padding: 6px 12px;
-    border: 1px solid var(--gray-300);
-    background: var(--white);
-    color: var(--gray-600);
-    border-radius: 2px;
-    font-size: var(--font-sm);
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.history-filter-btn.selected {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--white);
-}
-
 .history-notice {
     padding: 10px 12px;
     border: 1px solid rgba(14, 116, 144, 0.18);
@@ -1780,17 +1849,8 @@
 
 .history-sequence-chip {
     justify-content: flex-start;
-    gap: 5px;
     background: rgba(255, 255, 255, 0.8);
     color: var(--gray-700);
-}
-
-.history-sequence-chip-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: currentColor;
-    flex-shrink: 0;
 }
 
 .history-sequence-chip-text {
@@ -2046,17 +2106,30 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    border-radius: 2px;
+    overflow: hidden;
 }
 
 .history-comment-input {
     width: 100%;
+    max-width: 100%;
     min-height: 96px;
     padding: 12px;
     border: 1px solid var(--gray-300);
     border-radius: 2px;
+    background: var(--white);
     font: inherit;
     color: var(--gray-700);
-    resize: vertical;
+    resize: none;
+    overflow: auto;
+}
+
+.history-comment-actions {
+    justify-content: flex-end;
+    align-items: center;
 }
 
 .history-substance-row {

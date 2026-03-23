@@ -465,13 +465,14 @@ function bindCardEvents(ch) {
 
 // ---- Status Bar ----
 
+function applyScreenBrightness() {
+    const screenEl = document.querySelector('.device-screen');
+    if (!screenEl) return;
+    screenEl.style.setProperty('--screen-brightness', String(getScreenBrightnessFilterValue()));
+}
+
 function renderStatusBar() {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: getSelectedTimezone()
-    });
+    const timeStr = formatDeviceTimeLabel(getDeviceNow());
     const el = document.getElementById('status-bar-time');
     if (el) el.textContent = timeStr;
 
@@ -486,6 +487,8 @@ function renderStatusBar() {
         accountEl.textContent = getActiveAccountLabel();
         accountEl.classList.toggle('is-anonymous', isAnonymousSession());
     }
+
+    applyScreenBrightness();
 }
 
 // ---- Physical Slot Visualization ----
@@ -1090,8 +1093,8 @@ function showConfigModal(ch, draft = null, view = 'form') {
     const selectedTypeEnabled = !selectedType?.id || isTestTypeEnabledForCurrentUser(selectedType.id);
     const fastQrOnlyMode = Boolean(nextDraft.forceQrOnly);
     const lockTypeSelection = qrLocked || fastQrOnlyMode;
-    const showSampleField = deviceSettings.sampleIdEnabled;
-    const showOperatorField = deviceSettings.operatorIdEnabled;
+    const showSampleField = true;
+    const showOperatorField = true;
     const showReadIncubate = Boolean(selectedType?.incubationTime) &&
         selectedType?.category !== 'Strip' &&
         isIncubationEnabled();
@@ -1556,15 +1559,6 @@ function renderHistoryCommentBadge(flow) {
     return `<span class="history-comment-badge" title="Comment saved on this flow">Comment</span>`;
 }
 
-function renderHistoryFilterRow(filter) {
-    return `
-        <div class="history-filter-row">
-            <button class="history-filter-btn${filter === 'all' ? ' selected' : ''}" data-history-action="filter-all">All</button>
-            <button class="history-filter-btn${filter === 'tests' ? ' selected' : ''}" data-history-action="filter-tests">Tests</button>
-            <button class="history-filter-btn${filter === 'controls' ? ' selected' : ''}" data-history-action="filter-controls">Controls</button>
-        </div>`;
-}
-
 function renderHistoryNotice(notice) {
     if (!notice) return '';
     return `<div class="history-notice">${escapeHtml(notice)}</div>`;
@@ -1596,10 +1590,8 @@ function renderHistoryFlowMeta(flow) {
 function renderHistorySequenceChips(flow) {
     return flow.tests.map(test => {
         const tone = getHistoryResultTone(test.overall);
-        const label = test.overall === 'positive' ? 'POS' : 'NEG';
         return `<span class="history-sequence-chip is-${tone}">
-            <span class="history-sequence-chip-dot" aria-hidden="true"></span>
-            <span class="history-sequence-chip-text">${getHistoryAnnotationShortLabel(test.annotation)} ${label}</span>
+            <span class="history-sequence-chip-text">${getHistoryAnnotationShortLabel(test.annotation)} ${formatHistoryResultLabel(test.overall)}</span>
         </span>`;
     }).join('');
 }
@@ -1645,7 +1637,6 @@ function renderHistoryLightIntensityChart(points) {
         <div class="history-curve-card">
             <div class="history-curve-header">
                 <h3>Light Intensity</h3>
-                <span>Curve view</span>
             </div>
             <svg class="history-curve-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="Light intensity curve">
                 <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" class="history-curve-axis"></line>
@@ -1656,19 +1647,7 @@ function renderHistoryLightIntensityChart(points) {
         </div>`;
 }
 
-function getHistoryFlowsForFilter(flows, filter) {
-    if (filter === 'tests') {
-        return flows.filter(flow => !isHistoryControlFlow(flow));
-    }
-
-    if (filter === 'controls') {
-        return flows.filter(flow => isHistoryControlFlow(flow));
-    }
-
-    return flows;
-}
-
-function renderHistoryListView(flows, page, totalPages, filter, notice = '') {
+function renderHistoryListView(flows, page, totalPages, notice = '') {
     if (flows.length === 0) {
         return `
             <div class="history-screen-header">
@@ -1679,11 +1658,10 @@ function renderHistoryListView(flows, page, totalPages, filter, notice = '') {
                 <button class="history-close-btn" data-history-action="close">Close</button>
             </div>
             <div class="history-screen-body">
-                ${renderHistoryFilterRow(filter)}
                 ${renderHistoryNotice(notice)}
                 <div class="history-placeholder-panel history-placeholder-panel-simple">
                     <strong>No history yet</strong>
-                    <p>No records match the current filter on this reader.</p>
+                    <p>No records on this reader yet.</p>
                 </div>
             </div>`;
     }
@@ -1700,7 +1678,6 @@ function renderHistoryListView(flows, page, totalPages, filter, notice = '') {
             <button class="history-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body history-list-body">
-            ${renderHistoryFilterRow(filter)}
             ${renderHistoryNotice(notice)}
             <div class="history-flow-list">
                 ${pageFlows.map(flow => `
@@ -1742,17 +1719,6 @@ function renderHistoryCommentSection(flow, editingComment = false, draft = '') {
         ? `Saved on flow level${flow.commentUpdatedAt ? ` · ${escapeHtml(formatHistoryDateTime(flow.commentUpdatedAt, true))}` : ''}`
         : 'Comment applies to the whole flow, not an individual test.';
 
-    if (!deviceSettings.commentsEnabled) {
-        return `
-            <section class="history-section-card">
-                <div class="history-section-header">
-                    <h2>Comment</h2>
-                    <span>Disabled in settings</span>
-                </div>
-                <div class="history-comment-block is-disabled">Comments are turned off for this reader profile.</div>
-            </section>`;
-    }
-
     if (editingComment) {
         return `
             <section class="history-section-card">
@@ -1788,11 +1754,9 @@ function renderHistoryFlowView(flow, historyState) {
     const editingComment = Boolean(historyState.editingComment);
     const commentActionLabel = flow.comment ? 'Edit Comment' : 'Add Comment';
     const flowActions = renderHistoryActionBar([
-        `<button class="history-inline-btn" data-history-action="print-flow"${deviceSettings.printerEnabled ? '' : ' disabled'}>Print Group</button>`,
-        '<button class="history-inline-btn" data-history-action="export-csv">Export CSV</button>',
-        '<button class="history-inline-btn" data-history-action="export-xlsx">Export XLSX</button>',
-        `<button class="history-inline-btn" data-history-action="send-lims"${deviceSettings.limsEnabled ? '' : ' disabled'}>Send to LIMS</button>`,
-        `<button class="history-inline-btn history-inline-btn-secondary" data-history-action="edit-comment"${deviceSettings.commentsEnabled ? '' : ' disabled'}>${commentActionLabel}</button>`
+        '<button class="history-inline-btn" data-history-action="print-flow">Print Group</button>',
+        '<button class="history-inline-btn" data-history-action="send-lims">Send to LIMS</button>',
+        `<button class="history-inline-btn history-inline-btn-secondary" data-history-action="edit-comment">${commentActionLabel}</button>`
     ]);
     return `
         <div class="history-screen-header">
@@ -1821,18 +1785,10 @@ function renderHistoryFlowView(flow, historyState) {
                     ${renderHistoryField('Operator ID', flow.operatorId || 'Not set')}
                     ${renderHistoryField(flow.accountMode === 'anonymous' ? 'Account' : 'User', flow.accountMode === 'anonymous' ? 'Anonymous' : (flow.userName || 'Signed In'))}
                     ${renderHistoryField('Upload Status', formatUploadStatusLabel(flow.uploadStatus))}
-                    ${renderHistoryField('Upload Target', flow.accountMode === 'anonymous' ? 'Anonymous Data site' : activeAccount.siteName)}
+                    ${renderHistoryField('Site', flow.accountMode === 'anonymous' ? 'Anonymous Data site' : activeAccount.siteName)}
                     ${flow.flowId ? renderHistoryField('Flow ID', String(flow.flowId)) : ''}
                 </div>
             </section>
-            <section class="history-section-card">
-                <div class="history-section-header">
-                    <h2>Actions</h2>
-                    <span>Available outputs</span>
-                </div>
-                ${flowActions}
-            </section>
-            ${renderHistoryCommentSection(flow, editingComment, historyState.commentDraft || flow.comment || '')}
             <section class="history-section-card">
                 <div class="history-section-header">
                     <h2>Contained Tests</h2>
@@ -1853,6 +1809,14 @@ function renderHistoryFlowView(flow, historyState) {
                     `).join('')}
                 </div>
             </section>
+            <section class="history-section-card">
+                <div class="history-section-header">
+                    <h2>Actions</h2>
+                    <span>Available outputs</span>
+                </div>
+                ${flowActions}
+            </section>
+            ${renderHistoryCommentSection(flow, editingComment, historyState.commentDraft || flow.comment || '')}
         </div>`;
 }
 
@@ -1882,28 +1846,9 @@ function renderHistoryTestView(flow, test, notice = '') {
                 <div class="history-summary-grid">
                     ${renderHistoryField('Date & Time', formatHistoryDateTime(test.timestamp, true))}
                     ${renderHistoryField('Annotation', getHistoryAnnotationLabel(test.annotation))}
-                    ${renderHistoryField('Port', String(flow.channelId || 'Not set'))}
                     ${renderHistoryField('Upload Status', formatUploadStatusLabel(flow.uploadStatus))}
                 </div>
             </section>
-            <section class="history-section-card">
-                <div class="history-section-header">
-                    <h2>Actions</h2>
-                    <span>Available output</span>
-                </div>
-                ${renderHistoryActionBar([
-                    `<button class="history-inline-btn" data-history-action="print-test"${deviceSettings.printerEnabled ? '' : ' disabled'}>Print Test</button>`
-                ])}
-            </section>
-            ${flow.comment ? `
-                <section class="history-section-card">
-                    <div class="history-section-header">
-                        <h2>Flow Comment</h2>
-                        <span>Shared across this flow</span>
-                    </div>
-                    <div class="history-comment-block">${escapeHtml(flow.comment)}</div>
-                </section>
-            ` : ''}
             <section class="history-section-card">
                 <div class="history-section-header">
                     <h2>Substances</h2>
@@ -1929,8 +1874,7 @@ function showHistoryScreen(nextState = {}) {
 
     const allFlows = getHistoryFlows();
     const currentState = activeModal && activeModal.type === 'history' ? activeModal : {};
-    const filter = nextState.filter || currentState.filter || 'all';
-    const filteredFlows = getHistoryFlowsForFilter(allFlows, filter);
+    const filteredFlows = allFlows;
     const totalPages = Math.max(Math.ceil(filteredFlows.length / HISTORY_PAGE_SIZE), 1);
     const historyState = {
         type: 'history',
@@ -1938,7 +1882,7 @@ function showHistoryScreen(nextState = {}) {
         flowKey: nextState.flowKey ?? currentState.flowKey ?? null,
         testNumber: nextState.testNumber ?? currentState.testNumber ?? null,
         page: clampHistoryPage(nextState.page ?? currentState.page ?? 0, totalPages),
-        filter,
+        filter: 'all',
         notice: nextState.notice ?? currentState.notice ?? '',
         editingComment: nextState.editingComment ?? false,
         commentDraft: nextState.commentDraft ?? currentState.commentDraft ?? ''
@@ -1950,7 +1894,7 @@ function showHistoryScreen(nextState = {}) {
         const flow = findHistoryFlowByKey(historyState.flowKey);
         if (!flow) {
             historyState.view = 'list';
-            content = renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.filter, historyState.notice);
+            content = renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.notice);
         } else {
             content = renderHistoryFlowView(flow, historyState);
         }
@@ -1961,13 +1905,13 @@ function showHistoryScreen(nextState = {}) {
             historyState.view = flow ? 'flow' : 'list';
             content = flow
                 ? renderHistoryFlowView(flow, historyState)
-                : renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.filter, historyState.notice);
+                : renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.notice);
         } else {
             content = renderHistoryTestView(flow, test, historyState.notice);
         }
     } else {
         historyState.view = 'list';
-        content = renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.filter, historyState.notice);
+        content = renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.notice);
     }
 
     activeModal = historyState;
@@ -2030,30 +1974,6 @@ function showHistoryScreen(nextState = {}) {
                         view: 'list',
                         page: historyState.page + HISTORY_PAGE_JUMP,
                         filter: historyState.filter,
-                        notice: ''
-                    });
-                    break;
-                case 'filter-all':
-                    showHistoryScreen({
-                        view: 'list',
-                        page: 0,
-                        filter: 'all',
-                        notice: ''
-                    });
-                    break;
-                case 'filter-tests':
-                    showHistoryScreen({
-                        view: 'list',
-                        page: 0,
-                        filter: 'tests',
-                        notice: ''
-                    });
-                    break;
-                case 'filter-controls':
-                    showHistoryScreen({
-                        view: 'list',
-                        page: 0,
-                        filter: 'controls',
                         notice: ''
                     });
                     break;
@@ -2129,24 +2049,6 @@ function showHistoryScreen(nextState = {}) {
                         page: historyState.page,
                         filter: historyState.filter,
                         notice: 'Test print queued.'
-                    });
-                    break;
-                case 'export-csv':
-                    showHistoryScreen({
-                        view: 'flow',
-                        flowKey: historyState.flowKey,
-                        page: historyState.page,
-                        filter: historyState.filter,
-                        notice: 'CSV export prepared.'
-                    });
-                    break;
-                case 'export-xlsx':
-                    showHistoryScreen({
-                        view: 'flow',
-                        flowKey: historyState.flowKey,
-                        page: historyState.page,
-                        filter: historyState.filter,
-                        notice: 'Excel export prepared.'
                     });
                     break;
                 case 'send-lims':
@@ -2243,14 +2145,14 @@ function showSettingsPasswordScreen(errorMessage = '') {
 
     activeModal = { type: 'settings_password', errorMessage };
     screen.innerHTML = `
-        <div class="settings-password-card">
+        <div class="settings-password-card" data-1p-ignore="true" data-lpignore="true">
             <div class="settings-screen-title-wrap">
                 <h1>Settings Password</h1>
                 <p>Enter the reader password to open settings.</p>
             </div>
             <div class="settings-password-body">
                 <label class="settings-password-label" for="settings-password-input">Password</label>
-                <input class="form-input" id="settings-password-input" type="password" inputmode="numeric" placeholder="Enter password">
+                <input class="form-input" id="settings-password-input" type="password" inputmode="numeric" value="${escapeHtml(SETTINGS_PASSWORD)}" placeholder="Enter password" ${getAutofillIgnoreAttrs('password')}>
                 ${errorMessage ? `<div class="settings-password-error">${escapeHtml(errorMessage)}</div>` : '<div class="settings-password-hint">Reader password: 2026</div>'}
             </div>
             <div class="settings-password-actions">
@@ -2299,6 +2201,11 @@ function sanitizeVerificationThreshold(value) {
     const parsedValue = Number(value);
     if (!Number.isFinite(parsedValue)) return 250;
     return Math.min(250, Math.max(1, Math.round(parsedValue)));
+}
+
+function getAutofillIgnoreAttrs(type = 'text') {
+    const autocomplete = type === 'password' ? 'new-password' : 'off';
+    return `autocomplete="${autocomplete}" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore="true" data-lpignore="true"`;
 }
 
 function renderSelectableListRows(items, selectedValue, attributeName, listClass = '') {
@@ -2378,6 +2285,7 @@ function renderWifiLockIcon(network) {
 function buildConnectivityDraft(source = {}) {
     const connectivity = source.connectivity || deviceSettings.connectivity || 'offline';
     const wifiNetwork = source.wifiNetwork || deviceSettings.wifiNetwork || getDefaultWifiNetworkName();
+    const defaultWifiPassword = getWifiNetworkBySsid(wifiNetwork)?.password || SETTINGS_PASSWORD;
     let wifiStage = source.wifiStage || '';
 
     if (!wifiStage) {
@@ -2394,7 +2302,7 @@ function buildConnectivityDraft(source = {}) {
         connectivity,
         wifiStage,
         wifiNetwork,
-        wifiPassword: source.wifiPassword || '',
+        wifiPassword: typeof source.wifiPassword === 'string' && source.wifiPassword.length > 0 ? source.wifiPassword : defaultWifiPassword,
         wifiError: source.wifiError || ''
     };
 }
@@ -2426,9 +2334,9 @@ function renderConnectivityPanel(draft) {
                 <div class="settings-summary-row"><span>Wi-Fi</span><strong>${escapeHtml(draft.wifiNetwork)}</strong></div>
                 <div class="settings-summary-row"><span>Status</span><strong>Enter Password</strong></div>
             </div>
-            <div class="settings-inline-form">
+            <div class="settings-inline-form" data-1p-ignore="true" data-lpignore="true">
                 <label>Wi-Fi Password</label>
-                <input class="form-input" id="shared-wifi-password" type="password" value="${escapeHtml(draft.wifiPassword || '')}" placeholder="Enter network password">
+                <input class="form-input" id="shared-wifi-password" type="password" value="${escapeHtml(draft.wifiPassword || '')}" placeholder="Enter network password" ${getAutofillIgnoreAttrs('password')}>
             </div>
             ${draft.wifiError ? renderAsyncStateBlock('error', draft.wifiError) : ''}
             <div class="history-action-row">
@@ -2488,18 +2396,21 @@ function renderConnectivityPanel(draft) {
 
 function buildCloudFlowState(source = {}) {
     const accountMode = source.accountMode || (isSignedIn() ? 'signed_in' : 'anonymous');
+    const password = typeof source.password === 'string' && source.password.length > 0
+        ? source.password
+        : DEFAULT_CLOUD_PASSWORD;
     return {
         accountMode,
         username: source.username ?? activeAccount.username ?? DEFAULT_CLOUD_USERNAME,
-        password: source.password || '',
-        signInState: source.signInState || (isSignedIn() && accountMode === 'signed_in' ? 'success' : 'idle'),
+        password,
+        signInState: source.signInState || (isSignedIn() && accountMode === 'signed_in' && deviceSettings.connectivity !== 'offline' ? 'success' : 'idle'),
         signInError: source.signInError || ''
     };
 }
 
 function renderCloudAccountPanel(cloudState, options = {}) {
-    const showStatusSummary = isSignedIn() && cloudState.signInState === 'success';
     const activeConnectivity = options.connectivity || deviceSettings.connectivity;
+    const showStatusSummary = isSignedIn() && activeConnectivity !== 'offline' && cloudState.signInState === 'success';
     const connectivityLabel = options.connectivityLabel || getConnectivityLabel(activeConnectivity);
     const signInBlocked = activeConnectivity === 'offline' && !showStatusSummary;
     const asyncStateMarkup = signInBlocked
@@ -2522,11 +2433,11 @@ function renderCloudAccountPanel(cloudState, options = {}) {
                 </div>
                 ${renderAsyncStateBlock('success', 'Signed in.')}
             ` : `
-                <div class="settings-inline-form">
+                <div class="settings-inline-form" data-1p-ignore="true" data-lpignore="true">
                     <label>Username</label>
-                    <input class="form-input" id="${options.usernameInputId || 'shared-cloud-username'}" value="${escapeHtml(cloudState.username || '')}" placeholder="Username">
+                    <input class="form-input" id="${options.usernameInputId || 'shared-cloud-username'}" value="${escapeHtml(cloudState.username || '')}" placeholder="Username" ${getAutofillIgnoreAttrs('text')}>
                     <label>Password</label>
-                    <input class="form-input" id="${options.passwordInputId || 'shared-cloud-password'}" type="password" value="${escapeHtml(cloudState.password || '')}" placeholder="Password">
+                    <input class="form-input" id="${options.passwordInputId || 'shared-cloud-password'}" type="password" value="${escapeHtml(cloudState.password || '')}" placeholder="Password" ${getAutofillIgnoreAttrs('password')}>
                 </div>
                 ${asyncStateMarkup}
                 <div class="history-action-row">
@@ -2553,11 +2464,11 @@ function renderOnboardingCloudPanel(draft, connectivityDraft) {
 
     return `
         <div class="settings-section-body">
-            <div class="settings-inline-form">
+            <div class="settings-inline-form" data-1p-ignore="true" data-lpignore="true">
                 <label>Username</label>
-                <input class="form-input" id="onboarding-username" value="${escapeHtml(draft.username || '')}" placeholder="Username">
+                <input class="form-input" id="onboarding-username" value="${escapeHtml(draft.username || '')}" placeholder="Username" ${getAutofillIgnoreAttrs('text')}>
                 <label>Password</label>
-                <input class="form-input" id="onboarding-password" type="password" value="${escapeHtml(draft.password || '')}" placeholder="Password">
+                <input class="form-input" id="onboarding-password" type="password" value="${escapeHtml(draft.password || '')}" placeholder="Password" ${getAutofillIgnoreAttrs('password')}>
             </div>
             ${asyncStateMarkup}
             <div class="history-action-row">
@@ -2717,7 +2628,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
 
     clearPrototypeFullScreenTimer();
 
-    const totalSteps = 5;
+    const totalSteps = 7;
     const normalizedDraft = {
         ...buildOnboardingDraftFromState(),
         ...draft
@@ -2733,19 +2644,47 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
                 </div>`
         },
         {
-            title: 'Printing',
+            title: 'Display And Sound',
             body: `
                 <div class="settings-section-body">
+                    <div class="settings-summary-card">
+                        <div class="settings-summary-row"><span>Screen Brightness</span><strong>${escapeHtml(getScreenBrightnessLabel(normalizedDraft.screenBrightnessStep))}</strong></div>
+                    </div>
+                    <div class="settings-section-body onboarding-inline-stack">
+                        ${renderSettingsSegmentedControl('onboarding-brightness', normalizedDraft.screenBrightnessStep, Array.from({ length: 7 }, (_, index) => ({
+                            value: index + 1,
+                            label: String(index + 1)
+                        }))).replace('settings-toggle settings-toggle-wide', 'settings-toggle settings-toggle-wide onboarding-brightness-control')}
+                    </div>
                     ${renderSettingsToggleRow({
-                        title: 'Printer',
-                        detail: 'Enable or disable printing during setup. This can be changed later in settings.',
-                        id: 'onboarding-printer',
-                        value: normalizedDraft.printerEnabled ? 'on' : 'off',
+                        title: 'Sound',
+                        detail: 'Turn reader sound on or off during setup.',
+                        id: 'onboarding-sound',
+                        value: normalizedDraft.soundEnabled ? 'on' : 'off',
                         options: [
                             { value: 'on', label: 'On' },
                             { value: 'off', label: 'Off' }
                         ]
                     })}
+                </div>`
+        },
+        {
+            title: 'Date And Time',
+            body: `
+                <div class="settings-section-body">
+                    <div class="settings-inline-form">
+                        <label>Date</label>
+                        <input class="form-input" id="onboarding-date-input" type="date" value="${escapeHtml(normalizedDraft.dateInput)}">
+                        <label>Time</label>
+                        <input class="form-input" id="onboarding-time-input" type="time" value="${escapeHtml(normalizedDraft.timeInput)}">
+                    </div>
+                </div>`
+        },
+        {
+            title: 'Time Zone',
+            body: `
+                <div class="settings-section-body">
+                    ${renderSelectableListRows(DEFAULT_TIMEZONE_OPTIONS, normalizedDraft.timezone, 'data-onboarding-timezone')}
                 </div>`
         },
         {
@@ -2768,7 +2707,11 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
                 <div class="settings-section-body">
                     <div class="settings-summary-card">
                         <div class="settings-summary-row"><span>Language</span><strong>${escapeHtml(normalizedDraft.language)}</strong></div>
-                        <div class="settings-summary-row"><span>Printer</span><strong>${normalizedDraft.printerEnabled ? 'Enabled' : 'Disabled'}</strong></div>
+                        <div class="settings-summary-row"><span>Brightness</span><strong>${escapeHtml(getScreenBrightnessLabel(normalizedDraft.screenBrightnessStep))}</strong></div>
+                        <div class="settings-summary-row"><span>Sound</span><strong>${normalizedDraft.soundEnabled ? 'On' : 'Off'}</strong></div>
+                        <div class="settings-summary-row"><span>Date</span><strong>${escapeHtml(formatDeviceDateLabel(new Date(buildDeviceDateTimeIso(normalizedDraft.dateInput, normalizedDraft.timeInput, normalizedDraft.timezone)), normalizedDraft.timezone))}</strong></div>
+                        <div class="settings-summary-row"><span>Time</span><strong>${escapeHtml(formatDeviceTimeLabel(new Date(buildDeviceDateTimeIso(normalizedDraft.dateInput, normalizedDraft.timeInput, normalizedDraft.timezone)), normalizedDraft.timezone))}</strong></div>
+                        <div class="settings-summary-row"><span>Time Zone</span><strong>${escapeHtml(normalizedDraft.timezone)}</strong></div>
                         <div class="settings-summary-row"><span>Internet</span><strong>${escapeHtml(getConnectivitySummaryText(buildConnectivityDraft(normalizedDraft)))}</strong></div>
                         <div class="settings-summary-row"><span>Account</span><strong>${escapeHtml(
                             normalizedDraft.accountMode === 'signed_in' && normalizedDraft.signInState === 'success'
@@ -2784,9 +2727,9 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
     const nextLabel = stepIndex >= totalSteps - 1 ? 'Finish Setup' : 'Next';
     const showBack = stepIndex > 0;
     const connectivityDraft = buildConnectivityDraft(normalizedDraft);
-    const canAdvance = stepIndex === 2
+    const canAdvance = stepIndex === 4
         ? connectivityDraft.connectivity !== 'wifi' || connectivityDraft.wifiStage === 'wifi_success'
-        : (stepIndex === 3
+        : (stepIndex === 5
             ? normalizedDraft.accountMode === 'anonymous' || normalizedDraft.signInState === 'success'
             : true);
 
@@ -2813,10 +2756,18 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
         </div>`;
 
     screen.classList.add('active');
+    const screenEl = document.querySelector('.device-screen');
+    if (screenEl) {
+        screenEl.style.setProperty('--screen-brightness', String(getScreenBrightnessFilterValue(normalizedDraft.screenBrightnessStep)));
+    }
 
     const collectDraft = () => ({
         ...normalizedDraft,
-        printerEnabled: (screen.querySelector('#onboarding-printer .seg-option.selected')?.dataset.value || (normalizedDraft.printerEnabled ? 'on' : 'off')) === 'on',
+        screenBrightnessStep: Number(screen.querySelector('#onboarding-brightness .seg-option.selected')?.dataset.value || normalizedDraft.screenBrightnessStep),
+        soundEnabled: (screen.querySelector('#onboarding-sound .seg-option.selected')?.dataset.value || (normalizedDraft.soundEnabled ? 'on' : 'off')) === 'on',
+        timezone: screen.querySelector('[data-onboarding-timezone].selected')?.dataset.onboardingTimezone || normalizedDraft.timezone,
+        dateInput: screen.querySelector('#onboarding-date-input')?.value ?? normalizedDraft.dateInput,
+        timeInput: screen.querySelector('#onboarding-time-input')?.value ?? normalizedDraft.timeInput,
         wifiPassword: screen.querySelector('#shared-wifi-password')?.value ?? normalizedDraft.wifiPassword,
         username: screen.querySelector('#onboarding-username')?.value ?? normalizedDraft.username,
         password: screen.querySelector('#onboarding-password')?.value ?? normalizedDraft.password
@@ -2831,25 +2782,46 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
         });
     });
 
+    screen.querySelectorAll('[data-onboarding-timezone]').forEach(button => {
+        button.addEventListener('click', () => {
+            showOnboardingScreen(stepIndex, {
+                ...collectDraft(),
+                timezone: button.dataset.onboardingTimezone
+            });
+        });
+    });
+
     screen.querySelectorAll('.settings-toggle .seg-option').forEach(option => {
         option.addEventListener('click', () => {
             const toggle = option.closest('.settings-toggle');
             const toggleId = toggle.id;
             const nextDraft = collectDraft();
 
-            if (toggleId === 'onboarding-printer') {
+            if (toggleId === 'onboarding-brightness') {
                 showOnboardingScreen(stepIndex, {
                     ...nextDraft,
-                    printerEnabled: option.dataset.value === 'on'
+                    screenBrightnessStep: Number(option.dataset.value)
+                });
+                return;
+            }
+
+            if (toggleId === 'onboarding-sound') {
+                showOnboardingScreen(stepIndex, {
+                    ...nextDraft,
+                    soundEnabled: option.dataset.value === 'on'
                 });
                 return;
             }
 
             if (toggleId === 'shared-connectivity-mode') {
                 const nextConnectivity = option.dataset.value;
+                const nextAccountMode = nextConnectivity === 'offline' ? 'anonymous' : nextDraft.accountMode;
                 showOnboardingScreen(stepIndex, {
                     ...nextDraft,
                     connectivity: nextConnectivity,
+                    accountMode: nextAccountMode,
+                    signInState: nextConnectivity === 'offline' ? 'idle' : nextDraft.signInState,
+                    signInError: '',
                     wifiStage: nextConnectivity === 'wifi'
                         ? 'wifi_list'
                         : (nextConnectivity === 'ethernet' ? 'ethernet_ready' : 'offline'),
@@ -3029,9 +3001,12 @@ function showSettingsDetailScreen(view, state = {}) {
         cloudState: buildCloudFlowState(state.cloudState || {}),
         testTypeState: buildTestTypeManagerState(state.testTypeState || {}),
         softwareState: buildSoftwareState(state.softwareState || {}),
-        thresholdInput: String(state.thresholdInput || deviceSettings.verificationThreshold)
+        thresholdInput: String(state.thresholdInput || deviceSettings.verificationThreshold),
+        dateInput: String(state.dateInput || formatDeviceDateInputValue()),
+        timeInput: String(state.timeInput || formatDeviceTimeInputValue())
     };
     activeModal = detailState;
+    screen.dataset.view = view;
 
     let title = 'Settings Detail';
     let subtitle = '';
@@ -3057,25 +3032,52 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'verification_threshold') {
         const thresholdValue = sanitizeVerificationThreshold(detailState.thresholdInput);
+        const outstandingCount = getVerificationOutstandingCount(thresholdValue);
         title = 'Verification Threshold';
-        subtitle = 'Set the local early warning for outstanding verification.';
+        subtitle = 'Set the local warning count.';
         body = `
-            <section class="settings-section">
-                <div class="settings-section-body">
+            <section class="settings-section settings-threshold-section">
+                <div class="settings-section-body settings-threshold-body">
                     ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
-                    <div class="settings-detail-note">Cloud default is 250. Use a lower local number here for an earlier warning.</div>
-                    <div class="settings-inline-form">
-                        <label>Local Warning Threshold</label>
-                        <input class="form-input" id="settings-threshold-input" type="number" min="1" max="250" value="${escapeHtml(String(thresholdValue))}" placeholder="Enter number up to 250">
+                    <div class="settings-threshold-bubble-row">
+                        <div class="settings-threshold-bubble">
+                            <span>Cloud Default</span>
+                            <strong>250</strong>
+                        </div>
+                        <div class="settings-threshold-bubble${outstandingCount > 0 ? ' is-warning' : ''}">
+                            <span>Status</span>
+                            <strong>${escapeHtml(getVerificationSummaryLabel(thresholdValue))}</strong>
+                        </div>
                     </div>
-                    <div class="history-action-row">
+                    <div class="settings-threshold-control-row">
+                        <div class="settings-inline-form settings-threshold-input">
+                            <label>Local Warning</label>
+                            <input class="form-input" id="settings-threshold-input" type="number" min="1" max="250" value="${escapeHtml(String(thresholdValue))}" placeholder="1 to 250">
+                        </div>
                         <button class="history-inline-btn history-inline-btn-secondary" id="settings-threshold-reset">Reset To 250</button>
                         <button class="history-inline-btn" id="settings-threshold-save">Save Threshold</button>
                     </div>
-                    <div class="settings-count-panel">
+                    <div class="settings-count-panel settings-count-panel-compact">
                         <div class="settings-count-panel-head"><strong>${escapeHtml(getVerificationSummaryLabel(thresholdValue))}</strong><span>Per port</span></div>
-                        <div class="settings-count-grid">${renderVerificationCountRows(thresholdValue)}</div>
+                        <div class="settings-count-grid settings-count-grid-compact">${renderVerificationCountRows(thresholdValue)}</div>
                     </div>
+                </div>
+            </section>`;
+    } else if (view === 'brightness') {
+        title = 'Screen Brightness';
+        subtitle = 'Choose the display brightness level.';
+        body = `
+            <section class="settings-section">
+                <div class="settings-section-body">
+                    ${renderSelectableListRows(
+                        Array.from({ length: 7 }, (_, index) => ({
+                            value: String(index + 1),
+                            label: `Level ${index + 1}`,
+                            meta: index === 0 ? 'Least bright' : (index === 6 ? 'Most bright' : '')
+                        })),
+                        String(getScreenBrightnessStep()),
+                        'data-settings-brightness'
+                    )}
                 </div>
             </section>`;
     } else if (view === 'test_types') {
@@ -3102,16 +3104,37 @@ function showSettingsDetailScreen(view, state = {}) {
                 })}
             </section>`;
     } else if (view === 'date_time') {
+        const previewDate = new Date(buildDeviceDateTimeIso(detailState.dateInput, detailState.timeInput));
         title = 'Date And Time';
-        subtitle = 'View the current time and choose the upload timezone.';
+        subtitle = 'Set the reader date, time, and timezone.';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
                     <div class="settings-summary-card">
-                        <div class="settings-summary-row"><span>Current Time</span><strong>${escapeHtml(new Date().toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', timeZone: getSelectedTimezone() }))}</strong></div>
+                        <div class="settings-summary-row"><span>Date</span><strong>${escapeHtml(formatDeviceDateLabel(previewDate))}</strong></div>
+                        <div class="settings-summary-row"><span>Time</span><strong>${escapeHtml(formatDeviceTimeLabel(previewDate))}</strong></div>
                         <div class="settings-summary-row"><span>Timezone</span><strong>${escapeHtml(deviceSettings.timezone)}</strong></div>
                     </div>
-                    ${renderSelectableListRows(DEFAULT_TIMEZONE_OPTIONS, deviceSettings.timezone, 'data-settings-timezone', 'settings-timezone-list')}
+                    <div class="settings-inline-form">
+                        <label>Date</label>
+                        <input class="form-input" id="settings-date-input" type="date" value="${escapeHtml(detailState.dateInput)}">
+                        <label>Time</label>
+                        <input class="form-input" id="settings-time-input" type="time" value="${escapeHtml(detailState.timeInput)}">
+                    </div>
+                    <div class="history-action-row">
+                        <button class="history-inline-btn history-inline-btn-secondary" id="settings-open-timezone">Set Time Zone</button>
+                        <button class="history-inline-btn" id="settings-date-time-save">Save Date And Time</button>
+                    </div>
+                </div>
+            </section>`;
+    } else if (view === 'timezone') {
+        title = 'Time Zone';
+        subtitle = 'Choose the reader time zone.';
+        body = `
+            <section class="settings-section">
+                <div class="settings-section-body">
+                    ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
+                    ${renderSelectableListRows(DEFAULT_TIMEZONE_OPTIONS, deviceSettings.timezone, 'data-settings-timezone')}
                 </div>
             </section>`;
     } else if (view === 'software') {
@@ -3128,9 +3151,9 @@ function showSettingsDetailScreen(view, state = {}) {
             <section class="settings-section">
                 <div class="settings-section-body">
                     ${renderHistoryNotice(detailState.notice)}
-                    <div class="settings-inline-form">
+                    <div class="settings-inline-form" data-1p-ignore="true" data-lpignore="true">
                         <label>Password</label>
-                        <input class="form-input" id="settings-factory-password" type="password" inputmode="numeric" placeholder="Enter password">
+                        <input class="form-input" id="settings-factory-password" type="password" inputmode="numeric" value="${escapeHtml(SETTINGS_PASSWORD)}" placeholder="Enter password" ${getAutofillIgnoreAttrs('password')}>
                     </div>
                     ${detailState.factoryPasswordError ? `<div class="settings-password-error">${escapeHtml(detailState.factoryPasswordError)}</div>` : '<div class="settings-password-hint">Reader password: 2026</div>'}
                     <div class="history-action-row">
@@ -3140,16 +3163,15 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else {
         title = 'About';
-        subtitle = 'Reader summary and software details.';
+        subtitle = 'Reader identifiers and software details.';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
                     <div class="settings-summary-card">
-                        <div class="settings-summary-row"><span>Reader</span><strong>5-Port MilkSafe Reader</strong></div>
-                        <div class="settings-summary-row"><span>Display</span><strong>800 x 480</strong></div>
                         <div class="settings-summary-row"><span>Software Version</span><strong>${escapeHtml(deviceSettings.softwareVersion || CURRENT_SOFTWARE_VERSION)}</strong></div>
-                        <div class="settings-summary-row"><span>Language</span><strong>${escapeHtml(deviceSettings.language)}</strong></div>
-                        <div class="settings-summary-row"><span>Timezone</span><strong>${escapeHtml(deviceSettings.timezone)}</strong></div>
+                        <div class="settings-summary-row"><span>Serial Number</span><strong>${escapeHtml(DEVICE_SERIAL_NUMBER)}</strong></div>
+                        <div class="settings-summary-row"><span>LAN MAC Address</span><strong>${escapeHtml(LAN_MAC_ADDRESS)}</strong></div>
+                        <div class="settings-summary-row"><span>WLAN MAC Address</span><strong>${escapeHtml(WLAN_MAC_ADDRESS)}</strong></div>
                     </div>
                 </div>
             </section>`;
@@ -3186,6 +3208,7 @@ function showSettingsDetailScreen(view, state = {}) {
             const nextValue = option.dataset.value;
 
             if (toggle.id === 'shared-connectivity-mode') {
+                const wasSignedIn = isSignedIn();
                 if (nextValue === 'offline' || nextValue === 'ethernet') {
                     handleSettingsApply({
                         connectivity: nextValue
@@ -3195,6 +3218,7 @@ function showSettingsDetailScreen(view, state = {}) {
 
                 showSettingsDetailScreen('connectivity', {
                     focusSection: detailState.focusSection,
+                    notice: nextValue === 'offline' && wasSignedIn ? 'Reader switched to anonymous mode while offline.' : '',
                     connectivityDraft: {
                         ...detailState.connectivityDraft,
                         connectivity: nextValue,
@@ -3219,15 +3243,59 @@ function showSettingsDetailScreen(view, state = {}) {
         });
     });
 
+    screen.querySelectorAll('[data-settings-brightness]').forEach(button => {
+        button.addEventListener('click', () => {
+            handleSettingsApply({ screenBrightnessStep: Number(button.dataset.settingsBrightness) });
+            renderStatusBar();
+            showSettingsDetailScreen('brightness', {
+                focusSection: detailState.focusSection
+            });
+        });
+    });
+
     screen.querySelectorAll('[data-settings-timezone]').forEach(button => {
         button.addEventListener('click', () => {
             handleSettingsApply({ timezone: button.dataset.settingsTimezone });
             renderStatusBar();
             showSettingsDetailScreen('date_time', {
-                focusSection: detailState.focusSection
+                focusSection: detailState.focusSection,
+                dateInput: detailState.dateInput,
+                timeInput: detailState.timeInput
             });
         });
     });
+
+    const openTimezoneBtn = document.getElementById('settings-open-timezone');
+    if (openTimezoneBtn) {
+        openTimezoneBtn.addEventListener('click', () => {
+            const dateValue = document.getElementById('settings-date-input')?.value || detailState.dateInput;
+            const timeValue = document.getElementById('settings-time-input')?.value || detailState.timeInput;
+            showSettingsDetailScreen('timezone', {
+                focusSection: detailState.focusSection,
+                dateInput: dateValue,
+                timeInput: timeValue
+            });
+        });
+    }
+
+    const dateTimeSaveBtn = document.getElementById('settings-date-time-save');
+    if (dateTimeSaveBtn) {
+        dateTimeSaveBtn.addEventListener('click', () => {
+            const dateValue = document.getElementById('settings-date-input')?.value || detailState.dateInput;
+            const timeValue = document.getElementById('settings-time-input')?.value || detailState.timeInput;
+            handleSettingsApply({
+                deviceDateTimeIso: buildDeviceDateTimeIso(dateValue, timeValue),
+                dateTimeSetAt: new Date().toISOString()
+            });
+            renderStatusBar();
+            showSettingsDetailScreen('date_time', {
+                focusSection: detailState.focusSection,
+                dateInput: dateValue,
+                timeInput: timeValue,
+                notice: 'Date and time updated.'
+            });
+        });
+    }
 
     screen.querySelectorAll('[data-shared-wifi-network]').forEach(button => {
         button.addEventListener('click', () => {
@@ -3293,8 +3361,7 @@ function showSettingsDetailScreen(view, state = {}) {
                             ...connectingDraft,
                             wifiStage: passwordMatches ? 'wifi_success' : 'wifi_error',
                             wifiError: passwordMatches ? '' : 'Password incorrect. Re-enter the Wi-Fi password to continue.'
-                        },
-                        notice: passwordMatches ? `${connectingDraft.wifiNetwork} connected successfully.` : ''
+                        }
                     });
                 });
             }
@@ -3539,6 +3606,15 @@ function showSettingsDetailScreen(view, state = {}) {
 
     document.querySelectorAll('#settings-detail-back, #settings-detail-back-footer').forEach(button => {
         button.addEventListener('click', () => {
+            if (view === 'timezone') {
+                showSettingsDetailScreen('date_time', {
+                    focusSection: detailState.focusSection,
+                    dateInput: detailState.dateInput,
+                    timeInput: detailState.timeInput
+                });
+                return;
+            }
+
             if (view === 'test_types' && detailState.testTypeState.step === 'list') {
                 showSettingsDetailScreen('test_types', {
                     focusSection: detailState.focusSection,
@@ -3620,6 +3696,7 @@ function hideSettingsDetailScreen() {
 
     clearPrototypeFullScreenTimer();
     screen.classList.remove('active');
+    delete screen.dataset.view;
     screen.innerHTML = '';
 
     if (activeModal && activeModal.type === 'settings_detail') {
@@ -3681,12 +3758,18 @@ function showSettingsScreen(focusSection = '') {
                     value: deviceSettings.language,
                     buttonLabel: 'Open',
                     action: 'open-language'
+                }),
+                renderSettingsActionRow({
+                    title: 'Screen Brightness',
+                    detail: 'Set the display brightness from the dimmest to the brightest step.',
+                    value: getScreenBrightnessLabel(),
+                    buttonLabel: 'Open',
+                    action: 'open-brightness'
                 })
             ].join(''), 'Live settings that apply right away.', 'settings-reader-controls')}
             ${renderSettingsSection('Verification', [
                 renderSettingsActionRow({
                     title: 'Run Verification',
-                    detail: 'Verification stays separate for now.',
                     buttonLabel: 'Open',
                     action: 'open-verification'
                 }),
@@ -3695,10 +3778,9 @@ function showSettingsScreen(focusSection = '') {
                     detail: `Local device warning set to ${deviceSettings.verificationThreshold}. The cloud default remains 250.`,
                     value: getVerificationOutstandingCount() > 0 ? getVerificationSummaryLabel() : `Local ${deviceSettings.verificationThreshold}`,
                     buttonLabel: 'Manage',
-                    action: 'open-verification-threshold',
-                    badge: getVerificationOutstandingCount() > 0 ? 'Attention' : ''
+                    action: 'open-verification-threshold'
                 })
-            ].join(''), 'Verification stays separate for now.', 'settings-verification')}
+            ].join(''), '', 'settings-verification')}
             ${renderSettingsSection('Data And Setup', [
                 renderSettingsActionRow({
                     title: 'Test Types',
@@ -3735,68 +3817,6 @@ function showSettingsScreen(focusSection = '') {
                     action: 'open-curve-loader'
                 })
             ].join(''), '', 'settings-setup')}
-            ${renderSettingsSection('Outputs And Metadata', [
-                renderSettingsToggleRow({
-                    title: 'Printer',
-                    detail: 'Enable or disable printed result outputs.',
-                    id: 'set-printer',
-                    value: deviceSettings.printerEnabled ? 'on' : 'off',
-                    options: [
-                        { value: 'on', label: 'On' },
-                        { value: 'off', label: 'Off' }
-                    ]
-                }),
-                renderSettingsToggleRow({
-                    title: 'Comments',
-                    detail: 'Controls whether flow comments can be added in history.',
-                    id: 'set-comments',
-                    value: deviceSettings.commentsEnabled ? 'on' : 'off',
-                    options: [
-                        { value: 'on', label: 'On' },
-                        { value: 'off', label: 'Off' }
-                    ]
-                }),
-                renderSettingsToggleRow({
-                    title: 'Sample ID',
-                    detail: 'Show or hide sample ID capture in test configuration.',
-                    id: 'set-sample-id',
-                    value: deviceSettings.sampleIdEnabled ? 'on' : 'off',
-                    options: [
-                        { value: 'on', label: 'On' },
-                        { value: 'off', label: 'Off' }
-                    ]
-                }),
-                renderSettingsToggleRow({
-                    title: 'Operator ID',
-                    detail: 'Show or hide operator ID capture in test configuration.',
-                    id: 'set-operator-id',
-                    value: deviceSettings.operatorIdEnabled ? 'on' : 'off',
-                    options: [
-                        { value: 'on', label: 'On' },
-                        { value: 'off', label: 'Off' }
-                    ]
-                }),
-                renderSettingsToggleRow({
-                    title: 'LIMS',
-                    detail: 'Enable the LIMS export action in history.',
-                    id: 'set-lims',
-                    value: deviceSettings.limsEnabled ? 'on' : 'off',
-                    options: [
-                        { value: 'on', label: 'On' },
-                        { value: 'off', label: 'Off' }
-                    ]
-                }),
-                renderSettingsToggleRow({
-                    title: 'Sound',
-                    detail: 'Reader sound on or off.',
-                    id: 'set-sound',
-                    value: deviceSettings.soundEnabled ? 'on' : 'off',
-                    options: [
-                        { value: 'on', label: 'On' },
-                        { value: 'off', label: 'Off' }
-                    ]
-                })
-            ].join(''), '', 'settings-outputs')}
             ${renderSettingsSection('Maintenance', [
                 renderSettingsActionRow({
                     title: 'Software Update',
@@ -3832,13 +3852,6 @@ function showSettingsScreen(focusSection = '') {
             if (toggleId === 'set-temperature') nextSettings = { deviceTemperature: nextValue };
             if (toggleId === 'set-qr') nextSettings = { qrScanningEnabled: nextValue === 'on' };
             if (toggleId === 'set-microswitch') nextSettings = { microswitchEnabled: nextValue === 'on' };
-            if (toggleId === 'set-printer') nextSettings = { printerEnabled: nextValue === 'on' };
-            if (toggleId === 'set-comments') nextSettings = { commentsEnabled: nextValue === 'on' };
-            if (toggleId === 'set-sample-id') nextSettings = { sampleIdEnabled: nextValue === 'on' };
-            if (toggleId === 'set-operator-id') nextSettings = { operatorIdEnabled: nextValue === 'on' };
-            if (toggleId === 'set-lims') nextSettings = { limsEnabled: nextValue === 'on' };
-            if (toggleId === 'set-sound') nextSettings = { soundEnabled: nextValue === 'on' };
-
             handleSettingsApply(nextSettings);
             renderStatusBar();
             showSettingsScreen(focusSection);
@@ -3865,6 +3878,11 @@ function showSettingsScreen(focusSection = '') {
             if (action === 'open-language') {
                 hideSettingsScreen();
                 showSettingsDetailScreen('language', { focusSection: 'settings-reader-controls' });
+                return;
+            }
+            if (action === 'open-brightness') {
+                hideSettingsScreen();
+                showSettingsDetailScreen('brightness', { focusSection: 'settings-reader-controls' });
                 return;
             }
             if (action === 'open-verification-threshold') {
