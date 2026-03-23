@@ -1618,7 +1618,7 @@ function renderHistoryField(label, value) {
     </div>`;
 }
 
-function renderStructuredModalHeader(channelId, title, subtitle = '') {
+function renderStructuredModalHeader(channelId, title, subtitle = '', actionsHtml = '') {
     return `
         <div class="modal-header">
             <div class="modal-header-row">
@@ -1627,6 +1627,7 @@ function renderStructuredModalHeader(channelId, title, subtitle = '') {
                     <h2>${escapeHtml(title)}</h2>
                     ${subtitle ? `<span class="modal-subtitle">${escapeHtml(subtitle)}</span>` : ''}
                 </div>
+                ${actionsHtml}
             </div>
         </div>`;
 }
@@ -4813,13 +4814,13 @@ function showDecisionModal(ch, variant) {
     }).join('');
 
     modal.innerHTML = `
-        ${renderStructuredModalHeader(ch.id, headerTitle, `Channel ${ch.id}`)}
+        ${renderStructuredModalHeader(ch.id, headerTitle)}
         <div class="modal-body modal-structured-body">
             <section class="history-summary-card modal-summary-card is-${resultKey}">
                 <div class="history-summary-top">
-                    <div>
-                        <span class="history-summary-kicker">${stepLabel}</span>
-                        <h2>${escapeHtml(testTypeLabel)}</h2>
+                    <div class="decision-summary-copy">
+                        <h2>${escapeHtml(stepLabel)}</h2>
+                        <span class="decision-summary-type">${escapeHtml(testTypeLabel)}</span>
                     </div>
                     ${renderHistoryResultBadge(resultKey, 'lg')}
                 </div>
@@ -4878,7 +4879,7 @@ function showStopConfirmationModal(ch) {
     }).join('');
 
     modal.innerHTML = `
-        ${renderStructuredModalHeader(ch.id, 'Abort Flow', `Channel ${ch.id}`)}
+        ${renderStructuredModalHeader(ch.id, 'Abort Flow')}
         <div class="modal-body modal-structured-body">
             <section class="history-summary-card modal-summary-card is-warning">
                 <div class="history-summary-top">
@@ -4985,7 +4986,7 @@ function showDetailModal(ch) {
     };
 
     modal.innerHTML = `
-        ${renderStructuredModalHeader(ch.id, 'Flow Detail', `Channel ${ch.id}`)}
+        ${renderStructuredModalHeader(ch.id, 'Flow Detail', '', '<button class="close-btn" id="detail-close-btn" aria-label="Close">Close</button>')}
         <div class="modal-body modal-structured-body">
             <section class="history-summary-card modal-summary-card is-${summaryTone}">
                 <div class="history-summary-top">
@@ -5013,9 +5014,6 @@ function showDetailModal(ch) {
                     ${testsHtml}
                 </div>
             </section>
-        </div>
-        <div class="modal-footer">
-            <button class="modal-btn btn-secondary" id="detail-close-btn">Close</button>
         </div>`;
 
     overlay.classList.add('active');

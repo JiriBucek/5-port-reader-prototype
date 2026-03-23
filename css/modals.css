@@ -988,25 +988,21 @@
     text-align: left;
 }
 
-.decision-modal .modal-header-row,
-.detail-modal .modal-header-row {
+.decision-modal .modal-header-row {
     gap: 10px;
 }
 
-.decision-modal .modal-channel-badge,
-.detail-modal .modal-channel-badge {
+.decision-modal .modal-channel-badge {
     width: 64px;
     height: 64px;
     font-size: 30px;
 }
 
-.decision-modal .modal-header-row .header-text h2,
-.detail-modal .modal-header-row .header-text h2 {
+.decision-modal .modal-header-row .header-text h2 {
     font-size: var(--font-xl);
 }
 
-.decision-modal .modal-header-row .header-text .modal-subtitle,
-.detail-modal .modal-header-row .header-text .modal-subtitle {
+.decision-modal .modal-header-row .header-text .modal-subtitle {
     font-size: var(--font-sm);
 }
 
@@ -1036,6 +1032,24 @@
 .modal-summary-card,
 .modal-section-card {
     margin: 0;
+}
+
+.decision-summary-copy {
+    min-width: 0;
+}
+
+.decision-modal .modal-summary-card h2 {
+    font-size: 19px;
+    line-height: 1.1;
+}
+
+.decision-summary-type {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--font-sm);
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--gray-600);
 }
 
 /* Substance results list in modal */
@@ -1135,9 +1149,30 @@
     max-height: 94%;
 }
 
+.detail-modal .modal-header-row {
+    gap: 8px;
+}
+
+.detail-modal .modal-channel-badge {
+    width: 52px;
+    height: 52px;
+    font-size: 24px;
+    border-width: 1px;
+    box-shadow: none;
+}
+
+.detail-modal .modal-header-row .header-text h2 {
+    font-size: 18px;
+    line-height: 1.1;
+}
+
+.detail-modal .modal-header-row .header-text .modal-subtitle {
+    display: none;
+}
+
 .detail-modal .modal-header {
     text-align: left;
-    padding: 12px 16px 10px;
+    padding: 10px 16px 8px;
 }
 
 .detail-modal .modal-footer {
@@ -1153,23 +1188,24 @@
 }
 
 .detail-modal .close-btn {
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--gray-300);
-    background: var(--gray-100);
-    border-radius: 2px;
-    font-size: 20px;
+    min-height: var(--touch-target-compact);
+    padding: 0 10px;
+    border: none;
+    background: none;
+    border-radius: 0;
+    font-size: var(--font-base);
+    font-weight: 700;
     cursor: pointer;
-    color: var(--gray-500);
-    display: flex;
+    color: var(--primary);
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: background-color 0.15s;
+    line-height: 1;
 }
 
 .detail-modal .close-btn:hover {
-    background: var(--gray-200);
+    background: none;
 }
 
 /* Test history section */
