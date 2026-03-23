@@ -84,6 +84,9 @@ function handleSettingsDetailClose(returnToSettings = true, focusSection = '') {
 
 function handleVerificationClose() {
     hideVerificationScreen();
+    renderAllCards();
+    renderStatusBar();
+    renderSimulationButtons();
     showSettingsScreen();
 }
 

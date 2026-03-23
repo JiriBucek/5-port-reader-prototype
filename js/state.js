@@ -209,6 +209,18 @@ const DEVICE_SERIAL_NUMBER = 'MS5P-260323-0142';
 const LAN_MAC_ADDRESS = '00:1B:44:11:3A:B7';
 const WLAN_MAC_ADDRESS = '3C:52:82:4F:91:2D';
 const SCREEN_BRIGHTNESS_FILTERS = [0.55, 0.65, 0.75, 0.85, 0.95, 1.05, 1.15];
+const VERIFICATION_TEMPERATURE_TOLERANCE = 2;
+const VERIFICATION_LIGHT_INTENSITY_MIN = 500000;
+const VERIFICATION_RATIO_RANGE = {
+    min: 0.9,
+    max: 1.1
+};
+const VERIFICATION_LINE_NAMES = [
+    'Control line',
+    'Test line 1',
+    'Test line 2',
+    'Test line 3'
+];
 const DEFAULT_WIFI_NETWORKS = [
     { ssid: 'MilkSafe Factory', security: 'WPA2', signal: 'Excellent', password: '2026' },
     { ssid: 'MilkSafe QA Lab', security: 'WPA2', signal: 'Excellent', password: '2026' },
@@ -287,6 +299,8 @@ let usedCassetteIds = new Set();
 let cassetteIdCounter = 1;
 let sessionHistory = [];
 let historyEntryIdCounter = 1;
+let verificationHistory = [];
+let verificationEntryIdCounter = 1;
 let recentTestTypeIds = [];
 let savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
 let recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
@@ -368,6 +382,10 @@ function getVerificationCountForChannel(channelId) {
 
 function incrementVerificationCount(channelId) {
     deviceSettings.verificationCounts[channelId] = getVerificationCountForChannel(channelId) + 1;
+}
+
+function resetVerificationCount(channelId) {
+    deviceSettings.verificationCounts[channelId] = 0;
 }
 
 function getVerificationWarningChannels(thresholdValue = deviceSettings.verificationThreshold) {
@@ -584,6 +602,8 @@ function initChannels() {
     usedCassetteIds = new Set();
     sessionHistory = buildMockHistory();
     historyEntryIdCounter = sessionHistory.reduce((maxId, entry) => Math.max(maxId, entry.historyId || 0), 0) + 1;
+    verificationHistory = buildMockVerificationHistory();
+    verificationEntryIdCounter = verificationHistory.reduce((maxId, entry) => Math.max(maxId, entry.verificationId || 0), 0) + 1;
     recentTestTypeIds = DEFAULT_RECENT_TEST_TYPE_IDS.filter(id => TEST_TYPES.some(tt => tt.id === id));
     savedQuantCurves = PRELOADED_QUANT_CURVES.map(curve => ({ ...curve }));
     recentQuantCurveIds = savedQuantCurves.map(curve => curve.id);
@@ -600,6 +620,10 @@ function getActiveUserName() {
 
 function nextHistoryEntryId() {
     return historyEntryIdCounter++;
+}
+
+function nextVerificationEntryId() {
+    return verificationEntryIdCounter++;
 }
 
 function getScenarioLabel(scenario) {
@@ -642,6 +666,134 @@ function buildLightIntensitySeries({ seed = 0, positive = false, quantitative = 
     }
 
     return points;
+}
+
+function formatVerificationTemperature(value) {
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) return '--';
+    return `${parsedValue.toFixed(1)} C`;
+}
+
+function formatVerificationLightIntensity(value) {
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) return '--';
+    return parsedValue.toLocaleString('en-GB');
+}
+
+function formatVerificationRatioValue(value) {
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) return '--';
+    return parsedValue.toFixed(2);
+}
+
+function isVerificationTemperaturePass(targetTemperature, measuredTemperature) {
+    const target = Number(targetTemperature);
+    const measured = Number(measuredTemperature);
+    if (!Number.isFinite(target) || !Number.isFinite(measured)) return false;
+    return Math.abs(measured - target) <= VERIFICATION_TEMPERATURE_TOLERANCE;
+}
+
+function isVerificationRatioPass(value) {
+    const parsedValue = Number(value);
+    if (!Number.isFinite(parsedValue)) return false;
+    return parsedValue >= VERIFICATION_RATIO_RANGE.min && parsedValue <= VERIFICATION_RATIO_RANGE.max;
+}
+
+function buildMockVerificationLineRatios({ seed = 0, failingIndex = -1 } = {}) {
+    return VERIFICATION_LINE_NAMES.map((name, index) => {
+        const baseOffset = (((seed + index) % 5) - 2) * 0.02;
+        const value = index === failingIndex
+            ? (index % 2 === 0 ? 1.14 : 0.86)
+            : (1 + baseOffset);
+        const normalizedValue = Number(value.toFixed(2));
+        return {
+            name,
+            value: normalizedValue,
+            pass: isVerificationRatioPass(normalizedValue)
+        };
+    });
+}
+
+function createVerificationRecord({
+    verificationId = nextVerificationEntryId(),
+    verificationSource = 'archive',
+    channelId = 1,
+    targetTemperature = 40,
+    measuredTemperature = 40,
+    lightIntensity = 548320,
+    lightIntensitySeries = [],
+    lineRatios = [],
+    accountMode = isSignedIn() ? 'signed_in' : 'anonymous',
+    userName = getActiveUserName(),
+    siteName = activeAccount.siteName,
+    synced = false,
+    timestamp = new Date().toISOString()
+} = {}) {
+    const resolvedTargetTemperature = Number(targetTemperature) === 50 ? 50 : 40;
+    const resolvedMeasuredTemperature = Number.isFinite(Number(measuredTemperature))
+        ? Number(Number(measuredTemperature).toFixed(1))
+        : resolvedTargetTemperature;
+    const resolvedLightIntensity = Number.isFinite(Number(lightIntensity))
+        ? Math.round(Number(lightIntensity))
+        : VERIFICATION_LIGHT_INTENSITY_MIN;
+    const normalizedLineRatios = (Array.isArray(lineRatios) && lineRatios.length > 0
+        ? lineRatios
+        : buildMockVerificationLineRatios({ seed: Number(verificationId) || channelId || 0 }))
+        .map(line => {
+            const value = Number.isFinite(Number(line.value)) ? Number(Number(line.value).toFixed(2)) : 1;
+            return {
+                name: line.name || 'Line',
+                value,
+                pass: isVerificationRatioPass(value)
+            };
+        });
+    const resolvedAccountMode = accountMode === 'anonymous' ? 'anonymous' : 'signed_in';
+    const resolvedUserName = resolvedAccountMode === 'anonymous'
+        ? ''
+        : (String(userName || activeAccount.username || DEFAULT_CLOUD_USERNAME).trim() || DEFAULT_CLOUD_USERNAME);
+    const resolvedSiteName = resolvedAccountMode === 'anonymous'
+        ? 'Anonymous Data site'
+        : (String(siteName || activeAccount.siteName || 'Prague Dairy').trim() || 'Prague Dairy');
+    const canUseSyncedState = resolvedAccountMode === 'signed_in' && Boolean(synced);
+    const temperaturePass = isVerificationTemperaturePass(resolvedTargetTemperature, resolvedMeasuredTemperature);
+    const lightIntensityPass = resolvedLightIntensity >= VERIFICATION_LIGHT_INTENSITY_MIN;
+    const ratioPass = normalizedLineRatios.every(line => line.pass);
+    const overallPass = temperaturePass && lightIntensityPass && ratioPass;
+    const numericVerificationId = Number(verificationId);
+    const seedBase = Number.isFinite(numericVerificationId)
+        ? numericVerificationId
+        : (Number(channelId) || 0) + 310;
+
+    return {
+        verificationId,
+        verificationKey: `${verificationSource === 'live' ? 'verification-live' : 'verification'}-${verificationId}`,
+        verificationSource,
+        channelId: Number(channelId) || 1,
+        targetTemperature: resolvedTargetTemperature,
+        measuredTemperature: resolvedMeasuredTemperature,
+        temperatureDelta: Number(Math.abs(resolvedMeasuredTemperature - resolvedTargetTemperature).toFixed(1)),
+        temperaturePass,
+        lightIntensity: resolvedLightIntensity,
+        lightIntensityMinimum: VERIFICATION_LIGHT_INTENSITY_MIN,
+        lightIntensityPass,
+        lightIntensitySeries: Array.isArray(lightIntensitySeries) && lightIntensitySeries.length > 1
+            ? [...lightIntensitySeries]
+            : buildLightIntensitySeries({
+                seed: seedBase * 5,
+                positive: !overallPass,
+                quantitative: false
+            }).map(point => Number((resolvedLightIntensity / 10000 + point * 1800).toFixed(0))),
+        lineRatios: normalizedLineRatios,
+        ratioPass,
+        overallPass,
+        status: overallPass ? 'passed' : 'failed',
+        accountMode: resolvedAccountMode,
+        userName: resolvedUserName,
+        siteName: resolvedSiteName,
+        synced: canUseSyncedState,
+        uploadStatus: canUseSyncedState ? 'synced' : 'not_synced',
+        timestamp
+    };
 }
 
 function buildMockSubstancesForTestType(testTypeId, cassetteType, outcome, variantIndex = 0) {
@@ -1015,6 +1167,87 @@ function buildMockHistory() {
     ];
 }
 
+function buildMockVerificationHistory() {
+    return [
+        createVerificationRecord({
+            verificationId: 1,
+            channelId: 4,
+            targetTemperature: 50,
+            measuredTemperature: 49.6,
+            lightIntensity: 548320,
+            lineRatios: buildMockVerificationLineRatios({ seed: 1 }),
+            accountMode: 'signed_in',
+            userName: DEFAULT_CLOUD_USERNAME,
+            siteName: 'Prague Dairy',
+            synced: true,
+            timestamp: '2026-03-22T10:12:00.000Z'
+        }),
+        createVerificationRecord({
+            verificationId: 2,
+            channelId: 2,
+            targetTemperature: 40,
+            measuredTemperature: 42.4,
+            lightIntensity: 537940,
+            lineRatios: buildMockVerificationLineRatios({ seed: 2 }),
+            accountMode: 'signed_in',
+            userName: DEFAULT_CLOUD_USERNAME,
+            siteName: 'Prague Dairy',
+            synced: false,
+            timestamp: '2026-03-21T13:28:00.000Z'
+        }),
+        createVerificationRecord({
+            verificationId: 3,
+            channelId: 1,
+            targetTemperature: 50,
+            measuredTemperature: 50.3,
+            lightIntensity: 552410,
+            lineRatios: buildMockVerificationLineRatios({ seed: 3, failingIndex: 2 }),
+            accountMode: 'signed_in',
+            userName: DEFAULT_CLOUD_USERNAME,
+            siteName: 'Prague Dairy',
+            synced: true,
+            timestamp: '2026-03-20T08:46:00.000Z'
+        }),
+        createVerificationRecord({
+            verificationId: 4,
+            channelId: 5,
+            targetTemperature: 40,
+            measuredTemperature: 39.2,
+            lightIntensity: 544110,
+            lineRatios: buildMockVerificationLineRatios({ seed: 4 }),
+            accountMode: 'anonymous',
+            synced: false,
+            timestamp: '2026-03-19T16:04:00.000Z'
+        }),
+        createVerificationRecord({
+            verificationId: 5,
+            channelId: 3,
+            targetTemperature: 50,
+            measuredTemperature: 49.1,
+            lightIntensity: 541870,
+            lineRatios: buildMockVerificationLineRatios({ seed: 5 }),
+            accountMode: 'signed_in',
+            userName: DEFAULT_CLOUD_USERNAME,
+            siteName: 'Prague Dairy',
+            synced: true,
+            timestamp: '2026-03-18T14:15:00.000Z'
+        }),
+        createVerificationRecord({
+            verificationId: 6,
+            channelId: 2,
+            targetTemperature: 40,
+            measuredTemperature: 40.5,
+            lightIntensity: 546780,
+            lineRatios: buildMockVerificationLineRatios({ seed: 6 }),
+            accountMode: 'signed_in',
+            userName: DEFAULT_CLOUD_USERNAME,
+            siteName: 'Prague Dairy',
+            synced: false,
+            timestamp: '2026-03-17T09:32:00.000Z'
+        })
+    ];
+}
+
 function buildHistoryFlowFromChannel(ch) {
     if (!ch || ch.state !== STATES.COMPLETE || ch.testResults.length === 0) return null;
 
@@ -1063,6 +1296,36 @@ function getHistoryFlows() {
         ...sessionHistory,
         ...channels.map(ch => buildHistoryFlowFromChannel(ch)).filter(Boolean)
     ].sort((left, right) => new Date(right.timestamp) - new Date(left.timestamp));
+}
+
+function getVerificationRecords() {
+    return [...verificationHistory].sort((left, right) => new Date(right.timestamp) - new Date(left.timestamp));
+}
+
+function findVerificationRecordByKey(verificationKey) {
+    return getVerificationRecords().find(record => record.verificationKey === verificationKey) || null;
+}
+
+function storeVerificationRecord(recordInput = {}) {
+    const resolvedAccountMode = recordInput.accountMode || (isSignedIn() ? 'signed_in' : 'anonymous');
+    const shouldSync = resolvedAccountMode !== 'anonymous' &&
+        Boolean(recordInput.synced) &&
+        deviceSettings.connectivity !== 'offline';
+    const record = createVerificationRecord({
+        verificationId: nextVerificationEntryId(),
+        verificationSource: 'archive',
+        accountMode: resolvedAccountMode,
+        userName: getActiveUserName(),
+        siteName: activeAccount.siteName,
+        synced: shouldSync,
+        ...recordInput
+    });
+
+    verificationHistory.push(record);
+    if (record.overallPass) {
+        resetVerificationCount(record.channelId);
+    }
+    return record;
 }
 
 function findHistoryFlowByKey(historyKey) {
@@ -1516,6 +1779,12 @@ function canInsertCassette(ch) {
            ch.state === STATES.DETECTED ||
            ch.state === STATES.READY_FOR_TEST_N ||
            ch.state === STATES.ERROR;
+}
+
+function isChannelAvailableForVerification(channelId) {
+    const channel = getChannel(channelId);
+    if (!channel) return false;
+    return channel.state === STATES.EMPTY && !channel.physicalCassettePresent;
 }
 
 function canRemoveCassette(ch) {

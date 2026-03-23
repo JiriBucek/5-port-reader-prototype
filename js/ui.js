@@ -2084,7 +2084,7 @@ function renderSettingsSegmentedControl(id, value, options) {
     return `
         <div class="segmented-control settings-toggle${widthClass}" id="${id}">
             ${options.map(option => `
-                <button class="seg-option${String(option.value) === String(value) ? ' selected' : ''}" data-value="${option.value}">${option.label}</button>
+                <button class="seg-option${String(option.value) === String(value) ? ' selected' : ''}${option.className ? ` ${option.className}` : ''}" data-value="${option.value}"${option.disabled ? ' disabled' : ''}>${option.label}</button>
             `).join('')}
         </div>`;
 }
@@ -3774,6 +3774,12 @@ function showSettingsScreen(focusSection = '') {
                     action: 'open-verification'
                 }),
                 renderSettingsActionRow({
+                    title: 'Verification History',
+                    detail: 'Saved verification results on this reader.',
+                    buttonLabel: 'Open',
+                    action: 'open-verification-history'
+                }),
+                renderSettingsActionRow({
                     title: 'Verification Threshold',
                     detail: `Local device warning set to ${deviceSettings.verificationThreshold}. The cloud default remains 250.`,
                     value: getVerificationOutstandingCount() > 0 ? getVerificationSummaryLabel() : `Local ${deviceSettings.verificationThreshold}`,
@@ -3870,6 +3876,11 @@ function showSettingsScreen(focusSection = '') {
                 showVerificationScreen();
                 return;
             }
+            if (action === 'open-verification-history') {
+                hideSettingsScreen();
+                showVerificationScreen({ view: 'history' });
+                return;
+            }
             if (action === 'open-curve-loader') {
                 hideSettingsScreen();
                 showSettingsCurveScreen();
@@ -3962,31 +3973,780 @@ function hideSettingsCurveScreen() {
 
 // ---- Verification Screen ----
 
-function showVerificationScreen() {
+function normalizeVerificationTargetTemperature(value) {
+    return Number(value) === 50 ? 50 : 40;
+}
+
+function getDefaultVerificationChannelId(preferredChannelId = null) {
+    const preferred = Number(preferredChannelId);
+    if (isChannelAvailableForVerification(preferred)) {
+        return preferred;
+    }
+
+    return channels.find(channel => isChannelAvailableForVerification(channel.id))?.id || 1;
+}
+
+function buildVerificationScreenState(source = {}) {
+    const currentState = activeModal && activeModal.type === 'verification' ? activeModal : {};
+    const targetTemperature = normalizeVerificationTargetTemperature(source.targetTemperature ?? currentState.targetTemperature ?? 40);
+    const measuredTemperature = source.measuredTemperature ?? currentState.measuredTemperature;
+    const channelId = getDefaultVerificationChannelId(source.channelId ?? currentState.channelId);
+
+    return {
+        type: 'verification',
+        view: source.view || currentState.view || 'setup',
+        channelId,
+        targetTemperature,
+        waitStage: source.waitStage || currentState.waitStage || 'heating',
+        measuredTemperature: measuredTemperature != null && measuredTemperature !== ''
+            ? String(measuredTemperature)
+            : targetTemperature.toFixed(1),
+        readingStage: source.readingStage || currentState.readingStage || 'scanning',
+        recordKey: source.recordKey ?? currentState.recordKey ?? null,
+        page: Number(source.page ?? currentState.page ?? 0) || 0,
+        notice: source.notice ?? currentState.notice ?? '',
+        error: source.error ?? currentState.error ?? '',
+        origin: source.origin || currentState.origin || 'run',
+        showInfo: source.showInfo ?? currentState.showInfo ?? false
+    };
+}
+
+function renderVerificationResultBadge(overallPass, size = 'md') {
+    return renderToneBadge(overallPass ? 'Passed' : 'Failed', overallPass ? 'negative' : 'positive', size);
+}
+
+function renderVerificationCriteriaChips(record) {
+    const items = [
+        { label: 'Temp', pass: record.temperaturePass },
+        { label: 'Light', pass: record.lightIntensityPass },
+        { label: 'Ratio', pass: record.ratioPass }
+    ];
+
+    return items.map(item => `
+        <span class="history-sequence-chip is-${item.pass ? 'negative' : 'positive'}">
+            <span class="history-sequence-chip-text">${item.label} ${item.pass ? 'Passed' : 'Failed'}</span>
+        </span>
+    `).join('');
+}
+
+function renderVerificationHeader({ title, subtitle, backAction = '', backLabel = 'Back', showInfoButton = false }) {
+    const backButton = backAction
+        ? `<button class="history-back-btn" data-verification-action="${backAction}">${escapeHtml(backLabel)}</button>`
+        : '';
+    const infoButton = showInfoButton
+        ? '<button class="verification-help-btn" data-verification-action="toggle-info" aria-label="Verification info">?</button>'
+        : '';
+
+    return `
+        <div class="verification-screen-header history-screen-header">
+            <div class="history-screen-title-row">
+                ${backButton}
+                <div>
+                    <h1>${escapeHtml(title)}</h1>
+                    <p>${escapeHtml(subtitle)}</p>
+                </div>
+            </div>
+            <div class="verification-header-actions">
+                ${infoButton}
+                <button class="history-close-btn" data-verification-action="close">Close</button>
+            </div>
+        </div>`;
+}
+
+function renderVerificationMessages(state) {
+    return `
+        ${state.error ? renderAsyncStateBlock('error', state.error) : ''}
+        ${state.notice ? renderHistoryNotice(state.notice) : ''}`;
+}
+
+function renderVerificationSetupView(state) {
+    const hasAvailablePort = channels.some(channel => isChannelAvailableForVerification(channel.id));
+    const selectedChannelId = hasAvailablePort
+        ? getDefaultVerificationChannelId(state.channelId)
+        : (Number(state.channelId) || 1);
+    const channelOptions = channels.map(channel => ({
+        value: channel.id,
+        label: String(channel.id),
+        disabled: !isChannelAvailableForVerification(channel.id)
+    }));
+
+    return `
+        ${renderVerificationHeader({
+            title: 'Verification',
+            subtitle: 'Select the port and target temperature.'
+        })}
+        <div class="verification-screen-body">
+            ${renderVerificationMessages(state)}
+            <section class="history-section-card verification-step-card">
+                <div class="history-section-header">
+                    <h2>Port</h2>
+                    <span>${channels.filter(channel => isChannelAvailableForVerification(channel.id)).length} available</span>
+                </div>
+                ${renderSettingsSegmentedControl('verification-channel', selectedChannelId, channelOptions)}
+            </section>
+            <section class="history-section-card verification-step-card">
+                <div class="history-section-header">
+                    <h2>Temperature</h2>
+                    <span>Choose the verification target</span>
+                </div>
+                ${renderSettingsSegmentedControl('verification-temperature', state.targetTemperature, [
+                    { value: 40, label: '40 C' },
+                    { value: 50, label: '50 C' }
+                ])}
+            </section>
+            ${hasAvailablePort ? '' : `
+                <div class="history-placeholder-panel history-placeholder-panel-simple">
+                    <strong>No free ports</strong>
+                    <p>Clear a port on the dashboard before starting verification.</p>
+                </div>`}
+        </div>
+        <div class="verification-screen-footer">
+            <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="open-history">Verification History</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="setup-next"${hasAvailablePort ? '' : ' disabled'}>Next</button>
+        </div>`;
+}
+
+function renderVerificationWarmupView(state) {
+    const isReady = state.waitStage === 'ready';
+    return `
+        ${renderVerificationHeader({
+            title: 'Verification Temperature',
+            subtitle: `Port ${state.channelId} · ${state.targetTemperature} C`,
+            backAction: 'back-to-setup'
+        })}
+        <div class="verification-screen-body">
+            ${renderVerificationMessages(state)}
+            <section class="history-section-card verification-status-card">
+                <div class="verification-status-indicator${isReady ? ' is-ready' : ''}"></div>
+                <strong>${isReady ? 'Target temperature reached.' : `Heating port ${state.channelId} to ${state.targetTemperature} C.`}</strong>
+                <p>${isReady
+                    ? 'Insert the thermometer as shown and wait for a stable reading.'
+                    : 'Wait for the selected verification temperature before inserting the thermometer.'}</p>
+                ${isReady ? '' : renderAsyncStateBlock('loading', `Heating to ${state.targetTemperature} C...`)}
+            </section>
+            ${isReady ? `
+                <section class="history-section-card">
+                    <div class="verification-asset-card">
+                        <img class="verification-asset-image verification-asset-image-thermometer" src="assets/images/InsertThermometer.png" alt="Insert the thermometer into the selected verification port">
+                    </div>
+                </section>` : ''}
+        </div>
+        <div class="verification-screen-footer">
+            <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="back-to-setup">Back</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="warmup-next"${isReady ? '' : ' disabled'}>Next</button>
+        </div>`;
+}
+
+function renderVerificationMeasureView(state) {
+    const minimum = state.targetTemperature - VERIFICATION_TEMPERATURE_TOLERANCE;
+    const maximum = state.targetTemperature + VERIFICATION_TEMPERATURE_TOLERANCE;
+    return `
+        ${renderVerificationHeader({
+            title: 'Measured Temperature',
+            subtitle: `Port ${state.channelId} · Target ${state.targetTemperature} C`,
+            backAction: 'back-to-warmup'
+        })}
+        <div class="verification-screen-body">
+            ${renderVerificationMessages(state)}
+            <section class="history-section-card verification-step-card">
+                <div class="history-section-header">
+                    <h2>Thermometer Reading</h2>
+                    <span>${escapeHtml(`${minimum.toFixed(1)} C to ${maximum.toFixed(1)} C passes`)}</span>
+                </div>
+                <p class="verification-copy">Type the temperature measured on the thermometer after the reading stabilizes.</p>
+                <div class="settings-inline-form">
+                    <label>Measured Temperature</label>
+                    <input class="form-input" id="verification-measured-temp" type="number" step="0.1" value="${escapeHtml(state.measuredTemperature)}" placeholder="40.0">
+                </div>
+            </section>
+        </div>
+        <div class="verification-screen-footer">
+            <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="back-to-warmup">Back</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="measure-next">Next</button>
+        </div>`;
+}
+
+function renderVerificationInsertView(state) {
+    return `
+        ${renderVerificationHeader({
+            title: 'Insert Verification Cassette',
+            subtitle: `Port ${state.channelId}`,
+            backAction: 'back-to-measure'
+        })}
+        <div class="verification-screen-body">
+            ${renderVerificationMessages(state)}
+            <section class="history-section-card verification-step-card">
+                <div class="history-section-header">
+                    <h2>Verification Cassette</h2>
+                    <span>Insert into port ${state.channelId}</span>
+                </div>
+                <p class="verification-copy">Insert the standard 5 line verification cassette into port ${state.channelId}, then start the verification test.</p>
+                <div class="verification-asset-card">
+                    <img class="verification-asset-image" src="assets/images/InsertCassette.png" alt="Insert the standard 5 line verification cassette into the selected port">
+                </div>
+            </section>
+        </div>
+        <div class="verification-screen-footer">
+            <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="back-to-measure">Back</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="start-reading">Start Verification Test</button>
+        </div>`;
+}
+
+function renderVerificationReadingView(state) {
+    const stageMessage = state.readingStage === 'analyzing'
+        ? 'Checking ratio measured and light intensity...'
+        : 'Reading verification cassette...';
+    return `
+        ${renderVerificationHeader({
+            title: 'Verification Test',
+            subtitle: `Port ${state.channelId} · ${state.targetTemperature} C`
+        })}
+        <div class="verification-screen-body">
+            ${renderVerificationMessages(state)}
+            <section class="history-section-card verification-status-card">
+                <div class="verification-status-indicator"></div>
+                <strong>${stageMessage}</strong>
+                <p>${state.readingStage === 'analyzing'
+                    ? 'Final lens performance checks are being evaluated.'
+                    : 'The reader is scanning the verification cassette in the selected port.'}</p>
+                ${renderAsyncStateBlock('loading', stageMessage)}
+            </section>
+        </div>`;
+}
+
+function renderVerificationInfoOverlay() {
+    return `
+        <div class="verification-help-overlay" data-verification-action="close-info">
+            <div class="verification-help-dialog" role="dialog" aria-modal="true" aria-label="Verification info">
+                <div class="history-section-header">
+                    <h2>Verification Info</h2>
+                    <button class="verification-help-close" data-verification-action="close-info" aria-label="Close verification info">Close</button>
+                </div>
+                <div class="verification-help-copy">
+                    <p>Verification passes only when all 3 checks pass.</p>
+                    <div class="verification-help-grid">
+                        <div class="verification-help-row">
+                            <strong>Temperature</strong>
+                            <span>Measured temperature must be within ±${VERIFICATION_TEMPERATURE_TOLERANCE.toFixed(1)} C of the target temperature.</span>
+                        </div>
+                        <div class="verification-help-row">
+                            <strong>Light Intensity</strong>
+                            <span>Measured light intensity must be above ${escapeHtml(formatVerificationLightIntensity(VERIFICATION_LIGHT_INTENSITY_MIN))}.</span>
+                        </div>
+                        <div class="verification-help-row">
+                            <strong>Ratio Measured</strong>
+                            <span>All control and test line ratios must be between ${VERIFICATION_RATIO_RANGE.min.toFixed(2)} and ${VERIFICATION_RATIO_RANGE.max.toFixed(2)}.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function renderVerificationTemperatureSection(record) {
+    return `
+        <section class="history-section-card verification-metric-card">
+            <div class="history-section-header">
+                <h2>Temperature</h2>
+                ${renderVerificationResultBadge(record.temperaturePass)}
+            </div>
+            <div class="verification-check-copy">
+                <span>Target ${escapeHtml(formatVerificationTemperature(record.targetTemperature))}</span>
+                <span>Measured ${escapeHtml(formatVerificationTemperature(record.measuredTemperature))}</span>
+            </div>
+        </section>`;
+}
+
+function renderVerificationLightIntensitySection(record) {
+    return `
+        <section class="history-section-card verification-metric-card">
+            <div class="history-section-header">
+                <h2>Light Intensity</h2>
+                ${renderVerificationResultBadge(record.lightIntensityPass)}
+            </div>
+            <div class="verification-check-copy">
+                <span>Measured ${escapeHtml(formatVerificationLightIntensity(record.lightIntensity))}</span>
+            </div>
+        </section>`;
+}
+
+function renderVerificationRatioMeasuredSection(record) {
+    return `
+        <section class="history-section-card verification-metric-card">
+            <div class="history-section-header">
+                <h2>Ratio Measured</h2>
+                ${renderVerificationResultBadge(record.ratioPass)}
+            </div>
+            <div class="verification-ratio-grid">
+                ${record.lineRatios.map(line => `
+                    <div class="verification-ratio-tile${line.pass ? ' is-pass' : ' is-fail'}">
+                        <span>${escapeHtml(line.name)}</span>
+                        <strong>${escapeHtml(formatVerificationRatioValue(line.value))}</strong>
+                    </div>
+                `).join('')}
+            </div>
+        </section>`;
+}
+
+function renderVerificationDetailView(record, state) {
+    const backAction = state.origin === 'history' ? 'back-to-history' : 'back-to-setup';
+    const footerButtons = state.origin === 'history'
+        ? ['<button class="history-inline-btn history-inline-btn-primary" data-verification-action="print-result">Print Result</button>']
+        : [
+            '<button class="history-inline-btn history-inline-btn-primary" data-verification-action="print-result">Print Result</button>',
+            '<button class="history-inline-btn history-inline-btn-secondary" data-verification-action="start-new">Run Another Verification</button>'
+        ];
+    return `
+        ${renderVerificationHeader({
+            title: 'Verification Result',
+            subtitle: escapeHtml(formatHistoryDateTime(record.timestamp, true)),
+            backAction,
+            showInfoButton: true
+        })}
+        <div class="verification-screen-body">
+            ${renderVerificationMessages(state)}
+            <section class="history-summary-card is-${record.overallPass ? 'negative' : 'positive'}">
+                <div class="history-summary-top">
+                    <div>
+                        <span class="history-summary-kicker">Port ${escapeHtml(String(record.channelId))} Verification</span>
+                        <h2>${escapeHtml(record.overallPass ? 'Verification Passed' : 'Verification Failed')}</h2>
+                    </div>
+                    ${renderVerificationResultBadge(record.overallPass, 'lg')}
+                </div>
+                <div class="history-summary-grid verification-summary-grid">
+                    ${renderHistoryField('Date & Time', formatHistoryDateTime(record.timestamp, true))}
+                    ${renderHistoryField('Port', String(record.channelId))}
+                    ${renderHistoryField('Upload Status', formatUploadStatusLabel(record.uploadStatus))}
+                    ${renderHistoryField('Site', record.siteName)}
+                </div>
+            </section>
+            <div class="verification-detail-grid">
+                <div class="verification-metric-column">
+                    ${renderVerificationTemperatureSection(record)}
+                    ${renderVerificationLightIntensitySection(record)}
+                </div>
+                ${renderVerificationRatioMeasuredSection(record)}
+            </div>
+        </div>
+        <div class="verification-screen-footer verification-screen-footer-wrap">
+            ${footerButtons.join('')}
+        </div>
+        ${state.showInfo ? renderVerificationInfoOverlay() : ''}`;
+}
+
+function renderVerificationHistoryList(records, page, totalPages, notice = '') {
+    if (records.length === 0) {
+        return `
+            ${renderVerificationHeader({
+                title: 'Verification History',
+                subtitle: 'No verifications recorded on this reader yet.',
+                backAction: 'back-to-setup'
+            })}
+            <div class="verification-screen-body">
+                ${notice ? renderHistoryNotice(notice) : ''}
+                <div class="history-placeholder-panel history-placeholder-panel-simple">
+                    <strong>No verification history yet</strong>
+                    <p>Run the first verification to save a result on this reader.</p>
+                </div>
+            </div>`;
+    }
+
+    const start = page * HISTORY_PAGE_SIZE;
+    const pageRecords = records.slice(start, start + HISTORY_PAGE_SIZE);
+
+    return `
+        ${renderVerificationHeader({
+            title: 'Verification History',
+            subtitle: `${records.length} verification${records.length === 1 ? '' : 's'} on this reader. Latest first.`,
+            backAction: 'back-to-setup'
+        })}
+        <div class="verification-screen-body history-list-body">
+            ${notice ? renderHistoryNotice(notice) : ''}
+            <div class="history-flow-list">
+                ${pageRecords.map(record => `
+                    <button class="history-flow-row is-${record.overallPass ? 'negative' : 'positive'}" data-verification-action="open-record" data-verification-key="${record.verificationKey}">
+                        <div class="history-flow-row-top">
+                            <div class="history-flow-main">
+                                <div class="history-flow-title">Port ${escapeHtml(String(record.channelId))} Verification</div>
+                                <div class="history-flow-meta">
+                                    <span class="history-meta-text">${escapeHtml(formatHistoryDateTime(record.timestamp))}</span>
+                                    <span class="history-meta-text">Target ${escapeHtml(formatVerificationTemperature(record.targetTemperature))}</span>
+                                    <span class="history-meta-text">Measured ${escapeHtml(formatVerificationTemperature(record.measuredTemperature))}</span>
+                                    ${record.accountMode === 'anonymous' ? '<span class="history-meta-text">Anonymous</span>' : ''}
+                                    ${renderHistoryUploadBadge(record.uploadStatus, true)}
+                                </div>
+                            </div>
+                            <div class="history-flow-side">
+                                <span class="history-side-label">Result</span>
+                                ${renderVerificationResultBadge(record.overallPass)}
+                            </div>
+                        </div>
+                        <div class="history-flow-row-bottom">
+                            <span class="history-sequence-label">Checks</span>
+                            <div class="history-sequence-row">${renderVerificationCriteriaChips(record)}</div>
+                        </div>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+        <div class="history-screen-footer">
+            <button class="history-page-btn history-page-btn-jump" data-verification-action="prev-page-jump"${page === 0 ? ' disabled' : ''}>Prev 5</button>
+            <button class="history-page-btn" data-verification-action="prev-page"${page === 0 ? ' disabled' : ''}>Previous</button>
+            <span class="history-page-indicator">Page ${page + 1} / ${totalPages}</span>
+            <button class="history-page-btn" data-verification-action="next-page"${page >= totalPages - 1 ? ' disabled' : ''}>Next</button>
+            <button class="history-page-btn history-page-btn-jump" data-verification-action="next-page-jump"${page >= totalPages - 1 ? ' disabled' : ''}>Next 5</button>
+        </div>`;
+}
+
+function buildLiveVerificationRecord(state) {
+    const measuredTemperature = Number.parseFloat(String(state.measuredTemperature || ''));
+    return storeVerificationRecord({
+        channelId: state.channelId,
+        targetTemperature: state.targetTemperature,
+        measuredTemperature: Number.isFinite(measuredTemperature) ? measuredTemperature : state.targetTemperature,
+        lightIntensity: VERIFICATION_LIGHT_INTENSITY_MIN + 28140 + state.channelId * 1930 + (state.targetTemperature === 50 ? 4200 : 0),
+        lineRatios: buildMockVerificationLineRatios({
+            seed: state.channelId * 10 + state.targetTemperature
+        }),
+        accountMode: isSignedIn() ? 'signed_in' : 'anonymous',
+        userName: getActiveUserName(),
+        siteName: activeAccount.siteName,
+        synced: isSignedIn() && deviceSettings.connectivity !== 'offline',
+        timestamp: new Date().toISOString()
+    });
+}
+
+function showVerificationScreen(nextState = {}) {
     const screen = document.getElementById('verification-screen');
     if (!screen) return;
 
-    activeModal = { type: 'verification' };
+    clearPrototypeFullScreenTimer();
 
-    screen.innerHTML = `
-        <div class="verification-screen-header">
-            <div class="settings-screen-title-wrap">
-                <h1>Verification</h1>
-                <p>Verification is not available yet.</p>
-            </div>
-            <button class="history-close-btn" id="verification-screen-close">Back</button>
-        </div>
-        <div class="verification-screen-body">
-            <div class="history-placeholder-panel history-placeholder-panel-simple">
-                <strong>Verification not implemented</strong>
-                <p>This screen reserves the separate verification flow.</p>
-            </div>
-        </div>`;
+    const state = buildVerificationScreenState(nextState);
+    const records = getVerificationRecords();
+    const totalPages = Math.max(Math.ceil(records.length / HISTORY_PAGE_SIZE), 1);
+    state.page = clampHistoryPage(state.page, totalPages);
+    activeModal = state;
+    screen.dataset.view = state.view;
 
+    let content = '';
+
+    if (state.view === 'warmup') {
+        content = renderVerificationWarmupView(state);
+    } else if (state.view === 'measure') {
+        content = renderVerificationMeasureView(state);
+    } else if (state.view === 'insert_asset') {
+        content = renderVerificationInsertView(state);
+    } else if (state.view === 'reading') {
+        content = renderVerificationReadingView(state);
+    } else if (state.view === 'history') {
+        content = renderVerificationHistoryList(records, state.page, totalPages, state.notice);
+    } else if (state.view === 'detail') {
+        const record = findVerificationRecordByKey(state.recordKey);
+        content = record
+            ? renderVerificationDetailView(record, state)
+            : renderVerificationHistoryList(records, state.page, totalPages, 'Verification result not found.');
+    } else {
+        content = renderVerificationSetupView(state);
+    }
+
+    screen.innerHTML = content;
     screen.classList.add('active');
 
-    document.getElementById('verification-screen-close').addEventListener('click', () => {
-        handleVerificationClose();
+    if (state.view === 'warmup' && state.waitStage === 'heating') {
+        schedulePrototypeFullScreenTransition(() => {
+            showVerificationScreen({
+                ...state,
+                view: 'warmup',
+                waitStage: 'ready',
+                notice: '',
+                error: ''
+            });
+        }, 1200);
+    }
+
+    if (state.view === 'reading') {
+        if (state.readingStage === 'scanning') {
+            schedulePrototypeFullScreenTransition(() => {
+                showVerificationScreen({
+                    ...state,
+                    view: 'reading',
+                    readingStage: 'analyzing',
+                    notice: '',
+                    error: ''
+                });
+            }, 1050);
+        } else {
+            schedulePrototypeFullScreenTransition(() => {
+                const record = buildLiveVerificationRecord(state);
+                renderAllCards();
+                renderStatusBar();
+                renderSimulationButtons();
+                showVerificationScreen({
+                    view: 'detail',
+                    recordKey: record.verificationKey,
+                    origin: 'run',
+                    channelId: record.channelId,
+                    targetTemperature: record.targetTemperature,
+                    measuredTemperature: String(record.measuredTemperature),
+                    notice: '',
+                    error: ''
+                });
+            }, 1150);
+        }
+    }
+
+    screen.querySelectorAll('[data-verification-action]').forEach(button => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.verificationAction;
+
+            if (action === 'close') {
+                handleVerificationClose();
+                return;
+            }
+
+            if (action === 'toggle-info') {
+                showVerificationScreen({
+                    ...state,
+                    showInfo: true
+                });
+                return;
+            }
+
+            if (action === 'close-info') {
+                showVerificationScreen({
+                    ...state,
+                    showInfo: false
+                });
+                return;
+            }
+
+            if (action === 'open-history') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'history',
+                    page: 0,
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'setup-next') {
+                if (!isChannelAvailableForVerification(state.channelId)) {
+                    showVerificationScreen({
+                        ...state,
+                        view: 'setup',
+                        error: `Port ${state.channelId} is not available. Choose a free port to continue.`,
+                        notice: ''
+                    });
+                    return;
+                }
+
+                showVerificationScreen({
+                    ...state,
+                    view: 'warmup',
+                    waitStage: 'heating',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'back-to-setup' || action === 'start-new') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'setup',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'warmup-next') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'measure',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'back-to-warmup') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'warmup',
+                    waitStage: 'ready',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'measure-next') {
+                const measuredTemperature = document.getElementById('verification-measured-temp')?.value || '';
+                const parsedTemperature = Number.parseFloat(measuredTemperature);
+                if (!Number.isFinite(parsedTemperature)) {
+                    showVerificationScreen({
+                        ...state,
+                        view: 'measure',
+                        error: 'Enter the measured thermometer temperature to continue.',
+                        notice: '',
+                        measuredTemperature
+                    });
+                    return;
+                }
+
+                showVerificationScreen({
+                    ...state,
+                    view: 'insert_asset',
+                    measuredTemperature: parsedTemperature.toFixed(1),
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'back-to-measure') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'measure',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'start-reading') {
+                if (!isChannelAvailableForVerification(state.channelId)) {
+                    showVerificationScreen({
+                        ...state,
+                        view: 'setup',
+                        error: `Port ${state.channelId} is no longer free. Choose another port to continue.`,
+                        notice: ''
+                    });
+                    return;
+                }
+
+                showVerificationScreen({
+                    ...state,
+                    view: 'reading',
+                    readingStage: 'scanning',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'print-result') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'detail',
+                    notice: 'Verification result queued to print.',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'back-to-history') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'history',
+                    origin: 'history',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'open-record') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'detail',
+                    recordKey: button.dataset.verificationKey,
+                    origin: 'history',
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'prev-page') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'history',
+                    page: state.page - 1,
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'prev-page-jump') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'history',
+                    page: state.page - HISTORY_PAGE_JUMP,
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'next-page') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'history',
+                    page: state.page + 1,
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'next-page-jump') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'history',
+                    page: state.page + HISTORY_PAGE_JUMP,
+                    notice: '',
+                    error: ''
+                });
+            }
+        });
+    });
+
+    screen.querySelectorAll('#verification-channel .seg-option').forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.disabled) return;
+            showVerificationScreen({
+                ...state,
+                view: 'setup',
+                channelId: Number(button.dataset.value),
+                notice: '',
+                error: ''
+            });
+        });
+    });
+
+    screen.querySelectorAll('#verification-temperature .seg-option').forEach(button => {
+        button.addEventListener('click', () => {
+            showVerificationScreen({
+                ...state,
+                view: 'setup',
+                targetTemperature: Number(button.dataset.value),
+                measuredTemperature: Number(button.dataset.value).toFixed(1),
+                notice: '',
+                error: ''
+            });
+        });
+    });
+
+    screen.querySelectorAll('.verification-help-dialog').forEach(dialog => {
+        dialog.addEventListener('click', event => {
+            event.stopPropagation();
+        });
     });
 }
 
@@ -3994,8 +4754,10 @@ function hideVerificationScreen() {
     const screen = document.getElementById('verification-screen');
     if (!screen) return;
 
+    clearPrototypeFullScreenTimer();
     screen.classList.remove('active');
     screen.innerHTML = '';
+    delete screen.dataset.view;
 
     if (activeModal && activeModal.type === 'verification') {
         activeModal = null;
