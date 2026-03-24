@@ -97,13 +97,6 @@ function handleSettingsCurveClose() {
     showSettingsScreen('settings-setup');
 }
 
-function handleOnboardingCancel() {
-    hideOnboardingScreen();
-    renderAllCards();
-    renderStatusBar();
-    renderSimulationButtons();
-}
-
 function handleOnboardingComplete(draft) {
     applyOnboardingDraft(draft);
     hideOnboardingScreen();

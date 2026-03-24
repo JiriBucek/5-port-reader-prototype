@@ -1328,16 +1328,26 @@
     font-size: var(--font-base);
 }
 
+.onboarding-header-progress {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
 .onboarding-stepper {
     display: flex;
-    justify-content: center;
-    gap: 6px;
-    padding: 2px 0 8px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    padding: 0;
 }
 
 .onboarding-step-dot {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 999px;
     border: 1px solid var(--gray-300);
     background: var(--white);
@@ -1351,6 +1361,13 @@
 .onboarding-step-dot.is-complete {
     background: var(--success);
     border-color: var(--success);
+}
+
+.onboarding-step-label {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--gray-500);
+    white-space: nowrap;
 }
 
 .settings-detail-screen {
@@ -1588,6 +1605,21 @@
 }
 
 .settings-language-list .type-picker-results {
+    max-height: 300px;
+}
+
+.settings-timezone-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+
+.settings-timezone-search {
+    gap: 6px;
+}
+
+.settings-timezone-list .type-picker-results {
     max-height: 300px;
 }
 

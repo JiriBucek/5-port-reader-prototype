@@ -3093,6 +3093,75 @@ function renderLanguageSelectionRows(selectedLanguage, attributeName) {
     return renderSelectableListRows(DEFAULT_LANGUAGE_OPTIONS, selectedLanguage, attributeName, 'settings-language-list');
 }
 
+function getAvailableTimezoneOptions(selectedTimezone = 'UTC') {
+    const options = new Set(DEFAULT_TIMEZONE_OPTIONS);
+    options.add('UTC');
+    if (selectedTimezone) {
+        options.add(String(selectedTimezone));
+    }
+    return Array.from(options).sort((left, right) => left.localeCompare(right));
+}
+
+function normalizeTimezoneSearchText(value = '') {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[\/_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function renderTimezoneSelectionRows(selectedTimezone, valueAttributeName, searchInputId, emptyStateId) {
+    const timezoneOptions = getAvailableTimezoneOptions(selectedTimezone);
+    return `
+        <div class="settings-timezone-picker">
+            <div class="settings-inline-form settings-timezone-search">
+                <label for="${searchInputId}">Search</label>
+                <input class="form-input" id="${searchInputId}" type="text" value="" placeholder="Type Europe, Prague, Pacific..." ${getAutofillIgnoreAttrs('text')}>
+            </div>
+            <div class="type-picker-list-block settings-timezone-list">
+                <div class="type-picker-results">
+                    ${timezoneOptions.map(timezone => `
+                        <button class="type-picker-row${timezone === selectedTimezone ? ' selected' : ''}" ${valueAttributeName}="${escapeHtml(timezone)}" data-timezone-search-value="${escapeHtml(normalizeTimezoneSearchText(timezone))}">
+                            <span class="type-picker-row-name">${escapeHtml(timezone)}</span>
+                        </button>
+                    `).join('')}
+                    <div class="type-picker-empty" id="${emptyStateId}" hidden>No time zones match this filter.</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function bindTimezoneSearchBehavior(screen, inputId, optionSelector, emptyStateId) {
+    const searchInput = screen.querySelector(`#${inputId}`);
+    const emptyState = screen.querySelector(`#${emptyStateId}`);
+    if (!searchInput || !emptyState) return;
+    const resultsContainer = emptyState.closest('.type-picker-results');
+    const options = Array.from((resultsContainer || screen).querySelectorAll(optionSelector));
+
+    const applyTimezoneFilter = () => {
+        const query = normalizeTimezoneSearchText(searchInput.value || '');
+        let visibleCount = 0;
+
+        options.forEach(option => {
+            const searchableValue = normalizeTimezoneSearchText(option.dataset.timezoneSearchValue || option.textContent || '');
+            const matches = !query || searchableValue.includes(query);
+            option.style.display = matches ? '' : 'none';
+            if (matches) {
+                visibleCount += 1;
+            }
+        });
+
+        emptyState.hidden = visibleCount > 0;
+        emptyState.style.display = visibleCount > 0 ? 'none' : 'flex';
+        if (resultsContainer) {
+            resultsContainer.scrollTop = 0;
+        }
+    };
+
+    searchInput.addEventListener('input', applyTimezoneFilter);
+    applyTimezoneFilter();
+}
+
 function renderAsyncStateBlock(tone, message) {
     if (!message) return '';
 
@@ -3316,13 +3385,17 @@ function renderCloudAccountPanel(cloudState, options = {}) {
 
 function renderOnboardingCloudPanel(draft, connectivityDraft) {
     const signInBlocked = connectivityDraft.connectivity === 'offline';
-    const asyncStateMarkup = signInBlocked
+    const signedInReady = draft.cloudChoiceConfirmed && draft.accountMode === 'signed_in' && (draft.signInState === 'success' || draft.signInState === 'success_feedback');
+    const anonymousReady = draft.cloudChoiceConfirmed && draft.accountMode === 'anonymous';
+    const asyncStateMarkup = signInBlocked && !anonymousReady
         ? renderAsyncStateBlock('error', 'Connect to Wi-Fi or Ethernet before signing in.')
         : (draft.signInState === 'loading'
             ? renderAsyncStateBlock('loading', 'Signing in...')
-            : (draft.signInState === 'success_feedback'
-                ? renderAsyncStateBlock('success', 'Signed in.')
-                : (draft.signInError ? renderAsyncStateBlock('error', draft.signInError) : '')));
+            : (signedInReady
+                ? renderAsyncStateBlock('success', 'Signed in. You can continue.')
+                : (anonymousReady
+                    ? renderAsyncStateBlock('info', 'Continue without login selected. You can continue.')
+                    : (draft.signInError ? renderAsyncStateBlock('error', draft.signInError) : ''))));
 
     return `
         <div class="settings-section-body">
@@ -3334,8 +3407,8 @@ function renderOnboardingCloudPanel(draft, connectivityDraft) {
             </div>
             ${asyncStateMarkup}
             <div class="history-action-row">
-                <button class="history-inline-btn history-inline-btn-primary" data-onboarding-cloud-action="login"${signInBlocked ? ' disabled' : ''}>Sign In</button>
-                <button class="history-inline-btn" data-onboarding-cloud-action="continue-anonymous">Continue without login</button>
+                <button class="history-inline-btn${anonymousReady ? ' history-inline-btn-secondary' : ' history-inline-btn-primary'}" data-onboarding-cloud-action="login"${signInBlocked ? ' disabled' : ''}>${signedInReady ? 'Signed In' : 'Sign In'}</button>
+                <button class="history-inline-btn${anonymousReady ? ' history-inline-btn-primary' : ''}" data-onboarding-cloud-action="continue-anonymous">Continue without login</button>
             </div>
         </div>`;
 }
@@ -3484,6 +3557,14 @@ function renderOnboardingStepper(stepIndex, totalSteps) {
         </div>`;
 }
 
+function renderOnboardingHeaderProgress(stepIndex, totalSteps) {
+    return `
+        <div class="onboarding-header-progress">
+            ${renderOnboardingStepper(stepIndex, totalSteps)}
+            <span class="onboarding-step-label">Step ${stepIndex + 1} / ${totalSteps}</span>
+        </div>`;
+}
+
 function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromState()) {
     const screen = document.getElementById('onboarding-screen');
     if (!screen) return;
@@ -3546,7 +3627,12 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
             title: 'Time Zone',
             body: `
                 <div class="settings-section-body">
-                    ${renderSelectableListRows(DEFAULT_TIMEZONE_OPTIONS, normalizedDraft.timezone, 'data-onboarding-timezone')}
+                    ${renderTimezoneSelectionRows(
+                        normalizedDraft.timezoneChoiceConfirmed ? normalizedDraft.timezone : '',
+                        'data-onboarding-timezone',
+                        'onboarding-timezone-search',
+                        'onboarding-timezone-empty'
+                    )}
                 </div>`
         },
         {
@@ -3589,25 +3675,30 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
     const nextLabel = stepIndex >= totalSteps - 1 ? 'Finish Setup' : 'Next';
     const showBack = stepIndex > 0;
     const connectivityDraft = buildConnectivityDraft(normalizedDraft);
+    const cloudChoiceReady = Boolean(normalizedDraft.cloudChoiceConfirmed) && (
+        normalizedDraft.accountMode === 'anonymous' ||
+        normalizedDraft.signInState === 'success' ||
+        normalizedDraft.signInState === 'success_feedback'
+    );
     const canAdvance = stepIndex === 4
         ? connectivityDraft.connectivity !== 'wifi' || connectivityDraft.wifiStage === 'wifi_success'
         : (stepIndex === 5
-            ? normalizedDraft.accountMode === 'anonymous' || normalizedDraft.signInState === 'success'
-            : true);
+            ? cloudChoiceReady
+            : (stepIndex === 3
+                ? Boolean(normalizedDraft.timezoneChoiceConfirmed)
+                : true));
 
     screen.innerHTML = `
         <div class="onboarding-screen-header">
             <div class="settings-screen-title-wrap">
                 <h1>First-Time Setup</h1>
             </div>
-            <button class="topbar-close-btn" id="onboarding-close-btn">Close</button>
+            ${renderOnboardingHeaderProgress(stepIndex, totalSteps)}
         </div>
         <div class="onboarding-screen-body">
-            ${renderOnboardingStepper(stepIndex, totalSteps)}
             <section class="settings-section">
                 <div class="settings-section-header">
                     <h2>${currentStep.title}</h2>
-                    <p>Step ${stepIndex + 1} / ${totalSteps}</p>
                 </div>
                 ${currentStep.body}
             </section>
@@ -3628,6 +3719,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
         screenBrightnessStep: Number(screen.querySelector('#onboarding-brightness .seg-option.selected')?.dataset.value || normalizedDraft.screenBrightnessStep),
         soundEnabled: (screen.querySelector('#onboarding-sound .seg-option.selected')?.dataset.value || (normalizedDraft.soundEnabled ? 'on' : 'off')) === 'on',
         timezone: screen.querySelector('[data-onboarding-timezone].selected')?.dataset.onboardingTimezone || normalizedDraft.timezone,
+        timezoneChoiceConfirmed: Boolean(screen.querySelector('[data-onboarding-timezone].selected')) || Boolean(normalizedDraft.timezoneChoiceConfirmed),
         dateInput: screen.querySelector('#onboarding-date-input')?.value ?? normalizedDraft.dateInput,
         timeInput: screen.querySelector('#onboarding-time-input')?.value ?? normalizedDraft.timeInput,
         wifiPassword: screen.querySelector('#shared-wifi-password')?.value ?? normalizedDraft.wifiPassword,
@@ -3648,10 +3740,13 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
         button.addEventListener('click', () => {
             showOnboardingScreen(stepIndex, {
                 ...collectDraft(),
-                timezone: button.dataset.onboardingTimezone
+                timezone: button.dataset.onboardingTimezone,
+                timezoneChoiceConfirmed: true
             });
         });
     });
+
+    bindTimezoneSearchBehavior(screen, 'onboarding-timezone-search', '[data-onboarding-timezone]', 'onboarding-timezone-empty');
 
     screen.querySelectorAll('.settings-toggle .seg-option').forEach(option => {
         option.addEventListener('click', () => {
@@ -3677,12 +3772,14 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
 
             if (toggleId === 'shared-connectivity-mode') {
                 const nextConnectivity = option.dataset.value;
-                const nextAccountMode = nextConnectivity === 'offline' ? 'anonymous' : nextDraft.accountMode;
+                const resetSignedInChoice = nextConnectivity === 'offline' && nextDraft.accountMode === 'signed_in';
+                const nextAccountMode = resetSignedInChoice ? 'anonymous' : nextDraft.accountMode;
                 showOnboardingScreen(stepIndex, {
                     ...nextDraft,
                     connectivity: nextConnectivity,
                     accountMode: nextAccountMode,
-                    signInState: nextConnectivity === 'offline' ? 'idle' : nextDraft.signInState,
+                    cloudChoiceConfirmed: resetSignedInChoice ? false : nextDraft.cloudChoiceConfirmed,
+                    signInState: resetSignedInChoice ? 'idle' : nextDraft.signInState,
                     signInError: '',
                     wifiStage: nextConnectivity === 'wifi'
                         ? 'wifi_list'
@@ -3751,12 +3848,13 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
             const nextDraft = collectDraft();
 
             if (action === 'continue-anonymous') {
-                showOnboardingScreen(Math.min(stepIndex + 1, totalSteps - 1), {
+                showOnboardingScreen(stepIndex, {
                     ...nextDraft,
                     accountMode: 'anonymous',
+                    cloudChoiceConfirmed: true,
                     signInState: 'idle',
                     signInError: '',
-                    password: ''
+                    password: nextDraft.password
                 });
                 return;
             }
@@ -3768,6 +3866,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
                     showOnboardingScreen(stepIndex, {
                         ...nextDraft,
                         accountMode: 'signed_in',
+                        cloudChoiceConfirmed: false,
                         username,
                         password,
                         signInState: 'idle',
@@ -3779,6 +3878,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
                 const loadingDraft = {
                     ...nextDraft,
                     accountMode: 'signed_in',
+                    cloudChoiceConfirmed: false,
                     username,
                     password,
                     signInState: 'loading',
@@ -3791,6 +3891,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
                     if (!success) {
                         showOnboardingScreen(stepIndex, {
                             ...loadingDraft,
+                            cloudChoiceConfirmed: false,
                             signInState: 'idle',
                             signInError: 'Username or password is incorrect.'
                         });
@@ -3799,6 +3900,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
 
                     const successDraft = {
                         ...loadingDraft,
+                        cloudChoiceConfirmed: true,
                         password: '',
                         signInState: 'success_feedback',
                         signInError: ''
@@ -3806,7 +3908,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
 
                     showOnboardingScreen(stepIndex, successDraft);
                     schedulePrototypeFullScreenTransition(() => {
-                        showOnboardingScreen(Math.min(stepIndex + 1, totalSteps - 1), {
+                        showOnboardingScreen(stepIndex, {
                             ...successDraft,
                             signInState: 'success'
                         });
@@ -3820,13 +3922,6 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
     if (backBtn) {
         backBtn.addEventListener('click', () => {
             showOnboardingScreen(stepIndex - 1, collectDraft());
-        });
-    }
-
-    const closeBtn = document.getElementById('onboarding-close-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            handleOnboardingCancel();
         });
     }
 
@@ -4004,7 +4099,12 @@ function showSettingsDetailScreen(view, state = {}) {
             <section class="settings-section">
                 <div class="settings-section-body">
                     ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
-                    ${renderSelectableListRows(DEFAULT_TIMEZONE_OPTIONS, deviceSettings.timezone, 'data-settings-timezone')}
+                    ${renderTimezoneSelectionRows(
+                        deviceSettings.timezone,
+                        'data-settings-timezone',
+                        'settings-timezone-search',
+                        'settings-timezone-empty'
+                    )}
                 </div>
             </section>`;
     } else if (view === 'software') {
@@ -4142,6 +4242,8 @@ function showSettingsDetailScreen(view, state = {}) {
             });
         });
     });
+
+    bindTimezoneSearchBehavior(screen, 'settings-timezone-search', '[data-settings-timezone]', 'settings-timezone-empty');
 
     const openTimezoneBtn = document.getElementById('settings-open-timezone');
     if (openTimezoneBtn) {
@@ -4652,6 +4754,7 @@ function showSettingsScreen(focusSection = '') {
             ${renderSettingsSection('Verification', [
                 renderSettingsActionRow({
                     title: 'Run Verification',
+                    detail: 'Run a verification test that resets the verification threshold count for that port.',
                     buttonLabel: 'Open',
                     action: 'open-verification',
                     locked: !canAccessSettingsItem('open-verification')
