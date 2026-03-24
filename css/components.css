@@ -1059,6 +1059,26 @@
     cursor: pointer;
 }
 
+.settings-row-btn,
+.history-inline-btn,
+.history-close-btn,
+.history-back-btn,
+.history-page-btn,
+.modal-btn {
+    border-radius: 2px;
+    font-size: var(--font-base);
+    font-weight: 700;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.settings-row-btn:hover:not(:disabled),
+.history-inline-btn:hover:not(:disabled),
+.history-close-btn:hover:not(:disabled),
+.history-back-btn:hover:not(:disabled),
+.history-page-btn:hover:not(:disabled) {
+    background: var(--gray-50);
+}
+
 .settings-screen .segmented-control .seg-option,
 .settings-detail-screen .segmented-control .seg-option,
 .onboarding-screen .segmented-control .seg-option {
@@ -1092,13 +1112,20 @@
 
 .settings-screen-footer .modal-btn.btn-secondary {
     background: var(--white);
-    color: var(--gray-600);
+    color: var(--gray-700);
     border-color: var(--gray-300);
 }
 
 .settings-screen-footer .modal-btn.btn-primary {
     background: var(--primary);
+    border-color: var(--primary);
     color: var(--white);
+}
+
+.settings-screen-footer .modal-btn.btn-primary:hover:not(:disabled),
+.history-inline-btn.history-inline-btn-primary:hover:not(:disabled) {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
 }
 
 .settings-password-screen {
@@ -1735,7 +1762,7 @@
     min-width: 92px;
     padding: 8px 10px;
     font-size: var(--font-base);
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
 }
 

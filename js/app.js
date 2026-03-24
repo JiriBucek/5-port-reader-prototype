@@ -87,12 +87,19 @@ function handleVerificationClose() {
     renderAllCards();
     renderStatusBar();
     renderSimulationButtons();
-    showSettingsScreen();
+    showSettingsScreen('settings-verification');
 }
 
 function handleSettingsCurveClose() {
     hideSettingsCurveScreen();
-    showSettingsScreen();
+    showSettingsScreen('settings-setup');
+}
+
+function handleOnboardingCancel() {
+    hideOnboardingScreen();
+    renderAllCards();
+    renderStatusBar();
+    renderSimulationButtons();
 }
 
 function handleOnboardingComplete(draft) {

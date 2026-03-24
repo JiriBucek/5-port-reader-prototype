@@ -2233,7 +2233,6 @@ function renderHistoryFlowView(flow, historyState) {
                     <h1>Flow Detail</h1>
                 </div>
             </div>
-            <button class="topbar-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
             ${renderHistoryNotice(historyState.notice)}
@@ -2299,7 +2298,6 @@ function renderHistoryTestView(flow, test, notice = '') {
                     <h1>Test Detail</h1>
                 </div>
             </div>
-            <button class="topbar-close-btn" data-history-action="close">Close</button>
         </div>
         <div class="history-screen-body">
             ${renderHistoryNotice(notice)}
@@ -3414,6 +3412,7 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
             <div class="settings-screen-title-wrap">
                 <h1>First-Time Setup</h1>
             </div>
+            <button class="topbar-close-btn" id="onboarding-close-btn">Close</button>
         </div>
         <div class="onboarding-screen-body">
             ${renderOnboardingStepper(stepIndex, totalSteps)}
@@ -3633,6 +3632,13 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
     if (backBtn) {
         backBtn.addEventListener('click', () => {
             showOnboardingScreen(stepIndex - 1, collectDraft());
+        });
+    }
+
+    const closeBtn = document.getElementById('onboarding-close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            handleOnboardingCancel();
         });
     }
 
@@ -3863,8 +3869,7 @@ function showSettingsDetailScreen(view, state = {}) {
                 </div>
             </div>
         </div>
-        <div class="settings-detail-screen-body">${renderScreenIntroCopy(subtitle)}${body}</div>
-        ${view === 'factory_reset' ? '<div class="settings-screen-footer"><button class="modal-btn btn-secondary" id="settings-detail-back-footer">Back</button></div>' : ''}`;
+        <div class="settings-detail-screen-body">${renderScreenIntroCopy(subtitle)}${body}</div>`;
 
     screen.classList.add('active');
 
@@ -4282,7 +4287,7 @@ function showSettingsDetailScreen(view, state = {}) {
         });
     });
 
-    document.querySelectorAll('#settings-detail-back, #settings-detail-back-footer').forEach(button => {
+    document.querySelectorAll('#settings-detail-back').forEach(button => {
         button.addEventListener('click', () => {
             if (view === 'timezone') {
                 showSettingsDetailScreen('date_time', {
@@ -4722,10 +4727,7 @@ function renderVerificationHeader({ title, backAction = '', backLabel = 'Back', 
                     <h1>${escapeHtml(title)}</h1>
                 </div>
             </div>
-            <div class="verification-header-actions">
-                ${infoButton}
-                <button class="topbar-close-btn" data-verification-action="close">Close</button>
-            </div>
+            ${infoButton ? `<div class="verification-header-actions">${infoButton}</div>` : '<div class="verification-header-actions"></div>'}
         </div>`;
 }
 
@@ -4748,7 +4750,8 @@ function renderVerificationSetupView(state) {
 
     return `
         ${renderVerificationHeader({
-            title: 'Verification'
+            title: 'Verification',
+            backAction: 'back-to-settings'
         })}
         <div class="verification-screen-body">
             ${renderVerificationMessages(state)}
@@ -5168,7 +5171,7 @@ function showVerificationScreen(nextState = {}) {
         button.addEventListener('click', () => {
             const action = button.dataset.verificationAction;
 
-            if (action === 'close') {
+            if (action === 'back-to-settings') {
                 handleVerificationClose();
                 return;
             }
