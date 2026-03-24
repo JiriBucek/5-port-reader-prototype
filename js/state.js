@@ -819,6 +819,15 @@ function buildMockSubstancesForTestType(testTypeId, cassetteType, outcome, varia
     const substances = getSubstancesForTestType(testTypeId, cassetteType);
     const positiveIndex = variantIndex % Math.max(substances.length, 1);
 
+    if (outcome === 'invalid') {
+        return substances.map(name => ({
+            name,
+            result: 'invalid',
+            measuredValue: null,
+            displayValue: '--'
+        }));
+    }
+
     if (selectedTestType?.quantitative) {
         const quantitativeRange = selectedTestType.quantitativeRange || null;
         const baseValue = outcome === 'positive'
@@ -851,6 +860,26 @@ function buildMockSubstancesForTestType(testTypeId, cassetteType, outcome, varia
             displayValue: formatQualitativeMeasuredValue(measuredValue)
         };
     });
+}
+
+function getOverallResultFromSubstances(substanceResults = []) {
+    if (!Array.isArray(substanceResults) || substanceResults.length === 0) {
+        return 'invalid';
+    }
+
+    if (substanceResults.some(result => result?.result === 'invalid')) {
+        return 'invalid';
+    }
+
+    return substanceResults.some(result => result?.result === 'positive')
+        ? 'positive'
+        : 'negative';
+}
+
+function getRecordedTestOverall(testResult) {
+    if (!testResult) return null;
+    if (typeof testResult === 'string') return testResult;
+    return testResult.overall || getOverallResultFromSubstances(testResult.substances);
 }
 
 function createHistoryFlowRecord({
@@ -896,7 +925,10 @@ function createHistoryFlowRecord({
                 test.overall || 'negative',
                 testNumber - 1
             );
-        const overall = test.overall || (isTestPositive(substances) ? 'positive' : 'negative');
+        const overall = getRecordedTestOverall({
+            overall: test.overall || null,
+            substances
+        }) || 'negative';
 
         return {
             testNumber,
@@ -1291,7 +1323,7 @@ function buildHistoryFlowFromChannel(ch) {
         synced: false,
         tests: ch.testResults.map((testResult, index) => ({
             testNumber: testResult.testNumber || index + 1,
-            overall: testResult.overall || (isTestPositive(testResult.substances) ? 'positive' : 'negative'),
+            overall: getRecordedTestOverall(testResult) || 'negative',
             annotation: testResult.annotation || getHistoryAnnotationForTest(ch.scenario, testResult.testNumber || index + 1),
             timestamp: testResult.completedAt || new Date().toISOString(),
             cassetteType: testResult.cassetteType || ch.cassetteType,
@@ -1722,6 +1754,15 @@ function generateSubstanceResults(testTypeId, cassetteType, outcome) {
     const subs = getSubstancesForTestType(testTypeId, cassetteType);
     const selectedTestType = getTestTypeById(testTypeId);
 
+    if (outcome === 'invalid') {
+        return subs.map(name => ({
+            name,
+            result: 'invalid',
+            measuredValue: null,
+            displayValue: '--'
+        }));
+    }
+
     if (selectedTestType?.quantitative) {
         return subs.map(name => generateQuantitativeSubstanceResult(name, selectedTestType, outcome));
     }
@@ -1743,7 +1784,7 @@ function generateSubstanceResults(testTypeId, cassetteType, outcome) {
 }
 
 function isTestPositive(substanceResults) {
-    return substanceResults.some(r => r.result === 'positive');
+    return getOverallResultFromSubstances(substanceResults) === 'positive';
 }
 
 // ---- Reset Channel to Empty ----
@@ -1983,7 +2024,7 @@ function getCardStateClass(ch) {
         case STATES.WAITING_FOR_SWAP:
             return 'state-waiting';
         case STATES.RESULT:
-            return isTestPositive(ch.testResults[ch.testResults.length - 1].substances)
+            return getRecordedTestOverall(ch.testResults[ch.testResults.length - 1]) === 'positive'
                 ? 'state-result-positive' : 'state-result-negative';
         case STATES.COMPLETE:
             if (ch.scenario === 'pos_control' || ch.scenario === 'animal_control') {
@@ -1992,6 +2033,7 @@ function getCardStateClass(ch) {
             switch (ch.groupResult) {
                 case 'negative': return 'state-complete-negative';
                 case 'positive': return 'state-complete-positive';
+                case 'invalid': return 'state-complete-inconclusive';
                 case 'inconclusive': return 'state-complete-inconclusive';
             }
             return '';

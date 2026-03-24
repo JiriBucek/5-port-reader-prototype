@@ -58,6 +58,58 @@ function formatCardHeaderTypeLabel(label) {
         .replace(/^Bioeasy\s+/i, 'BE ');
 }
 
+function formatCompactResultLabel(result) {
+    switch (result) {
+        case 'positive':
+            return 'POS';
+        case 'negative':
+            return 'NEG';
+        case 'invalid':
+            return 'INV';
+        default:
+            return 'INC';
+    }
+}
+
+function getCassetteVisualResultClass(result) {
+    switch (result) {
+        case 'positive':
+            return 'result-positive';
+        case 'negative':
+            return 'result-negative';
+        case 'invalid':
+            return 'result-invalid';
+        default:
+            return 'result-pending';
+    }
+}
+
+function getMiniResultClass(result) {
+    switch (result) {
+        case 'positive':
+            return 'mini-result-positive';
+        case 'negative':
+            return 'mini-result-negative';
+        case 'invalid':
+            return 'mini-result-invalid';
+        default:
+            return 'mini-result-negative';
+    }
+}
+
+function getConfirmChipClass(result) {
+    switch (result) {
+        case 'positive':
+            return 'confirm-chip-positive';
+        case 'negative':
+            return 'confirm-chip-negative';
+        case 'invalid':
+            return 'confirm-chip-invalid';
+        default:
+            return 'confirm-chip-negative';
+    }
+}
+
 function renderCardHeader(ch) {
     const typeLabel = getCardHeaderTypeLabel(ch);
     const shortTypeLabel = formatCardHeaderTypeLabel(typeLabel);
@@ -140,7 +192,7 @@ function renderCassetteGraphic(ch) {
             resultClass = 'result-control';
         } else if (currentResults) {
             const resultIndex = item.isControl ? -1 : i - 1;
-            resultClass = currentResults[resultIndex].result === 'positive' ? 'result-positive' : 'result-negative';
+            resultClass = getCassetteVisualResultClass(currentResults[resultIndex]?.result);
         }
         return `<div class="substance-line${item.isControl ? ' is-control' : ''}">
             <span class="line-label">${item.label}</span>
@@ -185,14 +237,14 @@ function renderMiniHistory(ch) {
 
     let minis = testsToShow.map(tr => {
         const lines = [`<div class="mini-line result-control"></div>`, ...tr.substances.map(s =>
-            `<div class="mini-line result-${s.result}"></div>`
+            `<div class="mini-line ${getCassetteVisualResultClass(s.result)}"></div>`
         )].join('');
-        const overall = isTestPositive(tr.substances) ? 'positive' : 'negative';
-        const resultClass = overall === 'positive' ? 'mini-result-positive' : 'mini-result-negative';
+        const overall = getRecordedTestOverall(tr) || 'invalid';
+        const resultClass = getMiniResultClass(overall);
         return `<div class="mini-cassette">
             <div class="mini-cassette-graphic">${lines}</div>
             <span class="mini-cassette-label">T${tr.testNumber}</span>
-            <span class="mini-cassette-result ${resultClass}">${overall === 'positive' ? 'POS' : 'NEG'}</span>
+            <span class="mini-cassette-result ${resultClass}">${formatCompactResultLabel(overall)}</span>
         </div>`;
     }).join('');
 
@@ -203,9 +255,9 @@ function renderConfirmationHistory(ch) {
     if (ch.testResults.length === 0) return '';
 
     const chips = ch.testResults.map(tr => {
-        const positive = isTestPositive(tr.substances);
-        const cls = positive ? 'confirm-chip-positive' : 'confirm-chip-negative';
-        const label = positive ? 'POS' : 'NEG';
+        const result = getRecordedTestOverall(tr) || 'invalid';
+        const cls = getConfirmChipClass(result);
+        const label = formatCompactResultLabel(result);
         return `<span class="confirm-chip ${cls}">T${tr.testNumber} ${label}</span>`;
     }).join('');
 
@@ -274,13 +326,13 @@ function renderCardStatus(ch) {
 
         case STATES.RESULT: {
             const lastResult = ch.testResults[ch.testResults.length - 1];
-            const isPos = isTestPositive(lastResult.substances);
+            const resultKey = getRecordedTestOverall(lastResult);
             const testNum = lastResult.testNumber;
-            if (testNum === 1 && isPos) {
+            if (testNum === 1 && resultKey === 'positive') {
                 statusHtml = `<span class="status-text status-error">T1 positive</span>
                               <span class="status-text status-secondary status-waiting">Start T2</span>`;
                 statusClass = ' is-dual';
-            } else if (testNum === 2 && !isPos) {
+            } else if (testNum === 2 && resultKey === 'negative') {
                 statusHtml = `<span class="status-text status-success">T2 negative</span>
                               <span class="status-text status-secondary status-waiting">Start T3</span>`;
                 statusClass = ' is-dual';
@@ -340,9 +392,13 @@ function renderCardGroupResult(ch) {
 
     if (ch.state === STATES.COMPLETE && isControl) {
         const lastResult = ch.testResults[ch.testResults.length - 1];
-        const isPos = isTestPositive(lastResult.substances);
-        label = isPos ? 'POSITIVE' : 'NEGATIVE';
-        badgeClass = isPos ? 'group-badge-positive' : 'group-badge-negative';
+        const resultKey = getRecordedTestOverall(lastResult);
+        label = resultKey === 'positive'
+            ? 'POSITIVE'
+            : (resultKey === 'negative' ? 'NEGATIVE' : 'INVALID');
+        badgeClass = resultKey === 'positive'
+            ? 'group-badge-positive'
+            : (resultKey === 'negative' ? 'group-badge-negative' : 'group-badge-inconclusive');
         groupResultHtml = `
             <span class="group-badge ${badgeClass}">${label}</span>
         `;
@@ -355,6 +411,10 @@ function renderCardGroupResult(ch) {
             case 'positive':
                 badgeClass = 'group-badge-positive';
                 label = 'POSITIVE';
+                break;
+            case 'invalid':
+                badgeClass = 'group-badge-inconclusive';
+                label = 'INVALID';
                 break;
             case 'inconclusive':
                 badgeClass = 'group-badge-inconclusive';
@@ -409,6 +469,10 @@ function renderCardAction(ch) {
             ];
             break;
 
+        case STATES.INCUBATING:
+            primaryButton = `<button class="action-btn btn-secondary" data-action="interrupt-incubation" data-ch="${ch.id}">Abort</button>`;
+            break;
+
         case STATES.COMPLETE:
             primaryButton = `<button class="action-btn btn-secondary" data-action="view-details" data-ch="${ch.id}">View Details</button>`;
             secondaryButtons = [clearBtn];
@@ -450,6 +514,7 @@ function bindCardEvents(ch) {
                 case 'configure': handleConfigure(chId); break;
                 case 'stop': handleStop(chId); break;
                 case 'start-test-n': handleStartTestN(chId); break;
+                case 'interrupt-incubation': handleInterruptIncubation(chId); break;
                 case 'view-details': handleViewDetails(chId); break;
                 case 'retry': handleRetry(chId); break;
                 case 'abort': handleAbort(chId); break;
@@ -546,7 +611,10 @@ function updateSlotLines(ch, linesEl) {
             lineClass += ' line-control';
         } else if (currentResults) {
             const resultIndex = item.isControl ? -1 : i - 1;
-            lineClass += currentResults[resultIndex].result === 'positive' ? ' line-positive' : ' line-negative';
+            const result = currentResults[resultIndex]?.result;
+            lineClass += result === 'positive'
+                ? ' line-positive'
+                : (result === 'negative' ? ' line-negative' : ' line-invalid');
         }
         return `<div class="${lineClass}"></div>`;
     }).join('');
@@ -1166,7 +1234,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
         ? 'Insert cassette to enable reading.'
         : '';
     const bypassMessage = !blockingMessage && !readGateMessage && isCassetteInsertionBypassed()
-        ? 'Microswitch off. Reading can start without cassette insertion.'
+        ? 'Microswitch off. Reading can start without cassette insertion, but no readable cassette will stop in the error state.'
         : '';
     const subtitle = cassetteReady
         ? 'Cassette inserted'
@@ -1556,6 +1624,8 @@ function getHistoryResultTone(result) {
             return 'positive';
         case 'negative':
             return 'negative';
+        case 'invalid':
+            return 'inconclusive';
         default:
             return 'inconclusive';
     }
@@ -1575,6 +1645,8 @@ function formatHistoryResultLabel(result) {
             return 'Positive';
         case 'negative':
             return 'Negative';
+        case 'invalid':
+            return 'Invalid';
         default:
             return 'Inconclusive';
     }
@@ -4833,8 +4905,7 @@ function showDecisionModal(ch, variant) {
     activeModal = { type: 'decision', channelId: ch.id, variant };
 
     const lastResult = ch.testResults[ch.testResults.length - 1];
-    const isPos = isTestPositive(lastResult.substances);
-    const resultKey = isPos ? 'positive' : 'negative';
+    const resultKey = getRecordedTestOverall(lastResult) || 'invalid';
     const testTypeLabel = ch.testTypeName || ch.cassetteType || 'Test';
 
     let headerTitle, resultLabel, messageHtml, continueLabel, stepLabel;
@@ -4866,7 +4937,7 @@ function showDecisionModal(ch, variant) {
     modal.innerHTML = `
         ${renderStructuredModalHeader(ch.id, headerTitle)}
         <div class="modal-body modal-structured-body">
-            <section class="history-summary-card modal-summary-card is-${resultKey}">
+            <section class="history-summary-card modal-summary-card is-${getHistoryResultTone(resultKey)}">
                 <div class="history-summary-top">
                     <div class="decision-summary-copy">
                         <h2>${escapeHtml(stepLabel)}</h2>
@@ -4914,9 +4985,9 @@ function showStopConfirmationModal(ch) {
 
     const completedTests = ch.testResults.length;
     const testsHtml = ch.testResults.map(tr => {
-        const resultKey = isTestPositive(tr.substances) ? 'positive' : 'negative';
+        const resultKey = getRecordedTestOverall(tr) || 'invalid';
         const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
-        return `<div class="history-test-row history-test-row-static is-${resultKey}">
+        return `<div class="history-test-row history-test-row-static is-${getHistoryResultTone(resultKey)}">
             <div class="history-test-main">
                 <div class="history-test-title">Test ${tr.testNumber}</div>
                 <div class="history-test-meta">${escapeHtml(annotationLabel)} &middot; ${escapeHtml(formatHistoryDateTime(tr.completedAt, true))}</div>
@@ -4999,16 +5070,16 @@ function showDetailModal(ch) {
     let summaryBadge = '';
     if (isControl) {
         const lastResult = ch.testResults[ch.testResults.length - 1];
-        const isPos = isTestPositive(lastResult.substances);
+        const resultKey = getRecordedTestOverall(lastResult) || 'invalid';
         summaryTone = 'control';
-        summaryBadge = renderHistoryResultBadge(isPos ? 'positive' : 'negative', 'lg');
+        summaryBadge = renderHistoryResultBadge(resultKey, 'lg');
     } else if (ch.groupResult) {
         summaryTone = getHistoryResultTone(ch.groupResult);
         summaryBadge = renderHistoryResultBadge(ch.groupResult, 'lg');
     }
 
     const testsHtml = ch.testResults.map(tr => {
-        const resultKey = isTestPositive(tr.substances) ? 'positive' : 'negative';
+        const resultKey = getRecordedTestOverall(tr) || 'invalid';
         const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
         const timestampLabel = tr.completedAt ? formatHistoryDateTime(tr.completedAt, true) : 'Just completed';
         const subsHtml = tr.substances.map(s =>
@@ -5018,7 +5089,7 @@ function showDetailModal(ch) {
                 <span class="history-substance-result is-${getHistoryResultTone(s.result)}">${escapeHtml(formatHistoryResultLabel(s.result))}</span>
             </div>`
         ).join('');
-        return `<div class="test-entry is-${isControl ? 'control' : resultKey}">
+        return `<div class="test-entry is-${isControl ? 'control' : getHistoryResultTone(resultKey)}">
             <div class="test-entry-header">
                 <div class="test-entry-title-group">
                     <span class="test-num">Test ${tr.testNumber}</span>

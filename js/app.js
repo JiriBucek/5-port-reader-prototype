@@ -421,10 +421,13 @@ function hasReadableCassette(ch) {
 }
 
 function validateCassetteForCurrentTest(ch) {
+    const insertedCassettePresent = hasInsertedCassette(ch);
+
     if (ch.testTypeId && !isTestTypeEnabledForCurrentUser(ch.testTypeId)) {
         return {
             ok: false,
-            message: `${ch.testTypeName || 'Selected test type'} is disabled in this reader profile.`
+            message: `${ch.testTypeName || 'Selected test type'} is disabled in this reader profile.`,
+            clearCassette: false
         };
     }
 
@@ -433,21 +436,26 @@ function validateCassetteForCurrentTest(ch) {
         const selectedTestType = ch.testTypeName || ch.cassetteType;
         return {
             ok: false,
-            message: `Reader temperature is ${temperatureValidation.currentTemperatureLabel}. Set it to ${temperatureValidation.requiredTemperature} C for ${selectedTestType}.`
+            message: `Reader temperature is ${temperatureValidation.currentTemperatureLabel}. Set it to ${temperatureValidation.requiredTemperature} C for ${selectedTestType}.`,
+            clearCassette: false
         };
     }
 
     if (isCassetteInsertionCheckEnabled() && !hasReadableCassette(ch)) {
         return {
             ok: false,
-            message: 'Cassette could not be read. Insert cassette and retry.'
+            message: 'Cassette could not be read. Insert cassette and retry.',
+            clearCassette: false
         };
     }
 
-    if (deviceSettings.qrScanningEnabled && usedCassetteIds.has(ch.loadedCassetteId)) {
+    if (insertedCassettePresent &&
+        deviceSettings.qrScanningEnabled &&
+        usedCassetteIds.has(ch.loadedCassetteId)) {
         return {
             ok: false,
-            message: 'Cassette already used. Insert a new cassette and retry.'
+            message: 'Cassette already used. Insert a new cassette and retry.',
+            clearCassette: true
         };
     }
 
@@ -472,12 +480,14 @@ function validateCassetteForCurrentTest(ch) {
     // Confirmation must reuse the exact same test type when the inserted cassette
     // provides an identifiable test type. Fall back to the older cassette-shape
     // check only when no concrete type id is available.
-    if (deviceSettings.qrScanningEnabled &&
+    if (insertedCassettePresent &&
+        deviceSettings.qrScanningEnabled &&
         ch.currentTestNumber > 1) {
         if (expectedTestTypeId != null && loadedTestTypeId != null && expectedTestTypeId !== loadedTestTypeId) {
             return {
                 ok: false,
-                message: `Wrong cassette type. Expected ${expectedTypeLabel}.`
+                message: `Wrong cassette type. Expected ${expectedTypeLabel}.`,
+                clearCassette: true
             };
         }
 
@@ -485,16 +495,20 @@ function validateCassetteForCurrentTest(ch) {
             expectedType && loadedType && expectedType !== loadedType) {
             return {
                 ok: false,
-                message: `Wrong cassette type. Expected ${expectedTypeLabel}.`
+                message: `Wrong cassette type. Expected ${expectedTypeLabel}.`,
+                clearCassette: true
             };
         }
     }
 
-    return { ok: true };
+    return { ok: true, clearCassette: false };
 }
 
-function setChannelError(ch, message) {
+function setChannelError(ch, message, options = {}) {
     clearTimer(ch);
+    if (options.clearCassette) {
+        clearInsertedCassetteForNextStep(ch);
+    }
     ch.state = STATES.ERROR;
     ch.errorMessage = message;
 }
@@ -502,12 +516,21 @@ function setChannelError(ch, message) {
 function attemptStartCurrentTest(ch) {
     const validation = validateCassetteForCurrentTest(ch);
     if (!validation.ok) {
-        setChannelError(ch, validation.message);
+        setChannelError(ch, validation.message, { clearCassette: validation.clearCassette });
         return false;
     }
 
     startProcessing(ch);
     return true;
+}
+
+function clearInsertedCassetteForNextStep(ch) {
+    ch.physicalCassettePresent = false;
+    ch.cassettePresent = false;
+    ch.loadedCassetteId = null;
+    ch.loadedCassetteType = null;
+    ch.loadedTestTypeId = null;
+    ch.simulatedOutcome = null;
 }
 
 // ---- Start Test N (Confirmation) ----
@@ -563,8 +586,8 @@ function startIncubationTimer(ch) {
             ch.incubationRemaining = 0;
             ch.incubationElapsed = 0;
 
-            if (isCassetteInsertionCheckEnabled() && !hasReadableCassette(ch)) {
-                setChannelError(ch, 'Cassette read failed after incubation. Retry or abort.');
+            if (!hasReadableCassette(ch)) {
+                setChannelError(ch, 'Cassette could not be read. Insert cassette and retry.');
                 renderCard(ch);
                 renderSlot(ch);
                 renderSimulationButtons();
@@ -591,8 +614,8 @@ function startReadingTimer(ch) {
         if (remaining <= 0) {
             clearTimer(ch);
 
-            if (isCassetteInsertionCheckEnabled() && !hasReadableCassette(ch)) {
-                setChannelError(ch, 'Reading interrupted. Retry or abort.');
+            if (!hasReadableCassette(ch)) {
+                setChannelError(ch, 'Cassette could not be read. Insert cassette and retry.');
                 renderCard(ch);
                 renderSlot(ch);
                 renderSimulationButtons();
@@ -609,7 +632,7 @@ function startReadingTimer(ch) {
 function completeReading(ch) {
     const outcome = ch.simulatedOutcome || 'negative';
     const results = generateSubstanceResults(ch.testTypeId, ch.cassetteType, outcome);
-    const overall = isTestPositive(results) ? 'positive' : 'negative';
+    const overall = getOverallResultFromSubstances(results);
     const testNumber = ch.currentTestNumber;
     const selectedTestType = getTestTypeById(ch.testTypeId);
     const completedAt = new Date().toISOString();
@@ -652,7 +675,7 @@ function completeReading(ch) {
             if (overall === 'negative') {
                 ch.state = STATES.COMPLETE;
                 ch.groupResult = 'negative';
-            } else {
+            } else if (overall === 'positive') {
                 ch.state = STATES.RESULT;
                 queueDecisionModal(ch, 'a');
             }
@@ -662,7 +685,7 @@ function completeReading(ch) {
             if (overall === 'positive') {
                 ch.state = STATES.COMPLETE;
                 ch.groupResult = 'positive';
-            } else {
+            } else if (overall === 'negative') {
                 ch.state = STATES.RESULT;
                 queueDecisionModal(ch, 'b');
             }
@@ -670,11 +693,13 @@ function completeReading(ch) {
 
         case 3:
             ch.state = STATES.COMPLETE;
-            ch.groupResult = overall === 'positive' ? 'positive' : 'negative';
+            ch.groupResult = overall;
             break;
     }
 
-    if (ch.state === STATES.COMPLETE && ch.scenario === 'test') {
+    if (ch.state === STATES.COMPLETE &&
+        ch.scenario === 'test' &&
+        (ch.groupResult === 'positive' || ch.groupResult === 'negative')) {
         incrementVerificationCount(ch.id);
     }
 
@@ -729,6 +754,7 @@ function handleDecisionContinue(channelId) {
 
     ch.incubationElapsed = 0;
     ch.errorMessage = '';
+    clearInsertedCassetteForNextStep(ch);
     ch.state = STATES.READY_FOR_TEST_N;
 
     renderCard(ch);
@@ -767,6 +793,17 @@ function handleStopConfirm(channelId) {
 function handleStopCancel(channelId) {
     hideModal();
     processModalQueue();
+}
+
+function handleInterruptIncubation(channelId) {
+    const ch = getChannel(channelId);
+    if (ch.state !== STATES.INCUBATING) return;
+
+    setChannelError(ch, 'Incubation interrupted. Retry or abort.');
+
+    renderCard(ch);
+    renderSlot(ch);
+    renderSimulationButtons();
 }
 
 // ---- Clear Channel ----
@@ -812,16 +849,13 @@ function handleRetry(channelId) {
     if (ch.state !== STATES.ERROR) return;
 
     ch.errorMessage = '';
-
-    if (ch.currentTestNumber > 0) {
-        ch.currentTestNumber--;
-    }
-
-    ch.state = STATES.READY_FOR_TEST_N;
+    const started = attemptStartCurrentTest(ch);
 
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
+
+    if (!started) return;
 }
 
 function handleAbort(channelId) {

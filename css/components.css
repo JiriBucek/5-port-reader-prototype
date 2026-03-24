@@ -419,6 +419,11 @@
     opacity: 0.7;
 }
 
+.line-bar.result-invalid {
+    background: #fde68a;
+    border: 1px dashed #f59e0b;
+}
+
 .line-bar.result-control {
     background: #475569;
 }
@@ -489,6 +494,7 @@
 
 .mini-line.result-positive { background: #dc2626; }
 .mini-line.result-negative { background: #86efac; opacity: 0.7; }
+.mini-line.result-invalid { background: #fcd34d; }
 .mini-line.result-control { background: #475569; }
 
 .mini-cassette-label {
@@ -512,6 +518,11 @@
 .mini-result-negative {
     background: var(--success-light);
     color: #166534;
+}
+
+.mini-result-invalid {
+    background: var(--warning-light);
+    color: #92400e;
 }
 
 /* ---- Status Area ---- */
@@ -632,6 +643,12 @@
     background: var(--success-light);
     color: #166534;
     border-color: #86efac;
+}
+
+.confirm-chip-invalid {
+    background: var(--warning-light);
+    color: #92400e;
+    border-color: #fcd34d;
 }
 
 /* Progress bar */
