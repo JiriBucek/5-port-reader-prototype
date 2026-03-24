@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Figma Handoff Catalog - Overview</title>
+    <title>Figma Handoff Catalog - Device Overview</title>
     <style>
         :root {
             --bg: #f3f5f8;
@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 49 states";
+            content: "6 sections · 53 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -279,17 +279,6 @@
         }
         .shot-open img {
             height: auto;
-        }
-        .shot-open-hint {
-            display: inline-flex;
-            margin-top: 10px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid var(--line);
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 700;
         }
         .shot-missing {
             min-height: 180px;
@@ -453,7 +442,7 @@
     <aside class="sidebar">
         <div class="sidebar-main">
             <h1>Figma Handoff Catalog</h1>
-            <p>Reference screens and implementation states exported from the 5-Port Reader wireframe prototype.</p>
+            <p></p>
 
             <div class="sidebar-group">
                 <span class="sidebar-label">Pages</span>
@@ -470,7 +459,7 @@
                 
             <a class="sidebar-link" href="dashboard.html">
                 <span>Five-Port Dashboard</span>
-                <strong>16</strong>
+                <strong>20</strong>
             </a>
             
             <a class="sidebar-link" href="history.html">
@@ -506,8 +495,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-03-24 14:07</p>
-        <p><strong>Regenerate:</strong> <code>python3 scripts/generate_handoff.py</code></p>
+        <p><strong>Created:</strong> 2026-03-24 14:31</p>
     </section>
     
         </div>
@@ -520,7 +508,7 @@
         <div>
             <span class="section-kicker">Overview</span>
             <h2>Device Overview</h2>
-            <p class="section-summary">Use this page as a quick briefing for a designer who has not seen the reader before. It explains what the device does, why some flows exist, and which hardware constraints shape the interface.</p>
+            
         </div>
         
     </header>
@@ -530,23 +518,31 @@
             <section class="overview-card">
                 <h3>Device Constraints</h3>
                 <div class="overview-copy">
-                    <p>The target display is a small landscape touchscreen at 800 x 480 px.</p><p>There are five physical reader ports below the screen, and the UI often needs to reflect both the on-screen state and the physical cassette state at the same time.</p><p>Assume this is an Android-based device. Native Android patterns such as the keyboard, date and time pickers, screen transitions, modal presentation, and the system navigation area should be used where possible instead of being heavily redesigned.</p>
-                    <ul class="overview-list"><li>Design for fast reading at arm&#x27;s length.</li><li>If something can fit on one screen without scrolling, that is preferred.</li><li>The touchscreen has poor scrolling behavior, so avoid scrolling unless the screen truly needs it.</li></ul>
+                    <p>The target display is 800 x 480 px in landscape orientation.</p><p>There are five physical reader ports below the screen, so the UI often needs to show both the on-screen workflow state and the physical cassette state at the same time.</p><p>Assume this is an Android device. Where possible, use standard Android behavior for the keyboard, date and time pickers, navigation, and opening new screens instead of redesigning those patterns.</p>
+                    <ul class="overview-list"><li>If a screen can fit without scrolling, that is preferred.</li><li>Scrolling should be limited as much as possible because the touchscreen does not scroll well.</li><li>The most important actions and the port status should be readable at a glance.</li></ul>
                 </div>
             </section>
             
             <section class="overview-card">
                 <h3>Normal Test</h3>
                 <div class="overview-copy">
-                    <p>A normal test is the standard sample workflow. The user configures a port, enters sample and operator information, confirms or selects the test type, inserts the cassette, and starts reading.</p><p>Some tests are read only, while others need incubation first. A positive or conflicting result can trigger a confirmation flow with Test 2 and Test 3.</p><p>The confirmation flow exists only when the next operator action is needed. For example, if Test 1 is negative, the flow is complete and no confirmation modal is shown. If Test 1 is positive, or if Test 2 conflicts, the UI asks the operator to continue with the next test.</p>
-                    <ul class="overview-list"><li>Configuration may happen before cassette insertion.</li><li>Test type can be manual or prefilled from cassette QR.</li><li>Confirmation tests always require a newly inserted cassette.</li><li>Test 2 and Test 3 must stay tied to the same test type as the original test.</li></ul>
+                    <p>A normal test is the standard workflow for a milk sample. The user chooses a port, enters sample and operator information, selects or confirms the test type, and starts the read.</p><p>Some tests are read only. Other tests need incubation before reading.</p>
+                    <ul class="overview-list"><li>Configuration can happen before the cassette is inserted.</li><li>The test type can be chosen manually or prefilled from QR.</li><li>The main goal is to help the operator prepare the correct test on the correct port with as little friction as possible.</li></ul>
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Confirmation Flow</h3>
+                <div class="overview-copy">
+                    <p>If the first result needs confirmation, the device guides the operator to Test 2 and sometimes Test 3.</p><p>A modal appears only when the operator needs to make the next decision or take the next step. If the flow is already complete, no extra modal is shown.</p>
+                    <ul class="overview-list"><li>Test 2 and Test 3 always require a newly inserted cassette.</li><li>The next cassette must be the same test type as the original test.</li><li>If Test 1 is negative, the flow ends without a confirmation modal.</li></ul>
                 </div>
             </section>
             
             <section class="overview-card">
                 <h3>Controls</h3>
                 <div class="overview-copy">
-                    <p>Controls are not normal sample results. They are special runs, mainly positive controls and animal controls.</p><p>These are tests where a positive outcome is expected, so they should stay clearly distinct from normal sample tests.</p><p>They should remain clearly distinguishable from regular tests in both the workflow and the history.</p>
+                    <p>Positive controls and animal controls are not normal sample tests. They are special runs where a positive result is expected.</p><p>They should stay clearly separated from normal tests in both the workflow and the history.</p>
                     
                 </div>
             </section>
@@ -554,32 +550,32 @@
             <section class="overview-card">
                 <h3>Verification</h3>
                 <div class="overview-copy">
-                    <p>Verification is a service or maintenance workflow used to check port performance and reader temperature behavior.</p><p>During verification, the operator uses a physical thermometer to measure the temperature inside the selected port and compares that measured value to the selected 40 C or 50 C target.</p><p>All ports always use the same reader temperature setting. The rest of the verification result is based on device outputs such as light intensity and line ratio values, which show how well the reader can read the cassette lines.</p><p>Each port should be verified every 250 tests by default. The local warning threshold can be set lower on the device if the user wants to see the warning sooner, but the cloud-level expectation remains 250.</p><p>Once verification is completed, that port&#x27;s verification count resets to zero.</p>
-                    
+                    <p>Verification is a service workflow used to check port performance and reading behavior.</p><p>The operator places a physical thermometer into the port, measures the real temperature, and compares it to the selected 40 C or 50 C target.</p><p>The result also shows values such as light intensity and line ratios. These help show how well the device can read the cassette lines.</p>
+                    <ul class="overview-list"><li>All ports always share the same reader temperature setting.</li><li>Each port should be verified every 250 tests.</li><li>The user can set a lower local warning threshold, but the cloud default stays 250.</li><li>After verification, the counter for that port resets to zero.</li></ul>
                 </div>
             </section>
             
             <section class="overview-card">
-                <h3>QR Scanning</h3>
+                <h3>Cassettes, Strips, and QR</h3>
                 <div class="overview-copy">
-                    <p>The reader supports both strip tests and cassette tests. Strip tests are the older format and do not have QR. Cassette tests are the newer format and can include QR.</p><p>When QR scanning is enabled and a supported cassette is inserted, the reader uses the QR to identify the test type and prefill it so the operator cannot change it.</p><p>This is important because different test types can have different substances, different cassette layouts, and different numbers of lines.</p><p>During confirmation flows, the reader also checks that the next cassette is for the same test type as the original test.</p><p>When QR scanning is off, the operator must choose the test type manually.</p>
-                    <ul class="overview-list"><li>A cassette belongs to a batch, meaning a box of many cassettes of the same type.</li><li>The slot visualization should show the control line plus the test lines for that cassette.</li><li>The test lines can be labeled with short substance abbreviations because some tests have fewer lines and some have more.</li><li>The control line is always present because it shows whether the test itself worked.</li></ul>
+                    <p>The device supports both strip tests and cassette tests. Strips are the older format and do not have QR. Cassettes are the newer format and can have QR.</p><p>When QR is enabled and the cassette supports it, the device reads the test type from QR and does not let the user change it.</p><p>This matters because different test types can have different substances, different cassette layouts, and different numbers of lines.</p><p>During confirmation flows, the device also checks that the next cassette is the same test type as the original test.</p><p>If QR is turned off, the user must choose the test type manually.</p>
+                    <ul class="overview-list"><li>A batch means a box of many cassettes of the same type.</li><li>The slot can show the control line and the test lines for the inserted cassette.</li><li>Test lines can use short substance abbreviations because some tests have fewer lines and some have more.</li><li>The control line is always present because it shows whether the test itself worked.</li></ul>
                 </div>
             </section>
             
             <section class="overview-card">
                 <h3>Microswitch</h3>
                 <div class="overview-copy">
-                    <p>The microswitch is the reader&#x27;s cassette insertion sensor.</p><p>Its main use is to detect that a cassette was inserted after configuration so the reader can enable the read action.</p><p>The limitation is that it can detect insertion, but it cannot reliably detect removal.</p><p>When microswitch checking is on, the read actions stay disabled until a cassette is detected. When it is off, the reader allows a fallback service mode where the read buttons stay enabled even without insertion in case the microswitch is broken.</p>
+                    <p>The microswitch is the cassette insertion sensor.</p><p>Its main job is to detect that a cassette was inserted after configuration so the read action can be enabled.</p><p>Its limitation is that it can reliably detect insertion, but not removal.</p><p>When it is on, the read buttons unlock only after cassette insertion is detected. When it is off, the device allows a fallback mode without that check, for example if the sensor is broken.</p>
                     
                 </div>
             </section>
             
             <section class="overview-card">
-                <h3>Accounts And Settings Access</h3>
+                <h3>Account and Settings Access</h3>
                 <div class="overview-copy">
-                    <p>The reader can be used either signed in to the cloud or anonymous.</p><p>Anonymous mode means the device does not send test records to the cloud.</p><p>When the reader is signed in, the allowed test types for that device come from the back end. When it is anonymous, the operator can locally enable or disable test types in Settings using on and off toggles.</p>
-                    <ul class="overview-list"><li>Some settings are open to normal users.</li><li>Some settings require a reader password.</li><li>Once the password is entered, protected settings stay unlocked until the user leaves Settings.</li></ul>
+                    <p>The device can be signed in to the cloud or used in anonymous mode.</p><p>In anonymous mode, test records are not sent to the cloud.</p><p>When the device is signed in, the allowed test types come from the backend. When it is anonymous, the user can turn test types on and off locally in Settings.</p>
+                    <ul class="overview-list"><li>Some settings are open to normal users.</li><li>Some settings require the reader password.</li><li>After the password is entered, protected settings stay unlocked while Settings remains open.</li></ul>
                 </div>
             </section>
             
@@ -587,7 +583,7 @@
                 <h3>Other Important Concepts</h3>
                 <div class="overview-copy">
                     
-                    <ul class="overview-list"><li>Some tests require a specific reader temperature, typically 40 C or 50 C.</li><li>Quantitative tests need a loaded quant curve before they can start.</li><li>History separates Tests and Controls.</li><li>Exports are CSV or LIMS, not Excel.</li><li>Root full-screen views close, while pushed child views use back navigation.</li></ul>
+                    <ul class="overview-list"><li>Some tests require a specific reader temperature, usually 40 C or 50 C.</li><li>Quantitative tests need a loaded quant curve before they can start.</li><li>History separates normal tests and controls.</li><li>Exports are CSV or LIMS, not Excel.</li><li>Root full-screen screens use Close, while pushed child screens use Back.</li></ul>
                 </div>
             </section>
             

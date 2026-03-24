@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 49 states";
+            content: "6 sections · 53 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -279,17 +279,6 @@
         }
         .shot-open img {
             height: auto;
-        }
-        .shot-open-hint {
-            display: inline-flex;
-            margin-top: 10px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid var(--line);
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 700;
         }
         .shot-missing {
             min-height: 180px;
@@ -453,7 +442,7 @@
     <aside class="sidebar">
         <div class="sidebar-main">
             <h1>Figma Handoff Catalog</h1>
-            <p>Reference screens and implementation states exported from the 5-Port Reader wireframe prototype.</p>
+            <p></p>
 
             <div class="sidebar-group">
                 <span class="sidebar-label">Pages</span>
@@ -470,7 +459,7 @@
                 
             <a class="sidebar-link" href="dashboard.html">
                 <span>Five-Port Dashboard</span>
-                <strong>16</strong>
+                <strong>20</strong>
             </a>
             
             <a class="sidebar-link" href="history.html">
@@ -506,8 +495,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-03-24 14:07</p>
-        <p><strong>Regenerate:</strong> <code>python3 scripts/generate_handoff.py</code></p>
+        <p><strong>Created:</strong> 2026-03-24 14:31</p>
     </section>
     
         </div>
@@ -538,15 +526,10 @@
             data-viewer-description="Protected and password-free settings on the main settings screen."
         >
             <img loading="lazy" src="screenshots/settings-locked.png" alt="Settings overview">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_locked</span>
-            </div>
             <h3>Settings overview</h3>
             <p>Protected and password-free settings on the main settings screen.</p>
         </div>
@@ -563,15 +546,10 @@
             data-viewer-description="Password prompt shown when opening a protected setting."
         >
             <img loading="lazy" src="screenshots/settings-password-prompt.png" alt="Protected settings password">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_password_prompt</span>
-            </div>
             <h3>Protected settings password</h3>
             <p>Password prompt shown when opening a protected setting.</p>
         </div>
@@ -588,15 +566,10 @@
             data-viewer-description="Protected settings unlocked for the rest of the current settings session."
         >
             <img loading="lazy" src="screenshots/settings-unlocked.png" alt="Unlocked settings session">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_unlocked</span>
-            </div>
             <h3>Unlocked settings session</h3>
             <p>Protected settings unlocked for the rest of the current settings session.</p>
         </div>
@@ -613,15 +586,10 @@
             data-viewer-description="Wi-Fi network selection inside settings."
         >
             <img loading="lazy" src="screenshots/settings-connectivity-wifi-list.png" alt="Connectivity: Wi-Fi list">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_connectivity_wifi_list</span>
-            </div>
             <h3>Connectivity: Wi-Fi list</h3>
             <p>Wi-Fi network selection inside settings.</p>
         </div>
@@ -638,15 +606,10 @@
             data-viewer-description="Connected Wi-Fi success state inside settings."
         >
             <img loading="lazy" src="screenshots/settings-connectivity-wifi-success.png" alt="Connectivity: Wi-Fi connected">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_connectivity_wifi_success</span>
-            </div>
             <h3>Connectivity: Wi-Fi connected</h3>
             <p>Connected Wi-Fi success state inside settings.</p>
         </div>
@@ -663,15 +626,10 @@
             data-viewer-description="Local warning threshold and outstanding verification counts per port."
         >
             <img loading="lazy" src="screenshots/settings-verification-threshold.png" alt="Verification threshold">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_verification_threshold</span>
-            </div>
             <h3>Verification threshold</h3>
             <p>Local warning threshold and outstanding verification counts per port.</p>
         </div>
@@ -688,15 +646,10 @@
             data-viewer-description="Help overlay explaining cloud default versus local warning threshold."
         >
             <img loading="lazy" src="screenshots/settings-verification-threshold-help.png" alt="Verification threshold help">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_verification_threshold_help</span>
-            </div>
             <h3>Verification threshold help</h3>
             <p>Help overlay explaining cloud default versus local warning threshold.</p>
         </div>
@@ -713,15 +666,10 @@
             data-viewer-description="Loaded test type list shown after unlocking protected settings."
         >
             <img loading="lazy" src="screenshots/settings-test-types.png" alt="Test types">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_test_types</span>
-            </div>
             <h3>Test types</h3>
             <p>Loaded test type list shown after unlocking protected settings.</p>
         </div>
@@ -738,15 +686,10 @@
             data-viewer-description="Curve loader screen with saved quantitative curves."
         >
             <img loading="lazy" src="screenshots/settings-curve-loader.png" alt="Load quant curve">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_curve_loader</span>
-            </div>
             <h3>Load quant curve</h3>
             <p>Curve loader screen with saved quantitative curves.</p>
         </div>
@@ -763,15 +706,10 @@
             data-viewer-description="Reader identity and software summary."
         >
             <img loading="lazy" src="screenshots/settings-about.png" alt="About">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">Screen</span>
-                <span class="state-tag is-muted">settings_about</span>
-            </div>
             <h3>About</h3>
             <p>Reader identity and software summary.</p>
         </div>

@@ -308,6 +308,50 @@ async function applyPreset(page, presetId) {
                 }, 'form');
                 break;
             }
+            case 'dashboard_type_picker': {
+                const ch = getChannel(1);
+                ch.state = STATES.CONFIGURING;
+                showConfigModal(ch, {
+                    scenario: 'test',
+                    testTypeId: 37,
+                    sampleId: 'MILK-240318',
+                    operatorId: 'OP-204',
+                    fallbackCassetteType: '4L',
+                    lockedToQr: false,
+                    forceQrOnly: false,
+                    brandFilter: 'MilkSafe',
+                    categoryFilter: 'all',
+                    measurementFilter: 'all',
+                    curveId: null,
+                    curveLoadSource: 'qr',
+                    curveLoadError: ''
+                }, 'type_picker');
+                const mixedRow = document.querySelector('[data-test-type-id="8"]');
+                if (mixedRow) {
+                    mixedRow.scrollIntoView({ block: 'start' });
+                }
+                break;
+            }
+            case 'dashboard_type_picker_quantitative': {
+                const ch = getChannel(1);
+                ch.state = STATES.CONFIGURING;
+                showConfigModal(ch, {
+                    scenario: 'test',
+                    testTypeId: 20,
+                    sampleId: 'AFM-240318',
+                    operatorId: 'OP-204',
+                    fallbackCassetteType: '1L',
+                    lockedToQr: false,
+                    forceQrOnly: false,
+                    brandFilter: 'MilkSafe',
+                    categoryFilter: 'all',
+                    measurementFilter: 'quant',
+                    curveId: null,
+                    curveLoadSource: 'qr',
+                    curveLoadError: ''
+                }, 'type_picker');
+                break;
+            }
             case 'dashboard_config_qr_locked': {
                 const ch = getChannel(1);
                 insertCassette(1, { testTypeId: 43, outcome: 'negative' });
@@ -351,6 +395,47 @@ async function applyPreset(page, presetId) {
                     brandFilter: 'MilkSafe',
                     categoryFilter: 'strip',
                     measurementFilter: 'quant',
+                    curveId: null,
+                    curveLoadSource: 'qr',
+                    curveLoadError: ''
+                }, 'form');
+                break;
+            }
+            case 'dashboard_curve_picker': {
+                const ch = getChannel(1);
+                ch.state = STATES.CONFIGURING;
+                showConfigModal(ch, {
+                    scenario: 'test',
+                    testTypeId: 20,
+                    sampleId: 'AFM-240318',
+                    operatorId: 'OP-204',
+                    fallbackCassetteType: '1L',
+                    lockedToQr: false,
+                    forceQrOnly: false,
+                    brandFilter: 'MilkSafe',
+                    categoryFilter: 'strip',
+                    measurementFilter: 'quant',
+                    curveId: null,
+                    curveLoadSource: 'qr',
+                    curveLoadError: ''
+                }, 'curve_picker');
+                break;
+            }
+            case 'dashboard_temperature_mismatch': {
+                const ch = getChannel(1);
+                deviceSettings.deviceTemperature = 40;
+                ch.state = STATES.CONFIGURING;
+                showConfigModal(ch, {
+                    scenario: 'test',
+                    testTypeId: 18,
+                    sampleId: 'MILK-240318',
+                    operatorId: 'OP-204',
+                    fallbackCassetteType: '4L',
+                    lockedToQr: false,
+                    forceQrOnly: false,
+                    brandFilter: 'MilkSafe',
+                    categoryFilter: 'cassette',
+                    measurementFilter: 'all',
                     curveId: null,
                     curveLoadSource: 'qr',
                     curveLoadError: ''

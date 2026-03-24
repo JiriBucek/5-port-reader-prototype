@@ -83,13 +83,13 @@ def render_build_block(version: str, created_at: str) -> str:
         <h3>Build</h3>
         <p><strong>Version:</strong> {html.escape(version)}</p>
         <p><strong>Created:</strong> {html.escape(created_at)}</p>
-        <p><strong>Regenerate:</strong> <code>python3 scripts/generate_handoff.py</code></p>
     </section>
     """
 
 
 def render_sidebar(manifest: dict, active_page: str, version: str, created_at: str) -> str:
     sections = manifest.get("sections", [])
+    overview_meta = manifest.get("overview", {})
     section_links = []
     for section in sections:
         href = section_page_name(section)
@@ -106,6 +106,8 @@ def render_sidebar(manifest: dict, active_page: str, version: str, created_at: s
     overview_active = " is-active" if active_page == OVERVIEW_PAGE else ""
     changelog_active = " is-active" if active_page == CHANGELOG_PAGE else ""
 
+    overview_label = overview_meta.get("navLabel", "Overview")
+
     return f"""
     <aside class="sidebar">
         <div class="sidebar-main">
@@ -115,7 +117,7 @@ def render_sidebar(manifest: dict, active_page: str, version: str, created_at: s
             <div class="sidebar-group">
                 <span class="sidebar-label">Pages</span>
                 <a class="sidebar-link{overview_active}" href="{OVERVIEW_PAGE}">
-                    <span>Overview</span>
+                    <span>{html.escape(overview_label)}</span>
                 </a>
                 <a class="sidebar-link{changelog_active}" href="{CHANGELOG_PAGE}">
                     <span>Change Log</span>
@@ -217,7 +219,6 @@ def render_state_card(state: dict, screens_dir_name: str = "screenshots") -> str
             data-viewer-description="{html.escape(state['description'])}"
         >
             <img loading="lazy" src="{html.escape(image_src)}" alt="{html.escape(state['title'])}">
-            <span class="shot-open-hint">Open full size</span>
         </button>
         """
     else:
@@ -229,10 +230,6 @@ def render_state_card(state: dict, screens_dir_name: str = "screenshots") -> str
             {preview}
         </div>
         <div class="state-copy">
-            <div class="state-meta">
-                <span class="state-tag">{html.escape(state.get('capture', 'screen').title())}</span>
-                <span class="state-tag is-muted">{html.escape(state['preset'])}</span>
-            </div>
             <h3>{html.escape(state['title'])}</h3>
             <p>{html.escape(state['description'])}</p>
         </div>
@@ -246,12 +243,13 @@ def render_section_cards(section: dict) -> str:
 
 def render_section_header(kicker: str, title: str, summary: str, count_label: str = "") -> str:
     count_markup = f"<span class=\"section-count\">{html.escape(count_label)}</span>" if count_label else ""
+    summary_markup = f"<p class=\"section-summary\">{html.escape(summary)}</p>" if summary else ""
     return f"""
     <header class="page-header">
         <div>
             <span class="section-kicker">{html.escape(kicker)}</span>
             <h2>{html.escape(title)}</h2>
-            <p class="section-summary">{html.escape(summary)}</p>
+            {summary_markup}
         </div>
         {count_markup}
     </header>
@@ -285,8 +283,8 @@ def render_overview_page(manifest: dict) -> str:
 
     return f"""
     {render_section_header(
-        "Overview",
-        "Device Overview",
+        overview.get("kicker", "Overview"),
+        overview.get("heading", "Device Overview"),
         overview.get("intro", "")
     )}
     <div class="overview-grid">
@@ -629,17 +627,6 @@ def build_document(manifest: dict, version: str, created_at: str, active_page: s
         .shot-open img {{
             height: auto;
         }}
-        .shot-open-hint {{
-            display: inline-flex;
-            margin-top: 10px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid var(--line);
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 700;
-        }}
         .shot-missing {{
             min-height: 180px;
             display: grid;
@@ -819,7 +806,7 @@ def write_site(output_path: Path, manifest: dict, version: str, created_at: str)
         version=version,
         created_at=created_at,
         active_page=OVERVIEW_PAGE,
-        page_title=f"{manifest.get('title', 'Figma Handoff Catalog')} - Overview",
+        page_title=f"{manifest.get('title', 'Figma Handoff Catalog')} - {manifest.get('overview', {}).get('heading', 'Overview')}",
         main_content=render_overview_page(manifest),
     )
     (site_dir / OVERVIEW_PAGE).write_text(overview_html, encoding="utf-8")
