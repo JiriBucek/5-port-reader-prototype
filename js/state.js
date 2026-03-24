@@ -286,8 +286,39 @@ function createDefaultPrototypeRuntime() {
     return {
         onboardingCompleted: false,
         lastHistoryActionMessage: '',
-        pendingSettingsFocus: ''
+        pendingSettingsFocus: '',
+        settingsAccessUnlocked: false,
+        pendingProtectedSettingsTarget: null,
+        settingsPasswordReturnModal: null
     };
+}
+
+const PASSWORD_FREE_SETTINGS_ITEM_IDS = new Set([
+    'set-temperature',
+    'open-verification',
+    'open-verification-history',
+    'open-connectivity',
+    'open-brightness',
+    'open-curve-loader',
+    'open-about'
+]);
+
+function isSettingsItemPasswordProtected(itemId) {
+    return !PASSWORD_FREE_SETTINGS_ITEM_IDS.has(String(itemId || ''));
+}
+
+function isSettingsAccessUnlocked() {
+    return Boolean(prototypeRuntime.settingsAccessUnlocked);
+}
+
+function canAccessSettingsItem(itemId) {
+    return !isSettingsItemPasswordProtected(itemId) || isSettingsAccessUnlocked();
+}
+
+function resetSettingsAccessSession() {
+    prototypeRuntime.settingsAccessUnlocked = false;
+    prototypeRuntime.pendingProtectedSettingsTarget = null;
+    prototypeRuntime.settingsPasswordReturnModal = null;
 }
 
 // ---- Global State ----

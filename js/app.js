@@ -33,7 +33,7 @@ function bindStatusBarEvents() {
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             if (activeModal) return;
-            showSettingsPasswordScreen();
+            showSettingsScreen();
         });
     }
 }
@@ -54,19 +54,21 @@ function handleHistoryClose() {
 }
 
 function handleSettingsCancel() {
+    resetSettingsAccessSession();
     hideSettingsScreen();
     processModalQueue();
 }
 
 function handleSettingsPasswordCancel() {
+    prototypeRuntime.pendingProtectedSettingsTarget = null;
     hideSettingsPasswordScreen();
-    processModalQueue();
 }
 
 function handleSettingsPasswordSubmit(password) {
     if (String(password || '').trim() === SETTINGS_PASSWORD) {
+        prototypeRuntime.settingsAccessUnlocked = true;
         hideSettingsPasswordScreen();
-        showSettingsScreen();
+        completeProtectedSettingsUnlock();
         return;
     }
 

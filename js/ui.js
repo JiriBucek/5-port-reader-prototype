@@ -2278,7 +2278,6 @@ function renderHistoryFlowView(flow, historyState) {
             <section class="history-section-card">
                 <div class="history-section-header">
                     <h2>Actions</h2>
-                    <span>Available outputs</span>
                 </div>
                 ${flowActions}
             </section>
@@ -2318,7 +2317,6 @@ function renderHistoryTestView(flow, test, notice = '') {
             <section class="history-section-card">
                 <div class="history-section-header">
                     <h2>Substances</h2>
-                    <span>${test.substances.length} result${test.substances.length === 1 ? '' : 's'}</span>
                 </div>
                 <div class="history-substance-list">
                     ${test.substances.map(substance => `
@@ -2753,10 +2751,15 @@ function hideHistoryScreen() {
 
 // ---- Settings Screen ----
 
-function renderSettingsSegmentedControl(id, value, options) {
+function renderSettingsSegmentedControl(id, value, options, config = {}) {
     const widthClass = options.length > 2 ? ' settings-toggle-wide' : '';
+    const extraClass = config.className ? ` ${config.className}` : '';
+    const attributes = config.attributes || {};
+    const attributeMarkup = Object.entries(attributes)
+        .map(([name, attrValue]) => ` ${name}="${escapeHtml(String(attrValue))}"`)
+        .join('');
     return `
-        <div class="segmented-control settings-toggle${widthClass}" id="${id}">
+        <div class="segmented-control settings-toggle${widthClass}${extraClass}" id="${id}"${attributeMarkup}>
             ${options.map(option => `
                 <button class="seg-option${String(option.value) === String(value) ? ' selected' : ''}${option.className ? ` ${option.className}` : ''}" data-value="${option.value}"${option.disabled ? ' disabled' : ''}>${option.label}</button>
             `).join('')}
@@ -2774,27 +2777,197 @@ function renderSettingsSection(title, rows, note = '', sectionId = '') {
         </section>`;
 }
 
-function renderSettingsToggleRow({ title, detail, id, value, options }) {
+function getSettingsFocusSectionForItem(itemId = '') {
+    const normalizedId = String(itemId || '');
+    if (normalizedId === 'open-verification' || normalizedId === 'open-verification-history' || normalizedId === 'open-verification-threshold') {
+        return 'settings-verification';
+    }
+    if (normalizedId === 'open-software' || normalizedId === 'open-factory-reset' || normalizedId === 'open-about') {
+        return 'settings-maintenance';
+    }
+    if (normalizedId === 'open-test-types' || normalizedId === 'open-connectivity' || normalizedId === 'open-cloud' || normalizedId === 'open-date-time' || normalizedId === 'open-language' || normalizedId === 'open-brightness' || normalizedId === 'open-curve-loader') {
+        return 'settings-setup';
+    }
+    return 'settings-reader-controls';
+}
+
+function buildSettingsToggleUpdate(toggleId, nextValue) {
+    if (toggleId === 'set-temperature') return { deviceTemperature: nextValue };
+    if (toggleId === 'set-qr') return { qrScanningEnabled: nextValue === 'on' };
+    if (toggleId === 'set-microswitch') return { microswitchEnabled: nextValue === 'on' };
+    return null;
+}
+
+function requestProtectedSettingsUnlock(target = {}) {
+    prototypeRuntime.pendingProtectedSettingsTarget = {
+        ...target,
+        focusSection: target.focusSection || getSettingsFocusSectionForItem(target.action || target.toggleId || '')
+    };
+    showSettingsPasswordScreen();
+}
+
+function applySettingsToggleSelection(toggleId, nextValue, focusSection = '') {
+    const resolvedFocusSection = focusSection || getSettingsFocusSectionForItem(toggleId);
+    if (!canAccessSettingsItem(toggleId)) {
+        requestProtectedSettingsUnlock({
+            kind: 'toggle',
+            toggleId,
+            nextValue,
+            focusSection: resolvedFocusSection
+        });
+        return;
+    }
+
+    const nextSettings = buildSettingsToggleUpdate(toggleId, nextValue);
+    if (!nextSettings) return;
+
+    handleSettingsApply(nextSettings);
+    renderStatusBar();
+    showSettingsScreen(resolvedFocusSection);
+}
+
+function openSettingsAction(action, focusSection = '') {
+    const resolvedFocusSection = focusSection || getSettingsFocusSectionForItem(action);
+    if (!canAccessSettingsItem(action)) {
+        requestProtectedSettingsUnlock({
+            kind: 'action',
+            action,
+            focusSection: resolvedFocusSection
+        });
+        return;
+    }
+
+    if (action === 'open-verification') {
+        hideSettingsScreen();
+        showVerificationScreen();
+        return;
+    }
+    if (action === 'open-verification-history') {
+        hideSettingsScreen();
+        showVerificationScreen({ view: 'history' });
+        return;
+    }
+    if (action === 'open-curve-loader') {
+        hideSettingsScreen();
+        showSettingsCurveScreen();
+        return;
+    }
+    if (action === 'open-language') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('language', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-brightness') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('brightness', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-verification-threshold') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('verification_threshold', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-connectivity') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('connectivity', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-test-types') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('test_types', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-cloud') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('cloud', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-date-time') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('date_time', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-software') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('software', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-factory-reset') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('factory_reset', { focusSection: resolvedFocusSection });
+        return;
+    }
+    if (action === 'open-about') {
+        hideSettingsScreen();
+        showSettingsDetailScreen('about', { focusSection: resolvedFocusSection });
+    }
+}
+
+function completeProtectedSettingsUnlock() {
+    const pendingTarget = prototypeRuntime.pendingProtectedSettingsTarget;
+    prototypeRuntime.pendingProtectedSettingsTarget = null;
+
+    if (!pendingTarget) {
+        showSettingsScreen();
+        return;
+    }
+
+    if (pendingTarget.kind === 'toggle') {
+        applySettingsToggleSelection(pendingTarget.toggleId, pendingTarget.nextValue, pendingTarget.focusSection);
+        return;
+    }
+    if (pendingTarget.kind === 'action') {
+        openSettingsAction(pendingTarget.action, pendingTarget.focusSection);
+        return;
+    }
+
+    showSettingsScreen(pendingTarget.focusSection || '');
+}
+
+function renderSettingsLockIcon() {
     return `
-        <div class="settings-item">
+        <span class="settings-lock-icon" role="img" aria-label="Password protected" title="Password protected">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="M5.5 6V4.75a2.5 2.5 0 1 1 5 0V6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="3.5" y="6" width="9" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+        </span>`;
+}
+
+function renderSettingsToggleRow({ title, detail, id, value, options, locked = false }) {
+    const control = renderSettingsSegmentedControl(id, value, options, locked
+        ? {
+            className: 'settings-toggle-locked',
+            attributes: { 'data-settings-locked': 'true' }
+        }
+        : {});
+    return `
+        <div class="settings-item${locked ? ' settings-item-lockable' : ''}">
             <div class="settings-item-copy">
                 <h3>${title}</h3>
                 ${detail ? `<p>${detail}</p>` : ''}
             </div>
-            ${renderSettingsSegmentedControl(id, value, options)}
+            ${locked
+                ? `
+                    <div class="settings-item-meta">
+                        ${renderSettingsLockIcon()}
+                        ${control}
+                    </div>`
+                : control}
         </div>`;
 }
 
-function renderSettingsActionRow({ title, detail = '', value = '', buttonLabel = 'Open', action = '', badge = '' }) {
+function renderSettingsActionRow({ title, detail = '', value = '', buttonLabel = 'Open', action = '', badge = '', locked = false }) {
     return `
-        <div class="settings-item settings-item-mock">
+        <div class="settings-item settings-item-mock${locked ? ' settings-item-lockable' : ''}">
             <div class="settings-item-copy">
                 <h3>${title}</h3>
                 ${detail ? `<p>${detail}</p>` : ''}
             </div>
             <div class="settings-item-meta">
                 ${value ? `<span class="settings-inline-value">${value}</span>` : ''}
-                ${action ? `<button class="settings-row-btn" data-settings-action="${action}">${buttonLabel}</button>` : ''}
+                ${locked ? renderSettingsLockIcon() : ''}
+                ${action ? `<button class="settings-row-btn" data-settings-action="${action}"${locked ? ' data-settings-locked="true"' : ''}>${buttonLabel}</button>` : ''}
                 ${badge ? `<span class="settings-prototype-badge">${badge}</span>` : ''}
             </div>
         </div>`;
@@ -2817,12 +2990,16 @@ function showSettingsPasswordScreen(errorMessage = '') {
     const screen = document.getElementById('settings-password-screen');
     if (!screen) return;
 
+    if (!prototypeRuntime.settingsPasswordReturnModal && activeModal && activeModal.type !== 'settings_password') {
+        prototypeRuntime.settingsPasswordReturnModal = { ...activeModal };
+    }
+
     activeModal = { type: 'settings_password', errorMessage };
     screen.innerHTML = `
         <div class="settings-password-card" data-1p-ignore="true" data-lpignore="true">
             <div class="settings-screen-title-wrap">
-                <h1>Settings Password</h1>
-                <p>Enter the reader password to open settings.</p>
+                <h1>Unlock Protected Settings</h1>
+                <p>Enter the reader password to change protected reader settings.</p>
             </div>
             <div class="settings-password-body">
                 <label class="settings-password-label" for="settings-password-input">Password</label>
@@ -2831,15 +3008,22 @@ function showSettingsPasswordScreen(errorMessage = '') {
             </div>
             <div class="settings-password-actions">
                 <button class="history-close-btn" id="settings-password-cancel">Cancel</button>
-                <button class="settings-row-btn" id="settings-password-submit">Open Settings</button>
+                <button class="history-inline-btn history-inline-btn-primary" id="settings-password-submit">Unlock</button>
             </div>
         </div>`;
 
     screen.classList.add('active');
     document.getElementById('settings-password-cancel').addEventListener('click', () => handleSettingsPasswordCancel());
+    const passwordInput = document.getElementById('settings-password-input');
     document.getElementById('settings-password-submit').addEventListener('click', () => {
-        handleSettingsPasswordSubmit(document.getElementById('settings-password-input')?.value || '');
+        handleSettingsPasswordSubmit(passwordInput?.value || '');
     });
+    passwordInput?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            handleSettingsPasswordSubmit(passwordInput.value || '');
+        }
+    });
+    passwordInput?.focus();
 }
 
 function hideSettingsPasswordScreen() {
@@ -2850,8 +3034,12 @@ function hideSettingsPasswordScreen() {
     screen.innerHTML = '';
 
     if (activeModal && activeModal.type === 'settings_password') {
-        activeModal = null;
+        activeModal = prototypeRuntime.settingsPasswordReturnModal
+            ? { ...prototypeRuntime.settingsPasswordReturnModal }
+            : null;
     }
+
+    prototypeRuntime.settingsPasswordReturnModal = null;
 }
 
 let prototypeFullScreenTimerId = null;
@@ -3677,6 +3865,7 @@ function showSettingsDetailScreen(view, state = {}) {
         view,
         notice: state.notice || '',
         factoryPasswordError: state.factoryPasswordError || '',
+        showThresholdInfo: Boolean(state.showThresholdInfo),
         focusSection: state.focusSection || '',
         connectivityDraft: buildConnectivityDraft(state.connectivityDraft || {}),
         cloudState: buildCloudFlowState(state.cloudState || {}),
@@ -3715,7 +3904,7 @@ function showSettingsDetailScreen(view, state = {}) {
         const thresholdValue = sanitizeVerificationThreshold(detailState.thresholdInput);
         const outstandingCount = getVerificationOutstandingCount(thresholdValue);
         title = 'Verification Threshold';
-        subtitle = 'Set the local warning count.';
+        subtitle = 'Set the local reader warning count. Cloud default stays 250.';
         body = `
             <section class="settings-section settings-threshold-section">
                 <div class="settings-section-body settings-threshold-body">
@@ -3858,6 +4047,10 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     }
 
+    const thresholdInfoButton = view === 'verification_threshold'
+        ? '<div class="verification-header-actions"><button class="topbar-icon-btn verification-help-btn" data-settings-detail-action="toggle-threshold-info" aria-label="Verification threshold info">?</button></div>'
+        : '<div class="verification-header-actions"></div>';
+
     screen.innerHTML = `
         <div class="settings-detail-screen-header">
             <div class="history-screen-title-row">
@@ -3868,8 +4061,10 @@ function showSettingsDetailScreen(view, state = {}) {
                     <h1>${escapeHtml(title)}</h1>
                 </div>
             </div>
+            ${thresholdInfoButton}
         </div>
-        <div class="settings-detail-screen-body">${renderScreenIntroCopy(subtitle)}${body}</div>`;
+        <div class="settings-detail-screen-body">${renderScreenIntroCopy(subtitle)}${body}</div>
+        ${detailState.showThresholdInfo ? renderVerificationThresholdInfoOverlay() : ''}`;
 
     screen.classList.add('active');
 
@@ -4325,6 +4520,21 @@ function showSettingsDetailScreen(view, state = {}) {
         });
     });
 
+    screen.querySelectorAll('[data-settings-detail-action]').forEach(button => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.settingsDetailAction;
+            if (action !== 'toggle-threshold-info' && action !== 'close-threshold-info') return;
+
+            const thresholdInput = document.getElementById('settings-threshold-input')?.value || detailState.thresholdInput;
+            showSettingsDetailScreen('verification_threshold', {
+                focusSection: detailState.focusSection,
+                thresholdInput,
+                notice: detailState.notice,
+                showThresholdInfo: action === 'toggle-threshold-info'
+            });
+        });
+    });
+
     const thresholdSaveBtn = document.getElementById('settings-threshold-save');
     if (thresholdSaveBtn) {
         thresholdSaveBtn.addEventListener('click', () => {
@@ -4393,11 +4603,12 @@ function showSettingsScreen(focusSection = '') {
 
     clearPrototypeFullScreenTimer();
     activeModal = { type: 'settings', focusSection };
+    const settingsUnlocked = isSettingsAccessUnlocked();
 
     screen.innerHTML = `
         <div class="settings-screen-header">
             <div class="settings-screen-title-wrap">
-                <h1>Settings</h1>
+                <h1>Settings${settingsUnlocked ? '<span class="settings-header-badge">Unlocked</span>' : ''}</h1>
             </div>
             <button class="topbar-close-btn" id="settings-screen-close">Close</button>
         </div>
@@ -4412,7 +4623,8 @@ function showSettingsScreen(focusSection = '') {
                         { value: 'off', label: 'Off' },
                         { value: 40, label: '40 C' },
                         { value: 50, label: '50 C' }
-                    ]
+                    ],
+                    locked: !canAccessSettingsItem('set-temperature')
                 }),
                 renderSettingsToggleRow({
                     title: 'QR Scanning',
@@ -4422,7 +4634,8 @@ function showSettingsScreen(focusSection = '') {
                     options: [
                         { value: 'on', label: 'On' },
                         { value: 'off', label: 'Off' }
-                    ]
+                    ],
+                    locked: !canAccessSettingsItem('set-qr')
                 }),
                 renderSettingsToggleRow({
                     title: 'Micro Switch',
@@ -4432,27 +4645,31 @@ function showSettingsScreen(focusSection = '') {
                     options: [
                         { value: 'on', label: 'On' },
                         { value: 'off', label: 'Off' }
-                    ]
+                    ],
+                    locked: !canAccessSettingsItem('set-microswitch')
                 })
-            ].join(''), 'Live settings that apply right away.', 'settings-reader-controls')}
+            ].join(''), '', 'settings-reader-controls')}
             ${renderSettingsSection('Verification', [
                 renderSettingsActionRow({
                     title: 'Run Verification',
                     buttonLabel: 'Open',
-                    action: 'open-verification'
+                    action: 'open-verification',
+                    locked: !canAccessSettingsItem('open-verification')
                 }),
                 renderSettingsActionRow({
                     title: 'Verification History',
                     detail: 'Saved verification results on this reader.',
                     buttonLabel: 'Open',
-                    action: 'open-verification-history'
+                    action: 'open-verification-history',
+                    locked: !canAccessSettingsItem('open-verification-history')
                 }),
                 renderSettingsActionRow({
                     title: 'Verification Threshold',
                     detail: `Local device warning set to ${deviceSettings.verificationThreshold}. The cloud default remains 250.`,
                     value: getVerificationOutstandingCount() > 0 ? getVerificationSummaryLabel() : `Local ${deviceSettings.verificationThreshold}`,
                     buttonLabel: 'Manage',
-                    action: 'open-verification-threshold'
+                    action: 'open-verification-threshold',
+                    locked: !canAccessSettingsItem('open-verification-threshold')
                 })
             ].join(''), '', 'settings-verification')}
             ${renderSettingsSection('Data And Setup', [
@@ -4461,48 +4678,55 @@ function showSettingsScreen(focusSection = '') {
                     detail: isSignedIn() ? 'Signed-in readers show cloud-loaded test types and lock the toggles.' : 'Anonymous readers can enable or disable every loaded test type locally.',
                     value: isSignedIn() ? 'Cloud' : 'Local',
                     buttonLabel: 'Manage',
-                    action: 'open-test-types'
+                    action: 'open-test-types',
+                    locked: !canAccessSettingsItem('open-test-types')
                 }),
                 renderSettingsActionRow({
                     title: 'Connect To Internet',
                     detail: 'Wi-Fi uses saved credentials and Ethernet is plug-and-play.',
                     value: getConnectivityLabel(),
                     buttonLabel: 'Manage',
-                    action: 'open-connectivity'
+                    action: 'open-connectivity',
+                    locked: !canAccessSettingsItem('open-connectivity')
                 }),
                 renderSettingsActionRow({
                     title: 'MilkSafe Cloud',
                     detail: 'Sign in with username and password, or continue as anonymous.',
                     value: isSignedIn() ? activeAccount.username : 'Anonymous',
                     buttonLabel: 'Manage',
-                    action: 'open-cloud'
+                    action: 'open-cloud',
+                    locked: !canAccessSettingsItem('open-cloud')
                 }),
                 renderSettingsActionRow({
                     title: 'Date And Time',
                     detail: 'Date, time, and timezone for uploads.',
                     value: deviceSettings.timezone,
                     buttonLabel: 'Manage',
-                    action: 'open-date-time'
+                    action: 'open-date-time',
+                    locked: !canAccessSettingsItem('open-date-time')
                 }),
                 renderSettingsActionRow({
                     title: 'Language',
                     detail: 'Open the full device language list on a dedicated screen.',
                     value: deviceSettings.language,
                     buttonLabel: 'Open',
-                    action: 'open-language'
+                    action: 'open-language',
+                    locked: !canAccessSettingsItem('open-language')
                 }),
                 renderSettingsActionRow({
                     title: 'Screen Brightness',
                     detail: 'Set the display brightness from the dimmest to the brightest step.',
                     value: getScreenBrightnessLabel(),
                     buttonLabel: 'Open',
-                    action: 'open-brightness'
+                    action: 'open-brightness',
+                    locked: !canAccessSettingsItem('open-brightness')
                 }),
                 renderSettingsActionRow({
                     title: 'Load Quant Curve',
                     detail: 'Load a batch calibration curve before starting a quantitative test.',
                     buttonLabel: 'Open',
-                    action: 'open-curve-loader'
+                    action: 'open-curve-loader',
+                    locked: !canAccessSettingsItem('open-curve-loader')
                 })
             ].join(''), '', 'settings-setup')}
             ${renderSettingsSection('Maintenance', [
@@ -4511,19 +4735,22 @@ function showSettingsScreen(focusSection = '') {
                     detail: 'Check the latest software and step through the update flow.',
                     value: deviceSettings.softwareVersion || CURRENT_SOFTWARE_VERSION,
                     buttonLabel: 'Open',
-                    action: 'open-software'
+                    action: 'open-software',
+                    locked: !canAccessSettingsItem('open-software')
                 }),
                 renderSettingsActionRow({
                     title: 'Factory Reset',
                     detail: 'Password-protected factory reset.',
                     buttonLabel: 'Open',
-                    action: 'open-factory-reset'
+                    action: 'open-factory-reset',
+                    locked: !canAccessSettingsItem('open-factory-reset')
                 }),
                 renderSettingsActionRow({
                     title: 'About',
                     detail: 'Reader and software summary.',
                     buttonLabel: 'Open',
-                    action: 'open-about'
+                    action: 'open-about',
+                    locked: !canAccessSettingsItem('open-about')
                 })
             ].join(''), '', 'settings-maintenance')}
         </div>`;
@@ -4535,14 +4762,7 @@ function showSettingsScreen(focusSection = '') {
             const toggle = option.closest('.settings-toggle');
             const toggleId = toggle.id;
             const nextValue = option.dataset.value;
-
-            let nextSettings = {};
-            if (toggleId === 'set-temperature') nextSettings = { deviceTemperature: nextValue };
-            if (toggleId === 'set-qr') nextSettings = { qrScanningEnabled: nextValue === 'on' };
-            if (toggleId === 'set-microswitch') nextSettings = { microswitchEnabled: nextValue === 'on' };
-            handleSettingsApply(nextSettings);
-            renderStatusBar();
-            showSettingsScreen(focusSection);
+            applySettingsToggleSelection(toggleId, nextValue, focusSection || getSettingsFocusSectionForItem(toggleId));
         });
     });
 
@@ -4552,71 +4772,7 @@ function showSettingsScreen(focusSection = '') {
 
     screen.querySelectorAll('[data-settings-action]').forEach(button => {
         button.addEventListener('click', () => {
-            const action = button.dataset.settingsAction;
-            if (action === 'open-verification') {
-                hideSettingsScreen();
-                showVerificationScreen();
-                return;
-            }
-            if (action === 'open-verification-history') {
-                hideSettingsScreen();
-                showVerificationScreen({ view: 'history' });
-                return;
-            }
-            if (action === 'open-curve-loader') {
-                hideSettingsScreen();
-                showSettingsCurveScreen();
-                return;
-            }
-            if (action === 'open-language') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('language', { focusSection: 'settings-setup' });
-                return;
-            }
-            if (action === 'open-brightness') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('brightness', { focusSection: 'settings-setup' });
-                return;
-            }
-            if (action === 'open-verification-threshold') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('verification_threshold', { focusSection: 'settings-verification' });
-                return;
-            }
-            if (action === 'open-connectivity') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('connectivity', { focusSection: 'settings-setup' });
-                return;
-            }
-            if (action === 'open-test-types') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('test_types', { focusSection: 'settings-setup' });
-                return;
-            }
-            if (action === 'open-cloud') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('cloud', { focusSection: 'settings-setup' });
-                return;
-            }
-            if (action === 'open-date-time') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('date_time', { focusSection: 'settings-setup' });
-                return;
-            }
-            if (action === 'open-software') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('software', { focusSection: 'settings-maintenance' });
-                return;
-            }
-            if (action === 'open-factory-reset') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('factory_reset', { focusSection: 'settings-maintenance' });
-                return;
-            }
-            if (action === 'open-about') {
-                hideSettingsScreen();
-                showSettingsDetailScreen('about', { focusSection: 'settings-maintenance' });
-            }
+            openSettingsAction(button.dataset.settingsAction, focusSection);
         });
     });
 
@@ -4910,6 +5066,39 @@ function renderVerificationInfoOverlay() {
                         <div class="verification-help-row">
                             <strong>Ratio Measured</strong>
                             <span>All control and test line ratios must be between ${VERIFICATION_RATIO_RANGE.min.toFixed(2)} and ${VERIFICATION_RATIO_RANGE.max.toFixed(2)}.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function renderVerificationThresholdInfoOverlay() {
+    return `
+        <div class="verification-help-overlay" data-settings-detail-action="close-threshold-info">
+            <div class="verification-help-dialog" role="dialog" aria-modal="true" aria-label="Verification threshold info">
+                <div class="history-section-header">
+                    <h2>Verification Threshold Info</h2>
+                    <button class="verification-help-close" data-settings-detail-action="close-threshold-info" aria-label="Close verification threshold info">Close</button>
+                </div>
+                <div class="verification-help-copy">
+                    <p>This setting changes only the local reader warning. The cloud default always stays at 250.</p>
+                    <div class="verification-help-grid">
+                        <div class="verification-help-row">
+                            <strong>Cloud Default</strong>
+                            <span>MilkSafe Cloud always uses 250 tests without verification as the default threshold.</span>
+                        </div>
+                        <div class="verification-help-row">
+                            <strong>Outstanding In Cloud</strong>
+                            <span>A port is labeled Outstanding after more than 250 tests are run on that port without verification.</span>
+                        </div>
+                        <div class="verification-help-row">
+                            <strong>After Verification</strong>
+                            <span>When verification is completed on that port, the verification count resets to 0.</span>
+                        </div>
+                        <div class="verification-help-row">
+                            <strong>Local Reader Warning</strong>
+                            <span>You can set a lower threshold here if you want this reader to warn sooner than the cloud default.</span>
                         </div>
                     </div>
                 </div>
@@ -5490,7 +5679,6 @@ function showDecisionModal(ch, variant) {
             <section class="history-section-card modal-section-card">
                 <div class="history-section-header">
                     <h2>Substances</h2>
-                    <span>${lastResult.substances.length} result${lastResult.substances.length === 1 ? '' : 's'}</span>
                 </div>
                 <div class="history-substance-list">
                     ${substancesHtml}

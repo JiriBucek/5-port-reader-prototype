@@ -922,6 +922,18 @@
     letter-spacing: 0.2px;
 }
 
+.settings-header-badge {
+    margin-left: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(30, 95, 173, 0.1);
+    color: var(--primary);
+    font-size: var(--font-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
 .settings-screen-title-wrap p {
     margin-top: 4px;
     font-size: var(--font-base);
@@ -979,6 +991,10 @@
     border: 1px solid var(--gray-300);
     background: var(--white);
     border-radius: 2px;
+}
+
+.settings-item-lockable {
+    align-items: flex-start;
 }
 
 .settings-item-copy {
@@ -1046,6 +1062,22 @@
     letter-spacing: 0.4px;
 }
 
+.settings-lock-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--gray-500);
+}
+
+.settings-lock-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
 .settings-row-btn {
     min-height: var(--touch-target-compact);
     min-width: 88px;
@@ -1090,6 +1122,28 @@
 .segmented-control .seg-option:disabled {
     opacity: 0.45;
     cursor: default;
+}
+
+.settings-toggle-locked .seg-option {
+    cursor: pointer;
+}
+
+.settings-toggle-locked .seg-option:not(.selected) {
+    background: var(--gray-50);
+    color: var(--gray-500);
+}
+
+.settings-toggle-locked .seg-option.selected {
+    background: rgba(30, 95, 173, 0.12);
+    color: var(--primary);
+}
+
+.settings-toggle-locked .seg-option:hover {
+    background: var(--gray-100);
+}
+
+.settings-toggle-locked .seg-option.selected:hover {
+    background: rgba(30, 95, 173, 0.12);
 }
 
 .settings-screen-footer {
