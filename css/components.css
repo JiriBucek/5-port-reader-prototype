@@ -779,17 +779,39 @@
     transform: scale(0.97);
 }
 
+.card-action .action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    pointer-events: none;
+}
+
+.card-action .btn-primary:disabled,
+.card-action .btn-success:disabled,
+.card-action .btn-warning:disabled,
+.card-action .btn-danger:disabled {
+    background: var(--gray-300);
+    color: var(--gray-500);
+}
+
+.card-action .btn-secondary:disabled,
+.card-action .btn-ghost:disabled {
+    background: var(--gray-100);
+    color: var(--gray-500);
+    border-color: var(--gray-300);
+}
+
 .btn-primary {
     background: var(--primary);
     color: var(--white);
 }
-.btn-primary:hover { background: var(--primary-dark); }
+.btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
 
 .btn-success {
     background: var(--success);
     color: var(--white);
 }
-.btn-success:hover { background: #15803d; }
+.btn-success:hover:not(:disabled) { background: #15803d; }
 
 .btn-ghost {
     background: transparent;
@@ -797,7 +819,7 @@
     border: 1px solid var(--gray-300) !important;
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
     background: var(--gray-100);
 }
 
@@ -805,20 +827,20 @@
     background: var(--danger);
     color: var(--white);
 }
-.btn-danger:hover { background: #b91c1c; }
+.btn-danger:hover:not(:disabled) { background: #b91c1c; }
 
 .btn-secondary {
     background: var(--white);
     color: var(--gray-600);
     border: 1px solid var(--gray-300);
 }
-.btn-secondary:hover { background: var(--gray-50); }
+.btn-secondary:hover:not(:disabled) { background: var(--gray-50); }
 
 .btn-warning {
     background: var(--warning);
     color: var(--white);
 }
-.btn-warning:hover { background: #b45309; }
+.btn-warning:hover:not(:disabled) { background: #b45309; }
 
 .onboarding-screen,
 .settings-password-screen,

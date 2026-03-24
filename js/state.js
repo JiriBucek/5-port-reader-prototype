@@ -560,6 +560,24 @@ function formatStatusBarTemperatureLabel(value = deviceSettings.deviceTemperatur
     return numericValue == null ? 'Off' : `${numericValue}.0&deg;C`;
 }
 
+function isCassetteInsertionCheckEnabled() {
+    return deviceSettings.microswitchEnabled;
+}
+
+function isCassetteInsertionBypassed() {
+    return !isCassetteInsertionCheckEnabled();
+}
+
+function hasInsertedCassette(ch) {
+    return Boolean(ch && ch.physicalCassettePresent && ch.loadedCassetteId !== null);
+}
+
+function hasFreshConfirmationCassette(ch) {
+    return hasInsertedCassette(ch) &&
+           ch.currentTestNumber > 0 &&
+           !usedCassetteIds.has(ch.loadedCassetteId);
+}
+
 // ---- Channel Data Factory ----
 
 function createChannel(id) {
@@ -1776,6 +1794,7 @@ function canInsertCassette(ch) {
     if (ch.physicalCassettePresent) return false;
 
     return ch.state === STATES.EMPTY ||
+           ch.state === STATES.CONFIGURING ||
            ch.state === STATES.DETECTED ||
            ch.state === STATES.READY_FOR_TEST_N ||
            ch.state === STATES.ERROR;
@@ -1792,8 +1811,8 @@ function canRemoveCassette(ch) {
 }
 
 function canConfigureChannel(ch) {
-    return ch.state === STATES.DETECTED ||
-           (!deviceSettings.microswitchEnabled && ch.state === STATES.EMPTY);
+    return ch.state === STATES.EMPTY ||
+           ch.state === STATES.DETECTED;
 }
 
 function isRunningState(state) {

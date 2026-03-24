@@ -432,8 +432,17 @@
 .config-note-blocking {
     grid-column: 1 / -1;
     padding: 10px 12px;
-    border: 1px solid #fca5a5;
     border-radius: 2px;
+}
+
+.config-note-blocking.is-neutral {
+    border: 1px solid var(--gray-300);
+    background: var(--gray-50);
+    color: var(--gray-500);
+}
+
+.config-note-blocking:not(.is-neutral) {
+    border: 1px solid #fca5a5;
     background: var(--danger-bg);
     color: #991b1b;
 }

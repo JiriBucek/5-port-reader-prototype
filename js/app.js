@@ -160,7 +160,7 @@ function handleSettingsApply(nextSettings) {
     const incubationEnabled = isIncubationEnabled();
     const temperatureChanged = prevDeviceTemperature !== deviceSettings.deviceTemperature;
 
-    // If microswitch turns ON, physically present cassettes can immediately become detected.
+    // If microswitch turns ON, any physically present cassette can still surface as detected.
     if (!prevMicroswitch && deviceSettings.microswitchEnabled) {
         channels.forEach(ch => {
             if (ch.state === STATES.EMPTY && ch.physicalCassettePresent) {
@@ -294,14 +294,14 @@ function handleInsert(channelId, outcome) {
         ch.cassetteType = selectedType;
     }
 
-    // Detection is assistive. In manual mode, user can still configure from EMPTY.
-    if (deviceSettings.microswitchEnabled && ch.state === STATES.EMPTY) {
+    if (ch.state === STATES.EMPTY) {
         ch.state = STATES.DETECTED;
     }
 
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
+    refreshActiveConfigModal(channelId);
 }
 
 // Physical removal simulation (debug/testing aid).
@@ -317,6 +317,7 @@ function handleRemove(channelId) {
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
+    refreshActiveConfigModal(channelId);
     processModalQueue();
 }
 
@@ -339,11 +340,7 @@ function handleConfigCancel(channelId) {
     hideModal();
 
     if (ch.state === STATES.CONFIGURING) {
-        if (deviceSettings.microswitchEnabled && ch.cassettePresent) {
-            ch.state = STATES.DETECTED;
-        } else {
-            ch.state = STATES.EMPTY;
-        }
+        ch.state = ch.cassettePresent ? STATES.DETECTED : STATES.EMPTY;
     }
 
     renderCard(ch);
@@ -420,9 +417,7 @@ function startProcessing(ch) {
 }
 
 function hasReadableCassette(ch) {
-    return ch.cassettePresent &&
-           ch.physicalCassettePresent &&
-           ch.loadedCassetteId !== null;
+    return hasInsertedCassette(ch) && ch.cassettePresent;
 }
 
 function validateCassetteForCurrentTest(ch) {
@@ -442,7 +437,7 @@ function validateCassetteForCurrentTest(ch) {
         };
     }
 
-    if (!hasReadableCassette(ch)) {
+    if (isCassetteInsertionCheckEnabled() && !hasReadableCassette(ch)) {
         return {
             ok: false,
             message: 'Cassette could not be read. Insert cassette and retry.'
@@ -520,6 +515,7 @@ function attemptStartCurrentTest(ch) {
 function handleStartTestN(channelId) {
     const ch = getChannel(channelId);
     if (ch.state !== STATES.READY_FOR_TEST_N) return;
+    if (!hasFreshConfirmationCassette(ch)) return;
 
     ch.currentTestNumber++;
     const started = attemptStartCurrentTest(ch);
@@ -567,7 +563,7 @@ function startIncubationTimer(ch) {
             ch.incubationRemaining = 0;
             ch.incubationElapsed = 0;
 
-            if (!hasReadableCassette(ch)) {
+            if (isCassetteInsertionCheckEnabled() && !hasReadableCassette(ch)) {
                 setChannelError(ch, 'Cassette read failed after incubation. Retry or abort.');
                 renderCard(ch);
                 renderSlot(ch);
@@ -595,7 +591,7 @@ function startReadingTimer(ch) {
         if (remaining <= 0) {
             clearTimer(ch);
 
-            if (!hasReadableCassette(ch)) {
+            if (isCassetteInsertionCheckEnabled() && !hasReadableCassette(ch)) {
                 setChannelError(ch, 'Reading interrupted. Retry or abort.');
                 renderCard(ch);
                 renderSlot(ch);

@@ -223,14 +223,9 @@ function renderCardStatus(ch) {
 
     switch (ch.state) {
         case STATES.EMPTY:
-            if (deviceSettings.microswitchEnabled) {
-                statusHtml = `<span class="status-text status-waiting">Insert cassette</span>`;
-                statusClass = ' is-single';
-            } else {
-                statusHtml = `<span class="status-text status-waiting">Insert cassette</span>
-                              <span class="status-text status-secondary status-waiting">Tap Configure</span>`;
-                statusClass = ' is-dual';
-            }
+            statusHtml = `<span class="status-text status-waiting">Insert cassette</span>
+                          <span class="status-text status-secondary status-waiting">Tap Configure</span>`;
+            statusClass = ' is-dual';
             break;
 
         case STATES.DETECTED:
@@ -295,8 +290,9 @@ function renderCardStatus(ch) {
 
         case STATES.READY_FOR_TEST_N: {
             const nextTest = ch.currentTestNumber + 1;
+            const cassetteReady = hasFreshConfirmationCassette(ch);
             statusHtml = `${renderConfirmationHistory(ch)}
-                          <span class="status-text">Insert new cassette</span>
+                          <span class="status-text">${cassetteReady ? 'New cassette ready' : 'Insert new cassette'}</span>
                           <span class="status-text status-secondary status-waiting">Start T${nextTest}</span>`;
             statusClass = ' is-history';
             break;
@@ -407,7 +403,7 @@ function renderCardAction(ch) {
             break;
 
         case STATES.READY_FOR_TEST_N:
-            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}">Start Test ${ch.currentTestNumber + 1}</button>`;
+            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}"${hasFreshConfirmationCassette(ch) ? '' : ' disabled'}>Start Test ${ch.currentTestNumber + 1}</button>`;
             secondaryButtons = [
                 `<button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort Flow</button>`
             ];
@@ -589,7 +585,7 @@ function escapeHtml(value) {
 function buildConfigDraft(ch) {
     const fallbackCassetteType = ch.loadedCassetteType || ch.cassetteType || CASSETTE_TYPES[0];
     const insertedTestType = getTestTypeById(ch.loadedTestTypeId);
-    const qrPrefillType = (deviceSettings.qrScanningEnabled && ch.cassettePresent && insertedTestType?.qrEnabled)
+    const qrPrefillType = (deviceSettings.qrScanningEnabled && hasInsertedCassette(ch) && insertedTestType?.qrEnabled)
         ? insertedTestType
         : null;
     const qrModeLocked = Boolean(qrPrefillType);
@@ -623,6 +619,32 @@ function buildConfigDraft(ch) {
     };
 }
 
+function syncConfigDraftWithChannel(ch, draft = null) {
+    const baseDraft = buildConfigDraft(ch);
+    if (!draft) return baseDraft;
+
+    const nextTestTypeId = baseDraft.lockedToQr
+        ? baseDraft.testTypeId
+        : (draft.testTypeId ?? baseDraft.testTypeId);
+    const selectedType = getTestTypeById(nextTestTypeId);
+    const previousCurve = getCurveById(draft.curveId);
+    const nextCurveId = !selectedType?.quantitative
+        ? null
+        : (previousCurve?.testTypeId === selectedType.id
+            ? previousCurve.id
+            : (getDefaultCurveForTestType(selectedType.id, baseDraft.curveId)?.id || null));
+
+    return {
+        ...baseDraft,
+        ...draft,
+        fallbackCassetteType: baseDraft.fallbackCassetteType,
+        lockedToQr: baseDraft.lockedToQr,
+        forceQrOnly: baseDraft.forceQrOnly,
+        testTypeId: nextTestTypeId,
+        curveId: nextCurveId
+    };
+}
+
 function collectConfigDraft(modal, ch, previousDraft) {
     return {
         ...previousDraft,
@@ -639,6 +661,25 @@ function collectConfigDraft(modal, ch, previousDraft) {
         curveLoadSource: previousDraft.curveLoadSource || 'qr',
         curveLoadError: previousDraft.curveLoadError || ''
     };
+}
+
+function refreshActiveConfigModal(channelId) {
+    if (!activeModal || activeModal.type !== 'config' || activeModal.channelId !== channelId) return;
+
+    const ch = getChannel(channelId);
+    if (!ch) return;
+
+    const modal = document.getElementById('config-modal');
+    const previousDraft = activeModal.draft || buildConfigDraft(ch);
+    const latestDraft = (activeModal.view === 'form' && modal?.classList.contains('active'))
+        ? collectConfigDraft(modal, ch, previousDraft)
+        : previousDraft;
+    const nextDraft = syncConfigDraftWithChannel(ch, latestDraft);
+    const nextView = nextDraft.lockedToQr && activeModal.view === 'type_picker'
+        ? 'form'
+        : (activeModal.view || 'form');
+
+    showConfigModal(ch, nextDraft, nextView);
 }
 
 function getDraftSelection(draft, qrLocked) {
@@ -1088,7 +1129,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
     const modal = document.getElementById('config-modal');
     if (!overlay || !modal) return;
 
-    const nextDraft = draft || buildConfigDraft(ch);
+    const nextDraft = syncConfigDraftWithChannel(ch, draft);
     activeModal = { type: 'config', channelId: ch.id, draft: nextDraft, view };
 
     const scenarioOpts = [
@@ -1103,24 +1144,38 @@ function showConfigModal(ch, draft = null, view = 'form') {
     const selectedTypeEnabled = !selectedType?.id || isTestTypeEnabledForCurrentUser(selectedType.id);
     const fastQrOnlyMode = Boolean(nextDraft.forceQrOnly);
     const lockTypeSelection = qrLocked || fastQrOnlyMode;
+    const cassetteReady = hasInsertedCassette(ch);
+    const startRequiresCassette = isCassetteInsertionCheckEnabled();
     const showSampleField = true;
     const showOperatorField = true;
     const showReadIncubate = Boolean(selectedType?.incubationTime) &&
         selectedType?.category !== 'Strip' &&
         isIncubationEnabled();
+    const temperatureValidation = getTemperatureValidation(selectedType?.id, selectedType?.cassetteType);
+    const hasRequiredCurve = !selectedType?.quantitative || Boolean(selectedCurve?.id);
     const blockingMessage = !selectedTypeEnabled
         ? `${selectedType?.name || 'This test type'} is not enabled for the current reader profile.`
         : (fastQrOnlyMode && !selectedType?.id
             ? 'FAST QR only mode is enabled. Insert a supported QR cassette to continue.'
-            : '');
-    const subtitle = ch.cassettePresent
+            : (!selectedType ? 'Select test type to continue.' : ''));
+    const readDisabled = Boolean(blockingMessage) ||
+        !hasRequiredCurve ||
+        !temperatureValidation.ok ||
+        (startRequiresCassette && !cassetteReady);
+    const readGateMessage = !blockingMessage && startRequiresCassette && !cassetteReady
+        ? 'Insert cassette to enable reading.'
+        : '';
+    const bypassMessage = !blockingMessage && !readGateMessage && isCassetteInsertionBypassed()
+        ? 'Microswitch off. Reading can start without cassette insertion.'
+        : '';
+    const subtitle = cassetteReady
         ? 'Cassette inserted'
-        : 'Manual mode';
+        : 'Configure before insert';
 
     modal.className = `modal config-modal${view === 'type_picker' ? ' type-picker-mode active' : ' active'}`;
 
     if (view === 'type_picker') {
-        if (fastQrOnlyMode) {
+        if (lockTypeSelection) {
             showConfigModal(ch, nextDraft, 'form');
             return;
         }
@@ -1350,12 +1405,14 @@ function showConfigModal(ch, draft = null, view = 'form') {
                     </div>
                 ` : ''}
                 ${blockingMessage ? `<div class="config-note is-error config-note-blocking">${escapeHtml(blockingMessage)}</div>` : ''}
+                ${!blockingMessage && readGateMessage ? `<div class="config-note config-note-blocking is-neutral">${escapeHtml(readGateMessage)}</div>` : ''}
+                ${!blockingMessage && !readGateMessage && bypassMessage ? `<div class="config-note config-note-blocking is-neutral">${escapeHtml(bypassMessage)}</div>` : ''}
             </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="cfg-cancel">Cancel</button>
-            ${blockingMessage ? '' : '<button class="modal-btn btn-primary" id="cfg-read-only">Read</button>'}
-            ${!blockingMessage && showReadIncubate ? `<button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>` : ''}
+            <button class="modal-btn btn-primary" id="cfg-read-only">Read</button>
+            ${showReadIncubate ? `<button class="modal-btn btn-primary" id="cfg-read-incubate">Read + Incubate</button>` : ''}
         </div>
         <div class="config-keyboard" id="cfg-keyboard">
             <div class="config-keyboard-header">
@@ -1424,11 +1481,6 @@ function showConfigModal(ch, draft = null, view = 'form') {
         handleConfigCancel(ch.id);
     });
 
-    if (blockingMessage) {
-        overlay.classList.add('active');
-        return;
-    }
-
     // Start helpers
     function collectConfigAndStart(processing) {
         const latestDraft = collectConfigDraft(modal, ch, nextDraft);
@@ -1457,14 +1509,12 @@ function showConfigModal(ch, draft = null, view = 'form') {
         });
     }
 
-    const validation = getTemperatureValidation(selectedType?.id, selectedType?.cassetteType);
-    const hasRequiredCurve = !selectedType?.quantitative || Boolean(getDraftCurve(nextDraft, selectedType)?.id);
     const readOnlyBtn = document.getElementById('cfg-read-only');
     if (readOnlyBtn) {
-        readOnlyBtn.disabled = !validation.ok || !hasRequiredCurve || !selectedType;
+        readOnlyBtn.disabled = readDisabled;
     }
     if (incubateBtn) {
-        incubateBtn.disabled = !validation.ok || !selectedType?.incubationTime || !hasRequiredCurve;
+        incubateBtn.disabled = readDisabled || !selectedType?.incubationTime;
     }
 }
 
@@ -3762,7 +3812,7 @@ function showSettingsScreen(focusSection = '') {
                 }),
                 renderSettingsToggleRow({
                     title: 'Micro Switch',
-                    detail: 'Uses cassette insertion detection instead of manual start.',
+                    detail: 'On requires cassette insertion before reading. Off keeps the read buttons enabled as a service fallback.',
                     id: 'set-microswitch',
                     value: deviceSettings.microswitchEnabled ? 'on' : 'off',
                     options: [
