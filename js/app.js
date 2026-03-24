@@ -25,7 +25,7 @@ function bindStatusBarEvents() {
     if (historyBtn && !historyBtn.hidden) {
         historyBtn.addEventListener('click', () => {
             if (activeModal) return;
-            showHistoryScreen({ filter: 'all' });
+            showHistoryScreen({ filter: 'tests' });
         });
     }
 
@@ -70,7 +70,7 @@ function handleSettingsPasswordSubmit(password) {
         return;
     }
 
-    showSettingsPasswordScreen('Wrong password. Use 2026.');
+    showSettingsPasswordScreen('Wrong password.');
 }
 
 function handleSettingsDetailClose(returnToSettings = true, focusSection = '') {

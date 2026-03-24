@@ -294,6 +294,7 @@ function createDefaultPrototypeRuntime() {
 
 let channels = [];
 let activeModal = null;   // {type: 'config'|'decision'|'detail', channelId, data}
+let historyScreenState = null;
 let modalQueue = [];       // Queued modal events
 let usedCassetteIds = new Set();
 let cassetteIdCounter = 1;

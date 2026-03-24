@@ -1637,6 +1637,13 @@
     margin-bottom: 8px;
 }
 
+.history-screen-header-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+}
+
 .history-screen-header h1 {
     display: flex;
     align-items: center;
@@ -1675,6 +1682,13 @@
     background: none;
 }
 
+.topbar-close-btn:disabled,
+.topbar-back-btn:disabled,
+.topbar-icon-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 .topbar-back-btn,
 .topbar-icon-btn {
     min-width: var(--touch-target-compact);
@@ -1691,6 +1705,23 @@
     min-height: var(--touch-target-compact);
     display: flex;
     align-items: center;
+}
+
+.history-header-title {
+    min-width: 0;
+    justify-self: start;
+}
+
+.history-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    justify-self: end;
+}
+
+.topbar-export-btn {
+    min-width: auto;
+    padding: 0 10px;
 }
 
 .history-close-btn,
@@ -1802,6 +1833,63 @@
 
 .history-list-body {
     overflow: hidden;
+}
+
+.history-filter-tabs {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--gray-300);
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--white);
+    justify-self: center;
+}
+
+.history-filter-tab {
+    min-width: 128px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: none;
+    border-right: 1px solid var(--gray-300);
+    background: var(--white);
+    color: var(--gray-600);
+    font-size: var(--font-sm);
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.history-filter-tab:last-child {
+    border-right: none;
+}
+
+.history-filter-tab:hover {
+    background: var(--gray-50);
+}
+
+.history-filter-tab.is-selected {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.history-filter-tab-count {
+    min-width: 22px;
+    min-height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(148, 163, 184, 0.16);
+    font-size: 10px;
+    line-height: 1;
+}
+
+.history-filter-tab.is-selected .history-filter-tab-count {
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .history-flow-list {

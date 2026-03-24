@@ -1785,64 +1785,390 @@ function renderHistoryLightIntensityChart(points) {
         </div>`;
 }
 
-function renderHistoryListView(flows, page, totalPages, notice = '') {
-    if (flows.length === 0) {
-        return `
-            <div class="history-screen-header">
-                <div>
-                    <h1>History</h1>
-                </div>
+function normalizeHistoryFilter(filter) {
+    return filter === 'controls' ? 'controls' : 'tests';
+}
+
+function normalizeHistoryExportScope(scope) {
+    if (scope === 'controls' || scope === 'all') return scope;
+    return 'tests';
+}
+
+function normalizeHistoryExportDestination(destination) {
+    if (destination === 'csv' || destination === 'lims') return destination;
+    return 'excel';
+}
+
+function getHistoryFilterLabel(filter) {
+    return filter === 'controls' ? 'Controls' : 'Tests';
+}
+
+function getHistoryExportScopeLabel(scope) {
+    switch (scope) {
+        case 'controls':
+            return 'Controls';
+        case 'all':
+            return 'Everything';
+        default:
+            return 'Tests';
+    }
+}
+
+function filterHistoryFlows(flows, filter) {
+    const normalizedFilter = normalizeHistoryFilter(filter);
+    return flows.filter(flow => normalizedFilter === 'controls'
+        ? isHistoryControlFlow(flow)
+        : !isHistoryControlFlow(flow));
+}
+
+function getHistoryFilterCounts(flows) {
+    return flows.reduce((counts, flow) => {
+        if (isHistoryControlFlow(flow)) {
+            counts.controls += 1;
+        } else {
+            counts.tests += 1;
+        }
+        return counts;
+    }, { tests: 0, controls: 0 });
+}
+
+function renderHistoryFilterTabs(filter, counts) {
+    const normalizedFilter = normalizeHistoryFilter(filter);
+    return `
+        <div class="history-filter-tabs" role="tablist" aria-label="History filter">
+            <button class="history-filter-tab${normalizedFilter === 'tests' ? ' is-selected' : ''}" data-history-action="filter-tests" role="tab" aria-selected="${normalizedFilter === 'tests' ? 'true' : 'false'}">
+                <span>Tests</span>
+                <span class="history-filter-tab-count">${counts.tests}</span>
+            </button>
+            <button class="history-filter-tab${normalizedFilter === 'controls' ? ' is-selected' : ''}" data-history-action="filter-controls" role="tab" aria-selected="${normalizedFilter === 'controls' ? 'true' : 'false'}">
+                <span>Controls</span>
+                <span class="history-filter-tab-count">${counts.controls}</span>
+            </button>
+        </div>`;
+}
+
+function formatHistoryDateInput(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getDefaultHistoryExportDateRange() {
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setFullYear(startDate.getFullYear() - 1);
+    return {
+        startDate: formatHistoryDateInput(startDate),
+        endDate: formatHistoryDateInput(endDate)
+    };
+}
+
+function buildHistoryExportState(historyState, nextState = {}) {
+    const defaultRange = getDefaultHistoryExportDateRange();
+    const preferredScope = historyState?.filter === 'controls' ? 'controls' : 'tests';
+
+    return {
+        destination: normalizeHistoryExportDestination(nextState.destination),
+        scope: normalizeHistoryExportScope(nextState.scope ?? preferredScope),
+        startDate: formatHistoryDateInput(nextState.startDate || defaultRange.startDate),
+        endDate: formatHistoryDateInput(nextState.endDate || defaultRange.endDate),
+        notice: nextState.notice ?? ''
+    };
+}
+
+function getHistoryExportDateRange(startDate, endDate) {
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T23:59:59.999`);
+    const valid = !Number.isNaN(start.getTime()) &&
+        !Number.isNaN(end.getTime()) &&
+        start.getTime() <= end.getTime();
+
+    return { start, end, valid };
+}
+
+function filterHistoryFlowsForExport(flows, scope, startDate, endDate) {
+    const normalizedScope = normalizeHistoryExportScope(scope);
+    const range = getHistoryExportDateRange(startDate, endDate);
+    if (!range.valid) return [];
+
+    return flows.filter(flow => {
+        const matchesScope = normalizedScope === 'all'
+            ? true
+            : (normalizedScope === 'controls' ? isHistoryControlFlow(flow) : !isHistoryControlFlow(flow));
+        if (!matchesScope) return false;
+
+        const timestamp = new Date(flow.timestamp);
+        if (Number.isNaN(timestamp.getTime())) return false;
+
+        return timestamp >= range.start && timestamp <= range.end;
+    });
+}
+
+function formatHistoryExportTimestamp(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
+
+function flattenHistoryFlowsForExport(flows) {
+    return flows.flatMap(flow => flow.tests.map(test => ({
+        'Completed At': formatHistoryExportTimestamp(test.timestamp),
+        'Record Type': isHistoryControlFlow(flow) ? 'Control' : 'Test',
+        'Control Type': isHistoryControlFlow(flow) ? flow.scenarioLabel : '',
+        'Flow Result': formatHistoryResultLabel(flow.result),
+        'Test Result': formatHistoryResultLabel(test.overall),
+        'Test Number': String(test.testNumber),
+        'Annotation': getHistoryAnnotationLabel(test.annotation),
+        'Test Type': flow.testTypeName || test.testTypeName || flow.scenarioLabel || 'Test',
+        'Port': String(flow.channelId || ''),
+        'Sample ID': flow.sampleId || '',
+        'Operator ID': flow.operatorId || '',
+        'User': flow.accountMode === 'anonymous' ? 'Anonymous' : (flow.userName || 'Signed In'),
+        'Upload Status': formatUploadStatusLabel(flow.uploadStatus),
+        'Flow ID': flow.flowId ? String(flow.flowId) : '',
+        'Comment': flow.comment || '',
+        'Substances': test.substances.map(substance =>
+            `${substance.name}: ${substance.displayValue || formatHistoryResultLabel(substance.result)}`
+        ).join(' | ')
+    })));
+}
+
+function escapeHistoryCsvValue(value) {
+    const text = String(value ?? '');
+    if (!/[",\n]/.test(text)) return text;
+    return `"${text.replace(/"/g, '""')}"`;
+}
+
+function buildHistoryExportFilename(destination) {
+    const datePart = formatHistoryDateInput(new Date()).replace(/-/g, '');
+    switch (destination) {
+        case 'csv':
+            return `milksafe-history-${datePart}.csv`;
+        case 'lims':
+            return `milksafe-history-${datePart}-lims.json`;
+        default:
+            return `milksafe-history-${datePart}.xls`;
+    }
+}
+
+function sanitizeHistoryFilenamePart(value) {
+    return String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'flow';
+}
+
+function buildHistoryFlowExportFilename(flow, destination) {
+    const flowPart = sanitizeHistoryFilenamePart(flow.flowId || flow.historyKey || `port-${flow.channelId || 'x'}`);
+    const datePart = formatHistoryDateInput(flow.timestamp || new Date()).replace(/-/g, '') || 'export';
+
+    switch (destination) {
+        case 'csv':
+            return `milksafe-${flowPart}-${datePart}.csv`;
+        default:
+            return `milksafe-${flowPart}-${datePart}.xls`;
+    }
+}
+
+function downloadHistoryExportFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function exportHistoryRowsToCsv(rows) {
+    const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+    const lines = [
+        columns.map(escapeHistoryCsvValue).join(',')
+    ];
+
+    rows.forEach(row => {
+        lines.push(columns.map(column => escapeHistoryCsvValue(row[column])).join(','));
+    });
+
+    return `\ufeff${lines.join('\r\n')}`;
+}
+
+function exportHistoryRowsToExcel(rows) {
+    const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+    const headHtml = columns.map(column => `<th>${escapeHtml(column)}</th>`).join('');
+    const bodyHtml = rows.map(row => `
+        <tr>${columns.map(column => `<td>${escapeHtml(row[column])}</td>`).join('')}</tr>
+    `).join('');
+
+    return `\ufeff<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 16px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 12px; }
+        th { background: #e2e8f0; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <table>
+        <thead><tr>${headHtml}</tr></thead>
+        <tbody>${bodyHtml}</tbody>
+    </table>
+</body>
+</html>`;
+}
+
+function performFlowHistoryExport(flow, destination) {
+    const rows = flattenHistoryFlowsForExport([flow]);
+    if (rows.length === 0) {
+        return { ok: false, notice: 'No records available for this flow export.' };
+    }
+
+    switch (destination) {
+        case 'csv':
+            downloadHistoryExportFile(
+                buildHistoryFlowExportFilename(flow, 'csv'),
+                exportHistoryRowsToCsv(rows),
+                'text/csv;charset=utf-8'
+            );
+            return { ok: true, notice: 'CSV export downloaded.' };
+        default:
+            downloadHistoryExportFile(
+                buildHistoryFlowExportFilename(flow, 'excel'),
+                exportHistoryRowsToExcel(rows),
+                'application/vnd.ms-excel;charset=utf-8'
+            );
+            return { ok: true, notice: 'Excel export downloaded.' };
+    }
+}
+
+function performHistoryExport(exportState) {
+    const range = getHistoryExportDateRange(exportState.startDate, exportState.endDate);
+    if (!range.valid) {
+        return { ok: false, notice: 'Start date must be on or before end date.' };
+    }
+
+    const matchingFlows = filterHistoryFlowsForExport(
+        getHistoryFlows(),
+        exportState.scope,
+        exportState.startDate,
+        exportState.endDate
+    );
+    const rows = flattenHistoryFlowsForExport(matchingFlows);
+
+    if (rows.length === 0) {
+        return { ok: false, notice: 'No matching records found for that export range.' };
+    }
+
+    const recordLabel = `${rows.length} record${rows.length === 1 ? '' : 's'}`;
+
+    switch (exportState.destination) {
+        case 'csv':
+            downloadHistoryExportFile(
+                buildHistoryExportFilename('csv'),
+                exportHistoryRowsToCsv(rows),
+                'text/csv;charset=utf-8'
+            );
+            return { ok: true, notice: `CSV export downloaded with ${recordLabel}.` };
+        case 'lims':
+            return { ok: true, notice: `LIMS export queued with ${recordLabel}.` };
+        default:
+            downloadHistoryExportFile(
+                buildHistoryExportFilename('excel'),
+                exportHistoryRowsToExcel(rows),
+                'application/vnd.ms-excel;charset=utf-8'
+            );
+            return { ok: true, notice: `Excel export downloaded with ${recordLabel}.` };
+    }
+}
+
+function renderHistoryListView({
+    allFlows,
+    filteredFlows,
+    filter,
+    page,
+    totalPages,
+    notice = ''
+}) {
+    const counts = getHistoryFilterCounts(allFlows);
+    const start = page * HISTORY_PAGE_SIZE;
+    const pageFlows = filteredFlows.slice(start, start + HISTORY_PAGE_SIZE);
+    const hasAnyHistory = allFlows.length > 0;
+    const hasVisibleFlows = filteredFlows.length > 0;
+    const filteredLabel = getHistoryFilterLabel(filter);
+
+    return `
+        <div class="history-screen-header history-screen-header-list">
+            <div class="history-header-title">
+                <h1>History</h1>
+            </div>
+            ${renderHistoryFilterTabs(filter, counts)}
+            <div class="history-header-actions">
+                <button class="topbar-icon-btn topbar-export-btn" data-history-action="open-export"${hasAnyHistory ? '' : ' disabled'}>Export</button>
                 <button class="topbar-close-btn" data-history-action="close">Close</button>
             </div>
-            <div class="history-screen-body">
-                ${renderHistoryNotice(notice)}
+        </div>
+        <div class="history-screen-body history-list-body">
+            ${renderHistoryNotice(notice)}
+            ${!hasAnyHistory ? `
                 <div class="history-placeholder-panel history-placeholder-panel-simple">
                     <strong>No history yet</strong>
                     <p>No records on this reader yet.</p>
                 </div>
-            </div>`;
-    }
-
-    const start = page * HISTORY_PAGE_SIZE;
-    const pageFlows = flows.slice(start, start + HISTORY_PAGE_SIZE);
-
-    return `
-        <div class="history-screen-header">
-            <div>
-                <h1>History</h1>
-            </div>
-            <button class="topbar-close-btn" data-history-action="close">Close</button>
-        </div>
-        <div class="history-screen-body history-list-body">
-            ${renderHistoryNotice(notice)}
-            <div class="history-flow-list">
-                ${pageFlows.map(flow => `
-                    <button class="history-flow-row is-${getHistoryFlowTone(flow)}" data-history-action="open-flow" data-history-key="${flow.historyKey}">
-                        <div class="history-flow-row-top">
-                            <div class="history-flow-main">
-                                <div class="history-flow-title">${escapeHtml(flow.testTypeName || flow.scenarioLabel)}</div>
-                                <div class="history-flow-meta">${renderHistoryFlowMeta(flow)}</div>
+            ` : ''}
+            ${hasAnyHistory && !hasVisibleFlows ? `
+                <div class="history-placeholder-panel history-placeholder-panel-simple">
+                    <strong>No ${escapeHtml(filteredLabel.toLowerCase())} history</strong>
+                    <p>Try switching filters or exporting everything.</p>
+                </div>
+            ` : ''}
+            ${hasVisibleFlows ? `
+                <div class="history-flow-list">
+                    ${pageFlows.map(flow => `
+                        <button class="history-flow-row is-${getHistoryFlowTone(flow)}" data-history-action="open-flow" data-history-key="${flow.historyKey}">
+                            <div class="history-flow-row-top">
+                                <div class="history-flow-main">
+                                    <div class="history-flow-title">${escapeHtml(flow.testTypeName || flow.scenarioLabel)}</div>
+                                    <div class="history-flow-meta">${renderHistoryFlowMeta(flow)}</div>
+                                </div>
+                                <div class="history-flow-side">
+                                    <span class="history-side-label">Flow Result</span>
+                                    ${renderHistoryResultBadge(flow.result)}
+                                </div>
                             </div>
-                            <div class="history-flow-side">
-                                <span class="history-side-label">Flow Result</span>
-                                ${renderHistoryResultBadge(flow.result)}
+                            <div class="history-flow-row-bottom">
+                                <span class="history-sequence-label">Tests</span>
+                                <div class="history-sequence-row">${renderHistorySequenceChips(flow)}</div>
                             </div>
-                        </div>
-                        <div class="history-flow-row-bottom">
-                            <span class="history-sequence-label">Tests</span>
-                            <div class="history-sequence-row">${renderHistorySequenceChips(flow)}</div>
-                        </div>
-                    </button>
-                `).join('')}
-            </div>
+                        </button>
+                    `).join('')}
+                </div>
+            ` : ''}
         </div>
-        <div class="history-screen-footer">
-            <button class="history-page-btn history-page-btn-jump" data-history-action="prev-page-jump"${page === 0 ? ' disabled' : ''}>Prev 5</button>
-            <button class="history-page-btn" data-history-action="prev-page"${page === 0 ? ' disabled' : ''}>Previous</button>
-            <span class="history-page-indicator">Page ${page + 1} / ${totalPages}</span>
-            <button class="history-page-btn" data-history-action="next-page"${page >= totalPages - 1 ? ' disabled' : ''}>Next</button>
-            <button class="history-page-btn history-page-btn-jump" data-history-action="next-page-jump"${page >= totalPages - 1 ? ' disabled' : ''}>Next 5</button>
-        </div>`;
+        ${hasVisibleFlows ? `
+            <div class="history-screen-footer">
+                <button class="history-page-btn history-page-btn-jump" data-history-action="prev-page-jump"${page === 0 ? ' disabled' : ''}>Prev 5</button>
+                <button class="history-page-btn" data-history-action="prev-page"${page === 0 ? ' disabled' : ''}>Previous</button>
+                <span class="history-page-indicator">Page ${page + 1} / ${totalPages}</span>
+                <button class="history-page-btn" data-history-action="next-page"${page >= totalPages - 1 ? ' disabled' : ''}>Next</button>
+                <button class="history-page-btn history-page-btn-jump" data-history-action="next-page-jump"${page >= totalPages - 1 ? ' disabled' : ''}>Next 5</button>
+            </div>
+        ` : ''}`;
 }
 
 function renderHistoryActionBar(actions) {
@@ -1889,8 +2215,11 @@ function renderHistoryFlowView(flow, historyState) {
     const summaryKicker = isHistoryControlFlow(flow) ? flow.scenarioLabel : 'Flow Result';
     const editingComment = Boolean(historyState.editingComment);
     const commentActionLabel = flow.comment ? 'Edit Comment' : 'Add Comment';
+    const latestFlowTimestamp = formatHistoryDateTime(flow.timestamp, true);
     const flowActions = renderHistoryActionBar([
         '<button class="history-inline-btn" data-history-action="print-flow">Print Group</button>',
+        '<button class="history-inline-btn" data-history-action="export-flow-excel">Export Excel</button>',
+        '<button class="history-inline-btn" data-history-action="export-flow-csv">Export CSV</button>',
         '<button class="history-inline-btn" data-history-action="send-lims">Send to LIMS</button>',
         `<button class="history-inline-btn history-inline-btn-secondary" data-history-action="edit-comment">${commentActionLabel}</button>`
     ]);
@@ -1908,7 +2237,6 @@ function renderHistoryFlowView(flow, historyState) {
         </div>
         <div class="history-screen-body">
             ${renderHistoryNotice(historyState.notice)}
-            ${renderScreenIntroCopy(formatHistoryDateTime(flow.timestamp, true))}
             <section class="history-summary-card is-${tone}">
                 <div class="history-summary-top">
                     <div>
@@ -1918,6 +2246,7 @@ function renderHistoryFlowView(flow, historyState) {
                     ${renderHistoryResultBadge(flow.result, 'lg')}
                 </div>
                 <div class="history-summary-grid">
+                    ${renderHistoryField('Date & Time', latestFlowTimestamp)}
                     ${renderHistoryField('Port', String(flow.channelId || 'Not set'))}
                     ${renderHistoryField('Sample ID', flow.sampleId || 'Not set')}
                     ${renderHistoryField('Operator ID', flow.operatorId || 'Not set')}
@@ -2007,25 +2336,177 @@ function renderHistoryTestView(flow, test, notice = '') {
         </div>`;
 }
 
+function renderHistoryExportModal(exportState, matchingRows) {
+    return `
+        <div class="modal-header history-export-modal-header">
+            <div class="history-export-header-copy">
+                <h2>Export History</h2>
+            </div>
+        </div>
+        <div class="modal-body history-export-modal-body">
+            ${renderHistoryNotice(exportState.notice)}
+            <div class="form-field">
+                <label>Destination</label>
+                <div class="segmented-control compact history-export-segment">
+                    <button class="seg-option${exportState.destination === 'excel' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="excel">Excel</button>
+                    <button class="seg-option${exportState.destination === 'csv' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="csv">CSV</button>
+                    <button class="seg-option${exportState.destination === 'lims' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="lims">LIMS</button>
+                </div>
+            </div>
+            <div class="form-field">
+                <label>Records</label>
+                <div class="segmented-control compact history-export-segment">
+                    <button class="seg-option${exportState.scope === 'tests' ? ' selected' : ''}" data-history-export-action="set-scope" data-history-export-scope="tests">Tests</button>
+                    <button class="seg-option${exportState.scope === 'controls' ? ' selected' : ''}" data-history-export-action="set-scope" data-history-export-scope="controls">Controls</button>
+                    <button class="seg-option${exportState.scope === 'all' ? ' selected' : ''}" data-history-export-action="set-scope" data-history-export-scope="all">Everything</button>
+                </div>
+            </div>
+            <div class="history-export-date-grid">
+                <div class="form-field">
+                    <label>From</label>
+                    <input class="form-input" id="history-export-start-date" type="date" value="${escapeHtml(exportState.startDate)}">
+                </div>
+                <div class="form-field">
+                    <label>To</label>
+                    <input class="form-input" id="history-export-end-date" type="date" value="${escapeHtml(exportState.endDate)}">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn btn-secondary" data-history-export-action="cancel">Cancel</button>
+            <button class="modal-btn btn-primary" data-history-export-action="confirm"${matchingRows.length === 0 ? ' disabled' : ''}>Export</button>
+        </div>`;
+}
+
+function showHistoryExportModal(historyState, nextState = {}) {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('history-export-modal');
+    if (!overlay || !modal) return;
+
+    const currentState = activeModal && activeModal.type === 'history_export' ? activeModal : {};
+    const exportState = buildHistoryExportState(historyState, { ...currentState, ...nextState });
+    const range = getHistoryExportDateRange(exportState.startDate, exportState.endDate);
+    const modalNotice = exportState.notice || (!range.valid ? 'Start date must be on or before end date.' : '');
+    const matchingRows = flattenHistoryFlowsForExport(filterHistoryFlowsForExport(
+        getHistoryFlows(),
+        exportState.scope,
+        exportState.startDate,
+        exportState.endDate
+    ));
+
+    activeModal = {
+        type: 'history_export',
+        historyState: { ...historyState },
+        ...exportState,
+        notice: modalNotice
+    };
+
+    modal.innerHTML = renderHistoryExportModal({
+        ...exportState,
+        notice: modalNotice
+    }, matchingRows);
+    overlay.classList.add('active');
+    modal.classList.add('active');
+
+    modal.querySelectorAll('[data-history-export-action]').forEach(button => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.historyExportAction;
+            const latestState = activeModal?.type === 'history_export'
+                ? activeModal
+                : { historyState, ...exportState };
+
+            switch (action) {
+                case 'cancel':
+                    hideModal();
+                    break;
+                case 'set-destination':
+                    showHistoryExportModal(latestState.historyState, {
+                        destination: button.dataset.historyExportDestination,
+                        scope: latestState.scope,
+                        startDate: latestState.startDate,
+                        endDate: latestState.endDate,
+                        notice: ''
+                    });
+                    break;
+                case 'set-scope':
+                    showHistoryExportModal(latestState.historyState, {
+                        destination: latestState.destination,
+                        scope: button.dataset.historyExportScope,
+                        startDate: latestState.startDate,
+                        endDate: latestState.endDate,
+                        notice: ''
+                    });
+                    break;
+                case 'confirm': {
+                    const startDate = modal.querySelector('#history-export-start-date')?.value || latestState.startDate;
+                    const endDate = modal.querySelector('#history-export-end-date')?.value || latestState.endDate;
+                    const result = performHistoryExport({
+                        destination: latestState.destination,
+                        scope: latestState.scope,
+                        startDate,
+                        endDate
+                    });
+
+                    if (!result.ok) {
+                        showHistoryExportModal(latestState.historyState, {
+                            destination: latestState.destination,
+                            scope: latestState.scope,
+                            startDate,
+                            endDate,
+                            notice: result.notice
+                        });
+                        return;
+                    }
+
+                    hideModal();
+                    showHistoryScreen({
+                        ...latestState.historyState,
+                        notice: result.notice
+                    });
+                    break;
+                }
+            }
+        });
+    });
+
+    ['#history-export-start-date', '#history-export-end-date'].forEach(selector => {
+        const input = modal.querySelector(selector);
+        if (!input) return;
+
+        input.addEventListener('change', () => {
+            const latestState = activeModal?.type === 'history_export'
+                ? activeModal
+                : { historyState, ...exportState };
+            showHistoryExportModal(latestState.historyState, {
+                destination: latestState.destination,
+                scope: latestState.scope,
+                startDate: modal.querySelector('#history-export-start-date')?.value || latestState.startDate,
+                endDate: modal.querySelector('#history-export-end-date')?.value || latestState.endDate,
+                notice: ''
+            });
+        });
+    });
+}
+
 function showHistoryScreen(nextState = {}) {
     const screen = document.getElementById('history-screen');
     if (!screen) return;
 
     const allFlows = getHistoryFlows();
-    const currentState = activeModal && activeModal.type === 'history' ? activeModal : {};
-    const filteredFlows = allFlows;
-    const totalPages = Math.max(Math.ceil(filteredFlows.length / HISTORY_PAGE_SIZE), 1);
+    const currentState = historyScreenState || {};
     const historyState = {
         type: 'history',
         view: nextState.view || currentState.view || 'list',
         flowKey: nextState.flowKey ?? currentState.flowKey ?? null,
         testNumber: nextState.testNumber ?? currentState.testNumber ?? null,
-        page: clampHistoryPage(nextState.page ?? currentState.page ?? 0, totalPages),
-        filter: 'all',
+        filter: normalizeHistoryFilter(nextState.filter ?? currentState.filter ?? 'tests'),
         notice: nextState.notice ?? currentState.notice ?? '',
         editingComment: nextState.editingComment ?? false,
         commentDraft: nextState.commentDraft ?? currentState.commentDraft ?? ''
     };
+    const filteredFlows = filterHistoryFlows(allFlows, historyState.filter);
+    const totalPages = Math.max(Math.ceil(filteredFlows.length / HISTORY_PAGE_SIZE), 1);
+    historyState.page = clampHistoryPage(nextState.page ?? currentState.page ?? 0, totalPages);
 
     let content = '';
 
@@ -2033,7 +2514,14 @@ function showHistoryScreen(nextState = {}) {
         const flow = findHistoryFlowByKey(historyState.flowKey);
         if (!flow) {
             historyState.view = 'list';
-            content = renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.notice);
+            content = renderHistoryListView({
+                allFlows,
+                filteredFlows,
+                filter: historyState.filter,
+                page: historyState.page,
+                totalPages,
+                notice: historyState.notice
+            });
         } else {
             content = renderHistoryFlowView(flow, historyState);
         }
@@ -2044,16 +2532,30 @@ function showHistoryScreen(nextState = {}) {
             historyState.view = flow ? 'flow' : 'list';
             content = flow
                 ? renderHistoryFlowView(flow, historyState)
-                : renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.notice);
+                : renderHistoryListView({
+                    allFlows,
+                    filteredFlows,
+                    filter: historyState.filter,
+                    page: historyState.page,
+                    totalPages,
+                    notice: historyState.notice
+                });
         } else {
             content = renderHistoryTestView(flow, test, historyState.notice);
         }
     } else {
         historyState.view = 'list';
-        content = renderHistoryListView(filteredFlows, historyState.page, totalPages, historyState.notice);
+        content = renderHistoryListView({
+            allFlows,
+            filteredFlows,
+            filter: historyState.filter,
+            page: historyState.page,
+            totalPages,
+            notice: historyState.notice
+        });
     }
 
-    activeModal = historyState;
+    historyScreenState = historyState;
     screen.innerHTML = content;
     screen.classList.add('active');
 
@@ -2115,6 +2617,25 @@ function showHistoryScreen(nextState = {}) {
                         filter: historyState.filter,
                         notice: ''
                     });
+                    break;
+                case 'filter-tests':
+                    showHistoryScreen({
+                        view: 'list',
+                        page: 0,
+                        filter: 'tests',
+                        notice: ''
+                    });
+                    break;
+                case 'filter-controls':
+                    showHistoryScreen({
+                        view: 'list',
+                        page: 0,
+                        filter: 'controls',
+                        notice: ''
+                    });
+                    break;
+                case 'open-export':
+                    showHistoryExportModal(historyState);
                     break;
                 case 'open-flow':
                     showHistoryScreen({
@@ -2180,6 +2701,21 @@ function showHistoryScreen(nextState = {}) {
                         notice: 'Group print queued.'
                     });
                     break;
+                case 'export-flow-excel':
+                case 'export-flow-csv': {
+                    const flow = findHistoryFlowByKey(historyState.flowKey);
+                    const result = flow
+                        ? performFlowHistoryExport(flow, action === 'export-flow-csv' ? 'csv' : 'excel')
+                        : { ok: false, notice: 'Flow export unavailable.' };
+                    showHistoryScreen({
+                        view: 'flow',
+                        flowKey: historyState.flowKey,
+                        page: historyState.page,
+                        filter: historyState.filter,
+                        notice: result.notice
+                    });
+                    break;
+                }
                 case 'print-test':
                     showHistoryScreen({
                         view: 'test',
@@ -2208,12 +2744,13 @@ function hideHistoryScreen() {
     const screen = document.getElementById('history-screen');
     if (!screen) return;
 
+    if (activeModal && activeModal.type === 'history_export') {
+        hideModal();
+    }
+
     screen.classList.remove('active');
     screen.innerHTML = '';
-
-    if (activeModal && activeModal.type === 'history') {
-        activeModal = null;
-    }
+    historyScreenState = null;
 }
 
 // ---- Settings Screen ----
@@ -2292,7 +2829,7 @@ function showSettingsPasswordScreen(errorMessage = '') {
             <div class="settings-password-body">
                 <label class="settings-password-label" for="settings-password-input">Password</label>
                 <input class="form-input" id="settings-password-input" type="password" inputmode="numeric" value="${escapeHtml(SETTINGS_PASSWORD)}" placeholder="Enter password" ${getAutofillIgnoreAttrs('password')}>
-                ${errorMessage ? `<div class="settings-password-error">${escapeHtml(errorMessage)}</div>` : '<div class="settings-password-hint">Reader password: 2026</div>'}
+                ${errorMessage ? `<div class="settings-password-error">${escapeHtml(errorMessage)}</div>` : ''}
             </div>
             <div class="settings-password-actions">
                 <button class="history-close-btn" id="settings-password-cancel">Cancel</button>
@@ -3293,7 +3830,7 @@ function showSettingsDetailScreen(view, state = {}) {
                         <label>Password</label>
                         <input class="form-input" id="settings-factory-password" type="password" inputmode="numeric" value="${escapeHtml(SETTINGS_PASSWORD)}" placeholder="Enter password" ${getAutofillIgnoreAttrs('password')}>
                     </div>
-                    ${detailState.factoryPasswordError ? `<div class="settings-password-error">${escapeHtml(detailState.factoryPasswordError)}</div>` : '<div class="settings-password-hint">Reader password: 2026</div>'}
+                    ${detailState.factoryPasswordError ? `<div class="settings-password-error">${escapeHtml(detailState.factoryPasswordError)}</div>` : ''}
                     <div class="history-action-row">
                         <button class="history-inline-btn history-inline-btn-secondary" id="settings-factory-reset-confirm">Factory Reset</button>
                     </div>
@@ -3816,7 +4353,7 @@ function showSettingsDetailScreen(view, state = {}) {
             if (String(password).trim() !== SETTINGS_PASSWORD) {
                 showSettingsDetailScreen('factory_reset', {
                     focusSection: detailState.focusSection,
-                    factoryPasswordError: 'Wrong password. Use 2026.'
+                    factoryPasswordError: 'Wrong password.'
                 });
                 return;
             }
