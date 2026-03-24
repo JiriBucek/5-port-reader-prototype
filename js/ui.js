@@ -1796,7 +1796,7 @@ function normalizeHistoryExportScope(scope) {
 
 function normalizeHistoryExportDestination(destination) {
     if (destination === 'csv' || destination === 'lims') return destination;
-    return 'excel';
+    return 'csv';
 }
 
 function getHistoryFilterLabel(filter) {
@@ -1957,7 +1957,7 @@ function buildHistoryExportFilename(destination) {
         case 'lims':
             return `milksafe-history-${datePart}-lims.json`;
         default:
-            return `milksafe-history-${datePart}.xls`;
+            return `milksafe-history-${datePart}.csv`;
     }
 }
 
@@ -1977,7 +1977,7 @@ function buildHistoryFlowExportFilename(flow, destination) {
         case 'csv':
             return `milksafe-${flowPart}-${datePart}.csv`;
         default:
-            return `milksafe-${flowPart}-${datePart}.xls`;
+            return `milksafe-${flowPart}-${datePart}.csv`;
     }
 }
 
@@ -2006,33 +2006,6 @@ function exportHistoryRowsToCsv(rows) {
     return `\ufeff${lines.join('\r\n')}`;
 }
 
-function exportHistoryRowsToExcel(rows) {
-    const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
-    const headHtml = columns.map(column => `<th>${escapeHtml(column)}</th>`).join('');
-    const bodyHtml = rows.map(row => `
-        <tr>${columns.map(column => `<td>${escapeHtml(row[column])}</td>`).join('')}</tr>
-    `).join('');
-
-    return `\ufeff<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: Arial, sans-serif; padding: 16px; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 12px; }
-        th { background: #e2e8f0; font-weight: 700; }
-    </style>
-</head>
-<body>
-    <table>
-        <thead><tr>${headHtml}</tr></thead>
-        <tbody>${bodyHtml}</tbody>
-    </table>
-</body>
-</html>`;
-}
-
 function performFlowHistoryExport(flow, destination) {
     const rows = flattenHistoryFlowsForExport([flow]);
     if (rows.length === 0) {
@@ -2048,12 +2021,7 @@ function performFlowHistoryExport(flow, destination) {
             );
             return { ok: true, notice: 'CSV export downloaded.' };
         default:
-            downloadHistoryExportFile(
-                buildHistoryFlowExportFilename(flow, 'excel'),
-                exportHistoryRowsToExcel(rows),
-                'application/vnd.ms-excel;charset=utf-8'
-            );
-            return { ok: true, notice: 'Excel export downloaded.' };
+            return { ok: false, notice: '' };
     }
 }
 
@@ -2088,12 +2056,7 @@ function performHistoryExport(exportState) {
         case 'lims':
             return { ok: true, notice: `LIMS export queued with ${recordLabel}.` };
         default:
-            downloadHistoryExportFile(
-                buildHistoryExportFilename('excel'),
-                exportHistoryRowsToExcel(rows),
-                'application/vnd.ms-excel;charset=utf-8'
-            );
-            return { ok: true, notice: `Excel export downloaded with ${recordLabel}.` };
+            return { ok: false, notice: '' };
     }
 }
 
@@ -2218,7 +2181,6 @@ function renderHistoryFlowView(flow, historyState) {
     const latestFlowTimestamp = formatHistoryDateTime(flow.timestamp, true);
     const flowActions = renderHistoryActionBar([
         '<button class="history-inline-btn" data-history-action="print-flow">Print Group</button>',
-        '<button class="history-inline-btn" data-history-action="export-flow-excel">Export Excel</button>',
         '<button class="history-inline-btn" data-history-action="export-flow-csv">Export CSV</button>',
         '<button class="history-inline-btn" data-history-action="send-lims">Send to LIMS</button>',
         `<button class="history-inline-btn history-inline-btn-secondary" data-history-action="edit-comment">${commentActionLabel}</button>`
@@ -2344,7 +2306,6 @@ function renderHistoryExportModal(exportState, matchingRows) {
             <div class="form-field">
                 <label>Destination</label>
                 <div class="segmented-control compact history-export-segment">
-                    <button class="seg-option${exportState.destination === 'excel' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="excel">Excel</button>
                     <button class="seg-option${exportState.destination === 'csv' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="csv">CSV</button>
                     <button class="seg-option${exportState.destination === 'lims' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="lims">LIMS</button>
                 </div>
@@ -2697,11 +2658,10 @@ function showHistoryScreen(nextState = {}) {
                         notice: 'Group print queued.'
                     });
                     break;
-                case 'export-flow-excel':
                 case 'export-flow-csv': {
                     const flow = findHistoryFlowByKey(historyState.flowKey);
                     const result = flow
-                        ? performFlowHistoryExport(flow, action === 'export-flow-csv' ? 'csv' : 'excel')
+                        ? performFlowHistoryExport(flow, 'csv')
                         : { ok: false, notice: 'Flow export unavailable.' };
                     showHistoryScreen({
                         view: 'flow',
