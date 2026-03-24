@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figma Handoff Catalog - Overview</title>
+    <style>
+        :root {
+            --bg: #f3f5f8;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --surface-3: #eef4ff;
+            --text: #0f172a;
+            --muted: #475569;
+            --line: #dbe2ea;
+            --primary: #2563eb;
+            --primary-soft: #dbeafe;
+            --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+            --radius: 16px;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            margin: 0;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+            background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+        }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        code {
+            font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+        }
+        .layout {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 300px minmax(0, 1fr);
+        }
+        .sidebar {
+            position: sticky;
+            top: 0;
+            align-self: start;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 24px 20px;
+            border-right: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+        }
+        .sidebar h1 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            line-height: 1.1;
+        }
+        .sidebar p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .sidebar-group + .sidebar-group {
+            margin-top: 20px;
+        }
+        .sidebar-label {
+            display: inline-block;
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .sidebar-links,
+        .sidebar-group {
+            display: grid;
+            gap: 8px;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            font-size: 14px;
+            color: var(--muted);
+        }
+        .sidebar-link strong {
+            min-width: 28px;
+            text-align: center;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--text);
+            font-size: 12px;
+        }
+        .sidebar-link.is-active {
+            background: var(--primary-soft);
+            border-color: #bfdbfe;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .sidebar-link.is-active strong {
+            background: #ffffff;
+            color: var(--primary);
+        }
+        .meta-block {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+        .meta-block h3 {
+            margin: 0 0 10px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+        .meta-block p {
+            margin: 0;
+        }
+        .meta-block p + p {
+            margin-top: 8px;
+        }
+        .sidebar-meta::before {
+            content: "6 sections · 49 states";
+            display: block;
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .content {
+            padding: 28px;
+        }
+        .page-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .section-kicker {
+            display: inline-block;
+            margin-bottom: 6px;
+            color: var(--primary);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .page-header h2 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.08;
+        }
+        .section-summary {
+            margin: 10px 0 0;
+            color: var(--muted);
+            max-width: 820px;
+            line-height: 1.55;
+        }
+        .section-count {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .section-card-link {
+            display: block;
+        }
+        .section-card {
+            height: 100%;
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+        .section-card h3 {
+            margin: 0 0 8px;
+            font-size: 20px;
+        }
+        .section-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .overview-card {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+        .overview-card h3 {
+            margin: 0 0 10px;
+            font-size: 20px;
+            line-height: 1.15;
+        }
+        .overview-copy {
+            display: grid;
+            gap: 10px;
+        }
+        .overview-copy p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.58;
+        }
+        .overview-list {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--muted);
+            display: grid;
+            gap: 8px;
+            line-height: 1.5;
+        }
+        .state-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .state-card {
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+        .shot-frame {
+            background: #e2e8f0;
+            padding: 12px;
+            border-bottom: 1px solid var(--line);
+        }
+        .shot-open {
+            width: 100%;
+            display: block;
+            padding: 0;
+            border: none;
+            background: transparent;
+            text-align: left;
+            cursor: zoom-in;
+        }
+        .shot-open img,
+        .shot-missing {
+            display: block;
+            width: 100%;
+            border-radius: 10px;
+            background: #ffffff;
+        }
+        .shot-open img {
+            height: auto;
+        }
+        .shot-open-hint {
+            display: inline-flex;
+            margin-top: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .shot-missing {
+            min-height: 180px;
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            border: 1px dashed var(--line);
+        }
+        .state-copy {
+            padding: 16px;
+        }
+        .state-copy h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            line-height: 1.2;
+        }
+        .state-copy p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .state-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .state-tag {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .state-tag.is-muted {
+            background: var(--surface-2);
+            color: var(--muted);
+        }
+        .log-stack {
+            display: grid;
+            gap: 18px;
+        }
+        .log-card {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+        .log-list {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--muted);
+            display: grid;
+            gap: 8px;
+            line-height: 1.5;
+        }
+        .empty-copy {
+            color: var(--muted);
+        }
+        .viewer {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+        }
+        .viewer[hidden] {
+            display: none;
+        }
+        .viewer-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+        }
+        .viewer-dialog {
+            position: relative;
+            z-index: 1;
+            width: min(96vw, 1680px);
+            max-height: calc(100vh - 32px);
+            margin: 16px auto;
+            padding: 20px;
+            border-radius: 20px;
+            background: var(--surface);
+            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.28);
+            display: grid;
+            gap: 16px;
+        }
+        .viewer-close {
+            justify-self: end;
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--surface-2);
+            color: var(--text);
+            font: inherit;
+            cursor: pointer;
+        }
+        .viewer-copy h2 {
+            margin: 0 0 6px;
+            font-size: 24px;
+            line-height: 1.12;
+        }
+        .viewer-copy p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .viewer-image-wrap {
+            overflow: auto;
+            border-radius: 14px;
+            background: #edf2f7;
+            padding: 12px;
+        }
+        .viewer-image-wrap img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            background: #ffffff;
+        }
+        @media (max-width: 1180px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: static;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+            }
+            .content {
+                padding: 20px;
+            }
+        }
+        @media (max-width: 1100px) {
+            .state-grid,
+            .section-grid,
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+            .page-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .viewer-dialog {
+                width: calc(100vw - 20px);
+                margin: 10px;
+                max-height: calc(100vh - 20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        
+    <aside class="sidebar">
+        <div class="sidebar-main">
+            <h1>Figma Handoff Catalog</h1>
+            <p>Reference screens and implementation states exported from the 5-Port Reader wireframe prototype.</p>
+
+            <div class="sidebar-group">
+                <span class="sidebar-label">Pages</span>
+                <a class="sidebar-link is-active" href="index.html">
+                    <span>Overview</span>
+                </a>
+                <a class="sidebar-link" href="changelog.html">
+                    <span>Change Log</span>
+                </a>
+            </div>
+
+            <div class="sidebar-group">
+                <span class="sidebar-label">Sections</span>
+                
+            <a class="sidebar-link" href="dashboard.html">
+                <span>Five-Port Dashboard</span>
+                <strong>16</strong>
+            </a>
+            
+            <a class="sidebar-link" href="history.html">
+                <span>History</span>
+                <strong>5</strong>
+            </a>
+            
+            <a class="sidebar-link" href="verification.html">
+                <span>Verification</span>
+                <strong>7</strong>
+            </a>
+            
+            <a class="sidebar-link" href="settings.html">
+                <span>Settings</span>
+                <strong>10</strong>
+            </a>
+            
+            <a class="sidebar-link" href="software.html">
+                <span>Software Update</span>
+                <strong>4</strong>
+            </a>
+            
+            <a class="sidebar-link" href="onboarding.html">
+                <span>Onboarding</span>
+                <strong>7</strong>
+            </a>
+            
+            </div>
+        </div>
+
+        <div class="sidebar-meta">
+            
+    <section class="meta-block build-block">
+        <h3>Build</h3>
+        <p><strong>Version:</strong> Version 1</p>
+        <p><strong>Created:</strong> 2026-03-24 14:07</p>
+        <p><strong>Regenerate:</strong> <code>python3 scripts/generate_handoff.py</code></p>
+    </section>
+    
+        </div>
+    </aside>
+    
+        <main class="content">
+            
+    
+    <header class="page-header">
+        <div>
+            <span class="section-kicker">Overview</span>
+            <h2>Device Overview</h2>
+            <p class="section-summary">Use this page as a quick briefing for a designer who has not seen the reader before. It explains what the device does, why some flows exist, and which hardware constraints shape the interface.</p>
+        </div>
+        
+    </header>
+    
+    <div class="overview-grid">
+        
+            <section class="overview-card">
+                <h3>Device Constraints</h3>
+                <div class="overview-copy">
+                    <p>The target display is a small landscape touchscreen at 800 x 480 px.</p><p>There are five physical reader ports below the screen, and the UI often needs to reflect both the on-screen state and the physical cassette state at the same time.</p><p>Assume this is an Android-based device. Native Android patterns such as the keyboard, date and time pickers, screen transitions, modal presentation, and the system navigation area should be used where possible instead of being heavily redesigned.</p>
+                    <ul class="overview-list"><li>Design for fast reading at arm&#x27;s length.</li><li>If something can fit on one screen without scrolling, that is preferred.</li><li>The touchscreen has poor scrolling behavior, so avoid scrolling unless the screen truly needs it.</li></ul>
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Normal Test</h3>
+                <div class="overview-copy">
+                    <p>A normal test is the standard sample workflow. The user configures a port, enters sample and operator information, confirms or selects the test type, inserts the cassette, and starts reading.</p><p>Some tests are read only, while others need incubation first. A positive or conflicting result can trigger a confirmation flow with Test 2 and Test 3.</p><p>The confirmation flow exists only when the next operator action is needed. For example, if Test 1 is negative, the flow is complete and no confirmation modal is shown. If Test 1 is positive, or if Test 2 conflicts, the UI asks the operator to continue with the next test.</p>
+                    <ul class="overview-list"><li>Configuration may happen before cassette insertion.</li><li>Test type can be manual or prefilled from cassette QR.</li><li>Confirmation tests always require a newly inserted cassette.</li><li>Test 2 and Test 3 must stay tied to the same test type as the original test.</li></ul>
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Controls</h3>
+                <div class="overview-copy">
+                    <p>Controls are not normal sample results. They are special runs, mainly positive controls and animal controls.</p><p>These are tests where a positive outcome is expected, so they should stay clearly distinct from normal sample tests.</p><p>They should remain clearly distinguishable from regular tests in both the workflow and the history.</p>
+                    
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Verification</h3>
+                <div class="overview-copy">
+                    <p>Verification is a service or maintenance workflow used to check port performance and reader temperature behavior.</p><p>During verification, the operator uses a physical thermometer to measure the temperature inside the selected port and compares that measured value to the selected 40 C or 50 C target.</p><p>All ports always use the same reader temperature setting. The rest of the verification result is based on device outputs such as light intensity and line ratio values, which show how well the reader can read the cassette lines.</p><p>Each port should be verified every 250 tests by default. The local warning threshold can be set lower on the device if the user wants to see the warning sooner, but the cloud-level expectation remains 250.</p><p>Once verification is completed, that port&#x27;s verification count resets to zero.</p>
+                    
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>QR Scanning</h3>
+                <div class="overview-copy">
+                    <p>The reader supports both strip tests and cassette tests. Strip tests are the older format and do not have QR. Cassette tests are the newer format and can include QR.</p><p>When QR scanning is enabled and a supported cassette is inserted, the reader uses the QR to identify the test type and prefill it so the operator cannot change it.</p><p>This is important because different test types can have different substances, different cassette layouts, and different numbers of lines.</p><p>During confirmation flows, the reader also checks that the next cassette is for the same test type as the original test.</p><p>When QR scanning is off, the operator must choose the test type manually.</p>
+                    <ul class="overview-list"><li>A cassette belongs to a batch, meaning a box of many cassettes of the same type.</li><li>The slot visualization should show the control line plus the test lines for that cassette.</li><li>The test lines can be labeled with short substance abbreviations because some tests have fewer lines and some have more.</li><li>The control line is always present because it shows whether the test itself worked.</li></ul>
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Microswitch</h3>
+                <div class="overview-copy">
+                    <p>The microswitch is the reader&#x27;s cassette insertion sensor.</p><p>Its main use is to detect that a cassette was inserted after configuration so the reader can enable the read action.</p><p>The limitation is that it can detect insertion, but it cannot reliably detect removal.</p><p>When microswitch checking is on, the read actions stay disabled until a cassette is detected. When it is off, the reader allows a fallback service mode where the read buttons stay enabled even without insertion in case the microswitch is broken.</p>
+                    
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Accounts And Settings Access</h3>
+                <div class="overview-copy">
+                    <p>The reader can be used either signed in to the cloud or anonymous.</p><p>Anonymous mode means the device does not send test records to the cloud.</p><p>When the reader is signed in, the allowed test types for that device come from the back end. When it is anonymous, the operator can locally enable or disable test types in Settings using on and off toggles.</p>
+                    <ul class="overview-list"><li>Some settings are open to normal users.</li><li>Some settings require a reader password.</li><li>Once the password is entered, protected settings stay unlocked until the user leaves Settings.</li></ul>
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Other Important Concepts</h3>
+                <div class="overview-copy">
+                    
+                    <ul class="overview-list"><li>Some tests require a specific reader temperature, typically 40 C or 50 C.</li><li>Quantitative tests need a loaded quant curve before they can start.</li><li>History separates Tests and Controls.</li><li>Exports are CSV or LIMS, not Excel.</li><li>Root full-screen views close, while pushed child views use back navigation.</li></ul>
+                </div>
+            </section>
+            
+    </div>
+    
+        </main>
+    </div>
+    
+    <div class="viewer" id="viewer" hidden>
+        <div class="viewer-backdrop" data-viewer-close="true"></div>
+        <div class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
+            <button class="viewer-close" id="viewer-close" aria-label="Close">Close</button>
+            <div class="viewer-copy">
+                <h2 id="viewer-title"></h2>
+                <p id="viewer-description"></p>
+            </div>
+            <div class="viewer-image-wrap">
+                <img id="viewer-image" alt="">
+            </div>
+        </div>
+    </div>
+    
+    
+    <script>
+        (function () {
+            const viewer = document.getElementById('viewer');
+            const viewerImage = document.getElementById('viewer-image');
+            const viewerTitle = document.getElementById('viewer-title');
+            const viewerDescription = document.getElementById('viewer-description');
+            const closeBtn = document.getElementById('viewer-close');
+
+            if (!viewer || !viewerImage || !viewerTitle || !viewerDescription || !closeBtn) return;
+
+            function closeViewer() {
+                viewer.hidden = true;
+                viewer.classList.remove('is-open');
+                viewerImage.removeAttribute('src');
+                viewerImage.alt = '';
+                viewerTitle.textContent = '';
+                viewerDescription.textContent = '';
+            }
+
+            document.querySelectorAll('[data-viewer-src]').forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    viewerImage.src = trigger.dataset.viewerSrc || '';
+                    viewerImage.alt = trigger.dataset.viewerTitle || '';
+                    viewerTitle.textContent = trigger.dataset.viewerTitle || '';
+                    viewerDescription.textContent = trigger.dataset.viewerDescription || '';
+                    viewer.hidden = false;
+                    viewer.classList.add('is-open');
+                });
+            });
+
+            closeBtn.addEventListener('click', closeViewer);
+            viewer.addEventListener('click', event => {
+                if (event.target instanceof HTMLElement && event.target.dataset.viewerClose === 'true') {
+                    closeViewer();
+                }
+            });
+
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !viewer.hidden) {
+                    closeViewer();
+                }
+            });
+        })();
+    </script>
+    
+</body>
+</html>

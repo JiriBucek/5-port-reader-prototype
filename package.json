@@ -1,0 +1,29 @@
+{
+  "name": "5port_reader_prototype",
+  "version": "1.0.0",
+  "description": "A clickable wireframe prototype for a tablet-based milk testing device that measures antibiotics and other substances in milk.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "handoff": "python3 scripts/generate_handoff.py",
+    "handoff:capture": "node scripts/capture_handoff.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JiriBucek/5-port-reader-prototype.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JiriBucek/5-port-reader-prototype/issues"
+  },
+  "homepage": "https://github.com/JiriBucek/5-port-reader-prototype#readme",
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  }
+}

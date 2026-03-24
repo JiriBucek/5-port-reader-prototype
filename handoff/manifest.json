@@ -1,0 +1,498 @@
+{
+  "title": "Figma Handoff Catalog",
+  "subtitle": "Reference screens and implementation states exported from the 5-Port Reader wireframe prototype.",
+  "defaultVersion": "Version 1",
+  "overview": {
+    "intro": "Use this page as a quick briefing for a designer who has not seen the reader before. It explains what the device does, why some flows exist, and which hardware constraints shape the interface.",
+    "blocks": [
+      {
+        "title": "Device Constraints",
+        "body": [
+          "The target display is a small landscape touchscreen at 800 x 480 px.",
+          "There are five physical reader ports below the screen, and the UI often needs to reflect both the on-screen state and the physical cassette state at the same time.",
+          "Assume this is an Android-based device. Native Android patterns such as the keyboard, date and time pickers, screen transitions, modal presentation, and the system navigation area should be used where possible instead of being heavily redesigned."
+        ],
+        "bullets": [
+          "Design for fast reading at arm's length.",
+          "If something can fit on one screen without scrolling, that is preferred.",
+          "The touchscreen has poor scrolling behavior, so avoid scrolling unless the screen truly needs it."
+        ]
+      },
+      {
+        "title": "Normal Test",
+        "body": [
+          "A normal test is the standard sample workflow. The user configures a port, enters sample and operator information, confirms or selects the test type, inserts the cassette, and starts reading.",
+          "Some tests are read only, while others need incubation first. A positive or conflicting result can trigger a confirmation flow with Test 2 and Test 3.",
+          "The confirmation flow exists only when the next operator action is needed. For example, if Test 1 is negative, the flow is complete and no confirmation modal is shown. If Test 1 is positive, or if Test 2 conflicts, the UI asks the operator to continue with the next test."
+        ],
+        "bullets": [
+          "Configuration may happen before cassette insertion.",
+          "Test type can be manual or prefilled from cassette QR.",
+          "Confirmation tests always require a newly inserted cassette.",
+          "Test 2 and Test 3 must stay tied to the same test type as the original test."
+        ]
+      },
+      {
+        "title": "Controls",
+        "body": [
+          "Controls are not normal sample results. They are special runs, mainly positive controls and animal controls.",
+          "These are tests where a positive outcome is expected, so they should stay clearly distinct from normal sample tests.",
+          "They should remain clearly distinguishable from regular tests in both the workflow and the history."
+        ]
+      },
+      {
+        "title": "Verification",
+        "body": [
+          "Verification is a service or maintenance workflow used to check port performance and reader temperature behavior.",
+          "During verification, the operator uses a physical thermometer to measure the temperature inside the selected port and compares that measured value to the selected 40 C or 50 C target.",
+          "All ports always use the same reader temperature setting. The rest of the verification result is based on device outputs such as light intensity and line ratio values, which show how well the reader can read the cassette lines.",
+          "Each port should be verified every 250 tests by default. The local warning threshold can be set lower on the device if the user wants to see the warning sooner, but the cloud-level expectation remains 250.",
+          "Once verification is completed, that port's verification count resets to zero."
+        ]
+      },
+      {
+        "title": "QR Scanning",
+        "body": [
+          "The reader supports both strip tests and cassette tests. Strip tests are the older format and do not have QR. Cassette tests are the newer format and can include QR.",
+          "When QR scanning is enabled and a supported cassette is inserted, the reader uses the QR to identify the test type and prefill it so the operator cannot change it.",
+          "This is important because different test types can have different substances, different cassette layouts, and different numbers of lines.",
+          "During confirmation flows, the reader also checks that the next cassette is for the same test type as the original test.",
+          "When QR scanning is off, the operator must choose the test type manually."
+        ],
+        "bullets": [
+          "A cassette belongs to a batch, meaning a box of many cassettes of the same type.",
+          "The slot visualization should show the control line plus the test lines for that cassette.",
+          "The test lines can be labeled with short substance abbreviations because some tests have fewer lines and some have more.",
+          "The control line is always present because it shows whether the test itself worked."
+        ]
+      },
+      {
+        "title": "Microswitch",
+        "body": [
+          "The microswitch is the reader's cassette insertion sensor.",
+          "Its main use is to detect that a cassette was inserted after configuration so the reader can enable the read action.",
+          "The limitation is that it can detect insertion, but it cannot reliably detect removal.",
+          "When microswitch checking is on, the read actions stay disabled until a cassette is detected. When it is off, the reader allows a fallback service mode where the read buttons stay enabled even without insertion in case the microswitch is broken."
+        ]
+      },
+      {
+        "title": "Accounts And Settings Access",
+        "body": [
+          "The reader can be used either signed in to the cloud or anonymous.",
+          "Anonymous mode means the device does not send test records to the cloud.",
+          "When the reader is signed in, the allowed test types for that device come from the back end. When it is anonymous, the operator can locally enable or disable test types in Settings using on and off toggles."
+        ],
+        "bullets": [
+          "Some settings are open to normal users.",
+          "Some settings require a reader password.",
+          "Once the password is entered, protected settings stay unlocked until the user leaves Settings."
+        ]
+      },
+      {
+        "title": "Other Important Concepts",
+        "bullets": [
+          "Some tests require a specific reader temperature, typically 40 C or 50 C.",
+          "Quantitative tests need a loaded quant curve before they can start.",
+          "History separates Tests and Controls.",
+          "Exports are CSV or LIMS, not Excel.",
+          "Root full-screen views close, while pushed child views use back navigation."
+        ]
+      }
+    ]
+  },
+  "changeLog": [
+    {
+      "date": "2026-03-24",
+      "items": [
+        "Initial version 1."
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "dashboard",
+      "title": "Five-Port Dashboard",
+      "summary": "Core live dashboard states, configuration, processing, confirmation, errors, and completion.",
+      "states": [
+        {
+          "id": "dashboard-empty",
+          "title": "Empty dashboard",
+          "description": "All five channels idle with Configure available.",
+          "preset": "dashboard_empty",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-detected-qr",
+          "title": "Cassette detected",
+          "description": "Inserted QR cassette is detected before configuration.",
+          "preset": "dashboard_detected_qr",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-config-manual-before-insert",
+          "title": "Configure before insert",
+          "description": "Manual configuration with microswitch on and read disabled until cassette insertion.",
+          "preset": "dashboard_config_manual_before_insert",
+          "capture": "screen"
+        },
+        {
+          "id": "dashboard-config-qr-locked",
+          "title": "QR-locked configuration",
+          "description": "Inserted QR cassette auto-fills the test type and locks editing.",
+          "preset": "dashboard_config_qr_locked",
+          "capture": "screen"
+        },
+        {
+          "id": "dashboard-config-microswitch-off",
+          "title": "Microswitch fallback",
+          "description": "Microswitch off leaves reading available without cassette gating.",
+          "preset": "dashboard_config_microswitch_off",
+          "capture": "screen"
+        },
+        {
+          "id": "dashboard-config-quant-curve-required",
+          "title": "Quant curve required",
+          "description": "Quantitative strip selected without a loaded curve.",
+          "preset": "dashboard_config_quant_curve_required",
+          "capture": "screen"
+        },
+        {
+          "id": "dashboard-incubating",
+          "title": "Incubating",
+          "description": "Read plus incubate flow with countdown and abort action.",
+          "preset": "dashboard_incubating",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-error-no-cassette",
+          "title": "Read error: no cassette",
+          "description": "Unified red error state shown when a read starts without a readable cassette.",
+          "preset": "dashboard_error_no_cassette",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-decision-t1-positive",
+          "title": "Decision after Test 1 positive",
+          "description": "Confirmation modal prompting the operator to continue with Test 2.",
+          "preset": "dashboard_decision_t1_positive",
+          "capture": "screen"
+        },
+        {
+          "id": "dashboard-ready-t2-waiting",
+          "title": "Ready for Test 2",
+          "description": "Confirmation flow waiting for a newly inserted cassette.",
+          "preset": "dashboard_ready_t2_waiting_new_cassette",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-ready-t2-inserted",
+          "title": "Test 2 cassette ready",
+          "description": "Fresh cassette inserted and Start Test 2 enabled.",
+          "preset": "dashboard_ready_t2_new_cassette",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-tiebreaker-t2-negative",
+          "title": "Decision after Test 2 negative",
+          "description": "Tie-breaker modal prompting the operator to continue with Test 3.",
+          "preset": "dashboard_tiebreaker_t2_negative",
+          "capture": "screen"
+        },
+        {
+          "id": "dashboard-error-wrong-cassette",
+          "title": "Confirmation error: wrong cassette",
+          "description": "Replacement cassette does not match the expected test type.",
+          "preset": "dashboard_error_wrong_cassette",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-complete-negative",
+          "title": "Completed negative flow",
+          "description": "Single-test flow completed negative.",
+          "preset": "dashboard_complete_negative",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-complete-positive-confirmed",
+          "title": "Completed positive flow",
+          "description": "Confirmation flow resolved positive after the second test.",
+          "preset": "dashboard_complete_positive_after_confirmation",
+          "capture": "device"
+        },
+        {
+          "id": "dashboard-complete-inconclusive",
+          "title": "Completed inconclusive flow",
+          "description": "Confirmation flow aborted after conflicting results.",
+          "preset": "dashboard_complete_inconclusive_after_abort",
+          "capture": "device"
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "title": "History",
+      "summary": "Archived tests and controls, detail drill-down, and export entry points.",
+      "states": [
+        {
+          "id": "history-list-tests",
+          "title": "History list: tests",
+          "description": "Default history list filtered to regular tests.",
+          "preset": "history_list_tests",
+          "capture": "screen"
+        },
+        {
+          "id": "history-list-controls",
+          "title": "History list: controls",
+          "description": "History list filtered to controls only.",
+          "preset": "history_list_controls",
+          "capture": "screen"
+        },
+        {
+          "id": "history-flow-detail",
+          "title": "Flow detail",
+          "description": "Flow-level summary with contained tests and actions.",
+          "preset": "history_flow_detail",
+          "capture": "screen"
+        },
+        {
+          "id": "history-test-detail",
+          "title": "Test detail",
+          "description": "Single-test result detail with substance rows.",
+          "preset": "history_test_detail",
+          "capture": "screen"
+        },
+        {
+          "id": "history-export-modal",
+          "title": "Export modal",
+          "description": "Compact export modal with destination, scope, and date range.",
+          "preset": "history_export_modal",
+          "capture": "screen"
+        }
+      ]
+    },
+    {
+      "id": "verification",
+      "title": "Verification",
+      "summary": "Verification setup, guided run, result detail, and verification archive.",
+      "states": [
+        {
+          "id": "verification-setup",
+          "title": "Verification setup",
+          "description": "Choose a free port and target temperature before starting verification.",
+          "preset": "verification_setup",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-warmup-ready",
+          "title": "Verification warmup ready",
+          "description": "Reader reached target temperature and is ready for thermometer insertion.",
+          "preset": "verification_warmup_ready",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-measure",
+          "title": "Measured temperature",
+          "description": "Operator enters the thermometer reading.",
+          "preset": "verification_measure",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-insert-asset",
+          "title": "Insert verification asset",
+          "description": "Guided step before starting the verification read.",
+          "preset": "verification_insert_asset",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-reading",
+          "title": "Verification reading",
+          "description": "Verification read is in progress.",
+          "preset": "verification_reading",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-result-detail",
+          "title": "Verification result detail",
+          "description": "Detailed verification result with pass and fail criteria.",
+          "preset": "verification_result_detail",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-history",
+          "title": "Verification history",
+          "description": "List of previously saved verification runs.",
+          "preset": "verification_history",
+          "capture": "screen"
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "summary": "Settings home, locking model, and the main detail screens used during setup and maintenance.",
+      "states": [
+        {
+          "id": "settings-locked",
+          "title": "Settings overview",
+          "description": "Protected and password-free settings on the main settings screen.",
+          "preset": "settings_locked",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-password-prompt",
+          "title": "Protected settings password",
+          "description": "Password prompt shown when opening a protected setting.",
+          "preset": "settings_password_prompt",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-unlocked",
+          "title": "Unlocked settings session",
+          "description": "Protected settings unlocked for the rest of the current settings session.",
+          "preset": "settings_unlocked",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-connectivity-wifi-list",
+          "title": "Connectivity: Wi-Fi list",
+          "description": "Wi-Fi network selection inside settings.",
+          "preset": "settings_connectivity_wifi_list",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-connectivity-wifi-success",
+          "title": "Connectivity: Wi-Fi connected",
+          "description": "Connected Wi-Fi success state inside settings.",
+          "preset": "settings_connectivity_wifi_success",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-verification-threshold",
+          "title": "Verification threshold",
+          "description": "Local warning threshold and outstanding verification counts per port.",
+          "preset": "settings_verification_threshold",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-verification-threshold-help",
+          "title": "Verification threshold help",
+          "description": "Help overlay explaining cloud default versus local warning threshold.",
+          "preset": "settings_verification_threshold_help",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-test-types",
+          "title": "Test types",
+          "description": "Loaded test type list shown after unlocking protected settings.",
+          "preset": "settings_test_types",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-curve-loader",
+          "title": "Load quant curve",
+          "description": "Curve loader screen with saved quantitative curves.",
+          "preset": "settings_curve_loader",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-about",
+          "title": "About",
+          "description": "Reader identity and software summary.",
+          "preset": "settings_about",
+          "capture": "screen"
+        }
+      ]
+    },
+    {
+      "id": "software",
+      "title": "Software Update",
+      "summary": "Software update entry and progress states captured from the settings detail flow.",
+      "states": [
+        {
+          "id": "software-home",
+          "title": "Software update home",
+          "description": "Default software update screen before checking for an update.",
+          "preset": "software_home",
+          "capture": "screen"
+        },
+        {
+          "id": "software-package-ready",
+          "title": "Update available",
+          "description": "Cloud update found and ready to download.",
+          "preset": "software_package_ready",
+          "capture": "screen"
+        },
+        {
+          "id": "software-installing",
+          "title": "Installing update",
+          "description": "Software update actively installing.",
+          "preset": "software_installing",
+          "capture": "screen"
+        },
+        {
+          "id": "software-restart-required",
+          "title": "Restart required",
+          "description": "Update loaded and waiting for a restart to complete.",
+          "preset": "software_restart_required",
+          "capture": "screen"
+        }
+      ]
+    },
+    {
+      "id": "onboarding",
+      "title": "Onboarding",
+      "summary": "First-time setup flow, including required choices, connectivity, and cloud account states.",
+      "states": [
+        {
+          "id": "onboarding-language",
+          "title": "Language",
+          "description": "First onboarding step for choosing device language.",
+          "preset": "onboarding_language",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-timezone",
+          "title": "Time zone",
+          "description": "Timezone selection with text filtering and required explicit selection.",
+          "preset": "onboarding_timezone",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-internet-wifi-password",
+          "title": "Internet: Wi-Fi password",
+          "description": "Wi-Fi selected and waiting for network password entry.",
+          "preset": "onboarding_internet_wifi_password",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-cloud-idle",
+          "title": "Cloud account choice",
+          "description": "Operator must either sign in or explicitly continue without login before moving on.",
+          "preset": "onboarding_cloud_idle",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-cloud-error",
+          "title": "Cloud sign-in error",
+          "description": "Cloud account step showing invalid credentials.",
+          "preset": "onboarding_cloud_error",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-cloud-success",
+          "title": "Cloud sign-in success",
+          "description": "Cloud account step after a successful sign-in, with Next enabled.",
+          "preset": "onboarding_cloud_success",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-finish",
+          "title": "Finish setup",
+          "description": "Final onboarding summary before completing first-time setup.",
+          "preset": "onboarding_finish",
+          "capture": "screen"
+        }
+      ]
+    }
+  ]
+}
