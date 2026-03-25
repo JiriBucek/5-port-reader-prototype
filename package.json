@@ -7,8 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "npm run handoff",
+    "build": "python3 scripts/generate_handoff.py --skip-capture",
     "handoff": "python3 scripts/generate_handoff.py",
+    "handoff:html": "python3 scripts/generate_handoff.py --skip-capture",
     "handoff:capture": "node scripts/capture_handoff.mjs",
     "preview": "python3 -m http.server 8080",
     "test": "echo \"Error: no test specified\" && exit 1"
