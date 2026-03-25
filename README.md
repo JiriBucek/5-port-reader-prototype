@@ -126,6 +126,8 @@ Suggested Cloudflare build setup for this repo:
 - Deploy command: `npx wrangler deploy`
 - Non-production branch deploy command: `npx wrangler versions upload`
 - Environment variable: `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`
+- Worker environment variable: `TEAM_DOMAIN=https://milksafe.cloudflareaccess.com`
+- Worker environment variable: `POLICY_AUD=<your Access application AUD tag>`
 - Recommended public URL: a custom subdomain on a Cloudflare-managed zone, for example `reader-preview.example.com`
 
 The deploy bundle contains only the runtime files:
@@ -133,6 +135,7 @@ The deploy bundle contains only the runtime files:
 - `/handoff/` serves the design handoff catalog
 
 For full email-gated production access, protect a custom domain or subdomain with Cloudflare Access. Access can also protect preview deployments on `*.pages.dev`, but a custom domain is the simplest way to gate the main production URL too.
+This Worker validates the `cf-access-jwt-assertion` header before serving static assets, which is required when Access is in front of a Worker.
 
 Before pushing changes that should be deployed, refresh the static handoff pages and the Cloudflare bundle:
 - `npm run release:bundle`

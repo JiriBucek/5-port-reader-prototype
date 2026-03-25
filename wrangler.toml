@@ -1,5 +1,6 @@
 name = "5-port-reader-prototype"
 compatibility_date = "2026-03-25"
+main = "./src/worker.mjs"
 
 [assets]
 directory = "./dist"

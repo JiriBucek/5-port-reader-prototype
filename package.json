@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/JiriBucek/5-port-reader-prototype#readme",
   "devDependencies": {
+    "jose": "^6.1.0",
     "playwright": "^1.58.2"
   }
 }
