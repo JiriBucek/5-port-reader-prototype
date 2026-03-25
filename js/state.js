@@ -297,6 +297,7 @@ const PASSWORD_FREE_SETTINGS_ITEM_IDS = new Set([
     'set-temperature',
     'open-verification',
     'open-verification-history',
+    'open-test-types',
     'open-connectivity',
     'open-brightness',
     'open-curve-loader',
