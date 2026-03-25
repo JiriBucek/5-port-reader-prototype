@@ -11,6 +11,8 @@
     "handoff": "python3 scripts/generate_handoff.py",
     "handoff:html": "python3 scripts/generate_handoff.py --skip-capture",
     "handoff:capture": "node scripts/capture_handoff.mjs",
+    "pages:bundle": "node scripts/prepare_pages_bundle.mjs",
+    "release:bundle": "python3 scripts/generate_handoff.py --skip-capture && node scripts/prepare_pages_bundle.mjs",
     "preview": "python3 -m http.server 8080",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

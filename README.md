@@ -116,13 +116,26 @@ No build process required. Make changes to HTML/CSS/JS files and refresh the bro
 
 ## Deployment
 
-This prototype can be deployed to:
-- GitHub Pages
-- Netlify
-- Vercel
-- Any static hosting service
+Recommended deployment:
+- Cloudflare Pages with Git integration
+- Cloudflare Access for email-based gated access
 
-Simply upload all files to the hosting service.
+Suggested Cloudflare Pages setup for this repo:
+- Production branch: `main`
+- Framework preset: `None`
+- Build command: `node scripts/prepare_pages_bundle.mjs`
+- Build output directory: `dist`
+- Environment variable: `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`
+- Recommended public URL: a custom subdomain on a Cloudflare-managed zone, for example `reader-preview.example.com`
+
+The deploy bundle contains only the runtime files:
+- `/` serves the prototype
+- `/handoff/` serves the design handoff catalog
+
+For full email-gated production access, protect a custom domain or subdomain with Cloudflare Access. Access can also protect preview deployments on `*.pages.dev`, but a custom domain is the simplest way to gate the main production URL too.
+
+Before pushing changes that should be deployed, refresh the static handoff pages and the Cloudflare bundle:
+- `npm run release:bundle`
 
 ## Device Specifications
 
