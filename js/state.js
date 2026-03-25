@@ -916,6 +916,19 @@ function getRecordedTestOverall(testResult) {
     return testResult.overall || getOverallResultFromSubstances(testResult.substances);
 }
 
+function buildHistoryBatchNumber({ batchNumber = '', historyId = 0, channelId = 0, timestamp = '' } = {}) {
+    if (String(batchNumber || '').trim()) {
+        return String(batchNumber).trim();
+    }
+
+    const seed = Math.abs(Number.isFinite(Number(historyId)) ? Number(historyId) : Number(channelId) || 0);
+    const date = timestamp ? new Date(timestamp) : new Date();
+    const year = Number.isFinite(date.getTime()) ? String(date.getUTCFullYear()).slice(-2) : '00';
+    const month = Number.isFinite(date.getTime()) ? String(date.getUTCMonth() + 1).padStart(2, '0') : '00';
+    const day = Number.isFinite(date.getTime()) ? String(date.getUTCDate()).padStart(2, '0') : '00';
+    return `${year}${month}${day}${(seed % 9) + 1}`;
+}
+
 function createHistoryFlowRecord({
     historyId = nextHistoryEntryId(),
     historySource = 'archive',
@@ -938,6 +951,7 @@ function createHistoryFlowRecord({
     result = null,
     synced = false,
     flowId = null,
+    batchNumber = '',
     timestamp = new Date().toISOString(),
     tests = []
 } = {}) {
@@ -1012,6 +1026,12 @@ function createHistoryFlowRecord({
         synced: canUseBackendFlowId,
         uploadStatus: canUseBackendFlowId ? 'synced' : 'not_synced',
         flowId: canUseBackendFlowId ? flowId : null,
+        batchNumber: buildHistoryBatchNumber({
+            batchNumber,
+            historyId: numericHistoryId,
+            channelId,
+            timestamp: lastTimestamp
+        }),
         testCount: normalizedTests.length,
         tests: normalizedTests,
         timestamp: lastTimestamp
@@ -1355,6 +1375,7 @@ function buildHistoryFlowFromChannel(ch) {
         processing: ch.processing,
         result: ch.groupResult || ch.testResults[ch.testResults.length - 1]?.overall || null,
         synced: false,
+        batchNumber: ch.batchNumber || '',
         tests: ch.testResults.map((testResult, index) => ({
             testNumber: testResult.testNumber || index + 1,
             overall: getRecordedTestOverall(testResult) || 'negative',
@@ -1932,6 +1953,7 @@ function archiveSession(ch, reason, forcedGroupResult = null) {
         processing: ch.processing,
         result: finalResult,
         synced: false,
+        batchNumber: ch.batchNumber || '',
         timestamp: ch.testResults[ch.testResults.length - 1]?.completedAt || new Date().toISOString(),
         tests: ch.testResults.map(tr => ({
             testNumber: tr.testNumber,

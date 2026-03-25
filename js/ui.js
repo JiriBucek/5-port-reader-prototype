@@ -2285,7 +2285,7 @@ function renderHistoryTestView(flow, test, notice = '') {
                 <div class="history-summary-grid">
                     ${renderHistoryField('Date & Time', formatHistoryDateTime(test.timestamp, true))}
                     ${renderHistoryField('Annotation', getHistoryAnnotationLabel(test.annotation))}
-                    ${renderHistoryField('Upload Status', formatUploadStatusLabel(flow.uploadStatus))}
+                    ${renderHistoryField('Batch Number', flow.batchNumber || 'Not set')}
                 </div>
             </section>
             <section class="history-section-card">
