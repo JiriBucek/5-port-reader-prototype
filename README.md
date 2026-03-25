@@ -117,14 +117,14 @@ No build process required. Make changes to HTML/CSS/JS files and refresh the bro
 ## Deployment
 
 Recommended deployment:
-- Cloudflare Pages with Git integration
+- Cloudflare Workers Builds with Git integration
 - Cloudflare Access for email-based gated access
 
-Suggested Cloudflare Pages setup for this repo:
+Suggested Cloudflare build setup for this repo:
 - Production branch: `main`
-- Framework preset: `None`
 - Build command: `node scripts/prepare_pages_bundle.mjs`
-- Build output directory: `dist`
+- Deploy command: `npx wrangler deploy`
+- Non-production branch deploy command: `npx wrangler versions upload`
 - Environment variable: `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`
 - Recommended public URL: a custom subdomain on a Cloudflare-managed zone, for example `reader-preview.example.com`
 
