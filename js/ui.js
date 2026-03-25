@@ -329,23 +329,19 @@ function renderCardStatus(ch) {
             const resultKey = getRecordedTestOverall(lastResult);
             const testNum = lastResult.testNumber;
             if (testNum === 1 && resultKey === 'positive') {
-                statusHtml = `<span class="status-text status-error">T1 positive</span>
-                              <span class="status-text status-secondary status-waiting">Start T2</span>`;
-                statusClass = ' is-dual';
+                statusHtml = `<span class="status-text status-error">T1 positive</span>`;
+                statusClass = ' is-single';
             } else if (testNum === 2 && resultKey === 'negative') {
-                statusHtml = `<span class="status-text status-success">T2 negative</span>
-                              <span class="status-text status-secondary status-waiting">Start T3</span>`;
-                statusClass = ' is-dual';
+                statusHtml = `<span class="status-text status-success">T2 negative</span>`;
+                statusClass = ' is-single';
             }
             break;
         }
 
         case STATES.READY_FOR_TEST_N: {
-            const nextTest = ch.currentTestNumber + 1;
             const cassetteReady = hasFreshConfirmationCassette(ch);
             statusHtml = `${renderConfirmationHistory(ch)}
-                          <span class="status-text">${cassetteReady ? 'New cassette ready' : 'Insert new cassette'}</span>
-                          <span class="status-text status-secondary status-waiting">Start T${nextTest}</span>`;
+                          <span class="status-text">${cassetteReady ? 'New cassette ready' : 'Insert new cassette'}</span>`;
             statusClass = ' is-history';
             break;
         }
@@ -463,7 +459,7 @@ function renderCardAction(ch) {
             break;
 
         case STATES.READY_FOR_TEST_N:
-            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}"${hasFreshConfirmationCassette(ch) ? '' : ' disabled'}>Start Test ${ch.currentTestNumber + 1}</button>`;
+            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}"${hasFreshConfirmationCassette(ch) ? '' : ' disabled'}>Start</button>`;
             secondaryButtons = [
                 `<button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort Flow</button>`
             ];
@@ -755,6 +751,11 @@ function getDraftSelection(draft, qrLocked) {
         return null;
     }
 
+    const explicitSelection = getTestTypeById(draft.testTypeId);
+    if (explicitSelection) {
+        return explicitSelection;
+    }
+
     return getDisplayTestType(draft.testTypeId, draft.fallbackCassetteType, qrLocked);
 }
 
@@ -1029,7 +1030,19 @@ function renderConfigTemperatureGate(draft, qrLocked) {
         <span class="config-temp-copy">${validation.currentTemperatureLabel} device, ${validation.requiredTemperature} C required</span>`;
 }
 
-function getConfigTemperatureStatusClass(testTypeId, cassetteType) {
+function renderConfigStatusGate(draft, qrLocked, blockingMessage = '') {
+    if (blockingMessage) {
+        return `
+            <span class="config-temp-badge">Blocked</span>
+            <span class="config-temp-copy">${escapeHtml(blockingMessage)}</span>`;
+    }
+
+    return renderConfigTemperatureGate(draft, qrLocked);
+}
+
+function getConfigTemperatureStatusClass(testTypeId, cassetteType, blockingMessage = '') {
+    if (blockingMessage) return ' is-invalid';
+
     const validation = getTemperatureValidation(testTypeId, cassetteType);
     if (validation.bypassed || validation.requiredTemperature == null) return '';
     return validation.ok ? ' is-valid' : ' is-invalid';
@@ -1222,7 +1235,7 @@ function showConfigModal(ch, draft = null, view = 'form') {
     const temperatureValidation = getTemperatureValidation(selectedType?.id, selectedType?.cassetteType);
     const hasRequiredCurve = !selectedType?.quantitative || Boolean(selectedCurve?.id);
     const blockingMessage = !selectedTypeEnabled
-        ? `${selectedType?.name || 'This test type'} is not enabled for the current reader profile.`
+        ? `${selectedType?.name || 'This test type'} is not enabled for the current site.`
         : (fastQrOnlyMode && !selectedType?.id
             ? 'FAST QR only mode is enabled. Insert a supported QR cassette to continue.'
             : (!selectedType ? 'Select test type to continue.' : ''));
@@ -1465,14 +1478,13 @@ function showConfigModal(ch, draft = null, view = 'form') {
                         ${selectedCurve ? '' : '<div class="config-note is-error">Choose or load a curve.</div>'}
                     </div>
                 ` : ''}
-                ${selectedType?.requiredTemperature != null ? `
+                ${(blockingMessage || selectedType?.requiredTemperature != null) ? `
                     <div class="form-field form-field-temp-status">
-                        <div class="config-temp-status${getConfigTemperatureStatusClass(selectedType?.id, selectedType?.cassetteType)}" id="cfg-temp-status">
-                            ${renderConfigTemperatureGate(nextDraft, qrLocked)}
+                        <div class="config-temp-status${getConfigTemperatureStatusClass(selectedType?.id, selectedType?.cassetteType, blockingMessage)}" id="cfg-temp-status">
+                            ${renderConfigStatusGate(nextDraft, qrLocked, blockingMessage)}
                         </div>
                     </div>
                 ` : ''}
-                ${blockingMessage ? `<div class="config-note is-error config-note-blocking">${escapeHtml(blockingMessage)}</div>` : ''}
                 ${!blockingMessage && readGateMessage ? `<div class="config-note config-note-blocking is-neutral">${escapeHtml(readGateMessage)}</div>` : ''}
                 ${!blockingMessage && !readGateMessage && bypassMessage ? `<div class="config-note config-note-blocking is-neutral">${escapeHtml(bypassMessage)}</div>` : ''}
             </div>

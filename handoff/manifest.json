@@ -34,16 +34,202 @@
         ]
       },
       {
-        "title": "Confirmation Flow",
+        "title": "Individual Test vs Test Flow",
         "body": [
-          "If the first result needs confirmation, the device guides the operator to Test 2 and sometimes Test 3.",
-          "A modal appears only when the operator needs to make the next decision or take the next step. If the flow is already complete, no extra modal is shown."
+          "An individual test is one single cassette read. It always describes the result of that one cassette only.",
+          "A test flow is the whole sequence for one sample on one port. A flow can contain one test, two tests, or three tests depending on whether confirmation is needed."
+        ],
+        "definitions": [
+          {
+            "label": "Individual negative",
+            "tone": "negative",
+            "description": "One cassette read came out negative."
+          },
+          {
+            "label": "Individual positive",
+            "tone": "positive",
+            "description": "One cassette read came out positive."
+          },
+          {
+            "label": "Flow negative",
+            "tone": "negative",
+            "description": "The whole sample flow ended negative, even if more than one cassette was used."
+          },
+          {
+            "label": "Flow positive",
+            "tone": "positive",
+            "description": "The whole sample flow ended positive, even if more than one cassette was used."
+          },
+          {
+            "label": "Flow inconclusive",
+            "tone": "inconclusive",
+            "description": "The operator aborted the confirmation flow before it reached a final positive or negative end."
+          }
+        ]
+      },
+      {
+        "title": "Test Labels Used In History",
+        "body": [
+          "The interface uses short names like T1, T2, and T3 in compact places such as buttons and dashboard cards.",
+          "In history and detail views, the same three steps are labeled with longer names so the user can see where each cassette belongs in the full sample flow."
+        ],
+        "definitions": [
+          {
+            "label": "Original",
+            "tone": "neutral",
+            "description": "The first cassette read for the sample. This is the same step the dashboard often calls T1."
+          },
+          {
+            "label": "First Confirmation",
+            "tone": "neutral",
+            "description": "The second cassette read for the same sample. This is the same step the dashboard often calls T2."
+          },
+          {
+            "label": "Second Confirmation",
+            "tone": "neutral",
+            "description": "The third cassette read for the same sample. This is the same step the dashboard often calls T3."
+          }
         ],
         "bullets": [
-          "Test 2 and Test 3 always require a newly inserted cassette.",
-          "The next cassette must be the same test type as the original test.",
-          "If Test 1 is negative, the flow ends without a confirmation modal."
+          "Original = Test 1 = T1",
+          "First Confirmation = Test 2 = T2",
+          "Second Confirmation = Test 3 = T3"
         ]
+      },
+      {
+        "title": "Confirmation Flow",
+        "body": [
+          "Confirmation starts only when the first individual test is positive. If the first individual test is negative, the whole flow finishes immediately and no confirmation modal is shown.",
+          "From there, the operator can continue to the next test or abort the flow. Aborting at any confirmation step leads to an inconclusive flow result.",
+          "In the dashboard, the steps are often shortened to T1, T2, and T3. In history, the same steps appear as Original, First Confirmation, and Second Confirmation."
+        ],
+        "bullets": [
+          "Flow negative can happen after 1 test or after 3 tests.",
+          "Flow positive can happen after 2 tests or after 3 tests.",
+          "Flow inconclusive happens only when the operator aborts the confirmation flow.",
+          "Test 2 and Test 3 always require a newly inserted cassette.",
+          "The next cassette must be the same test type as the original test."
+        ],
+        "flowDiagram": {
+          "start": {
+            "label": "T1 / Original individual result",
+            "tone": "neutral"
+          },
+          "branches": [
+            {
+              "event": {
+                "label": "Individual negative",
+                "tone": "negative"
+              },
+              "result": {
+                "label": "Flow negative",
+                "tone": "negative"
+              },
+              "meta": "1 test"
+            },
+            {
+              "event": {
+                "label": "Individual positive",
+                "tone": "positive"
+              },
+              "next": {
+                "label": "Confirmation required",
+                "tone": "neutral"
+              },
+              "children": [
+                {
+                  "event": {
+                    "label": "Abort",
+                    "tone": "warning"
+                  },
+                  "result": {
+                    "label": "Flow inconclusive",
+                    "tone": "inconclusive"
+                  }
+                },
+                {
+                  "event": {
+                    "label": "Continue",
+                    "tone": "neutral"
+                  },
+                  "next": {
+                    "label": "Insert new cassette and run T2 / First Confirmation",
+                    "tone": "neutral"
+                  },
+                  "children": [
+                    {
+                      "event": {
+                        "label": "T2 individual positive",
+                        "tone": "positive"
+                      },
+                      "result": {
+                        "label": "Flow positive",
+                        "tone": "positive"
+                      },
+                      "meta": "2 tests"
+                    },
+                    {
+                      "event": {
+                        "label": "T2 individual negative",
+                        "tone": "negative"
+                      },
+                      "next": {
+                        "label": "Tiebreaker required",
+                        "tone": "neutral"
+                      },
+                      "children": [
+                        {
+                          "event": {
+                            "label": "Abort",
+                            "tone": "warning"
+                          },
+                          "result": {
+                            "label": "Flow inconclusive",
+                            "tone": "inconclusive"
+                          }
+                        },
+                        {
+                          "event": {
+                            "label": "Continue",
+                            "tone": "neutral"
+                          },
+                          "next": {
+                            "label": "Insert new cassette and run T3 / Second Confirmation",
+                            "tone": "neutral"
+                          },
+                          "children": [
+                            {
+                              "event": {
+                                "label": "T3 individual positive",
+                                "tone": "positive"
+                              },
+                              "result": {
+                                "label": "Flow positive",
+                                "tone": "positive"
+                              },
+                              "meta": "3 tests"
+                            },
+                            {
+                              "event": {
+                                "label": "T3 individual negative",
+                                "tone": "negative"
+                              },
+                              "result": {
+                                "label": "Flow negative",
+                                "tone": "negative"
+                              },
+                              "meta": "3 tests"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "title": "Controls",
@@ -128,147 +314,335 @@
     {
       "id": "dashboard",
       "title": "Five-Port Dashboard",
-      "summary": "Core live dashboard states, configuration, processing, confirmation, errors, and completion.",
+      "summary": "Core dashboard states grouped by setup, selection, quant workflow, confirmation, and completion.",
+      "subsections": [
+        {
+          "id": "configuration",
+          "title": "Configuration",
+          "summary": "How a port is prepared before reading, including QR prefill, cassette gating, and temperature checks."
+        },
+        {
+          "id": "test-selection",
+          "title": "Test Selection",
+          "summary": "How manual test type selection looks across the different test families and badge combinations."
+        },
+        {
+          "id": "quant-curve-loading",
+          "title": "Quant Curve Loading",
+          "summary": "How quantitative tests block, load, and confirm a required quant curve before reading."
+        },
+        {
+          "id": "confirmation-flow",
+          "title": "Confirmation Flow",
+          "summary": "How Test 2 and Test 3 are guided, including fresh cassette requirements and cassette mismatch edge cases."
+        },
+        {
+          "id": "read-results-errors",
+          "title": "Read, Results, and Errors",
+          "summary": "What active processing, retryable errors, and completed flows look like on the live dashboard."
+        },
+        {
+          "id": "flow-details",
+          "title": "Flow Details",
+          "summary": "The long scrollable detail modal that opens from View Details after a completed run."
+        }
+      ],
       "states": [
         {
           "id": "dashboard-empty",
           "title": "Empty dashboard",
           "description": "All five channels idle with Configure available.",
           "preset": "dashboard_empty",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "configuration"
         },
         {
           "id": "dashboard-detected-qr",
           "title": "Cassette detected",
           "description": "Inserted QR cassette is detected before configuration.",
           "preset": "dashboard_detected_qr",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "configuration"
+        },
+        {
+          "id": "dashboard-detected-strip",
+          "title": "Strip detected",
+          "description": "Inserted strip is detected before configuration, but the test type is not prefilled because strips do not have QR.",
+          "preset": "dashboard_detected_strip",
+          "capture": "device",
+          "subsection": "configuration"
         },
         {
           "id": "dashboard-config-manual-before-insert",
           "title": "Configure before insert",
           "description": "Manual configuration with microswitch on and read disabled until cassette insertion.",
           "preset": "dashboard_config_manual_before_insert",
-          "capture": "screen"
-        },
-        {
-          "id": "dashboard-type-picker",
-          "title": "Choose test type",
-          "description": "Manual test type picker showing different badge combinations across qualitative, quantitative, strip, and cassette tests.",
-          "preset": "dashboard_type_picker",
-          "capture": "screen"
-        },
-        {
-          "id": "dashboard-type-picker-quantitative",
-          "title": "Choose test type: quantitative",
-          "description": "Manual test type picker filtered to quantitative test types so the Quant badge is visible.",
-          "preset": "dashboard_type_picker_quantitative",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "configuration"
         },
         {
           "id": "dashboard-config-qr-locked",
           "title": "QR-locked configuration",
           "description": "Inserted QR cassette auto-fills the test type and locks editing.",
           "preset": "dashboard_config_qr_locked",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "configuration"
         },
         {
           "id": "dashboard-config-microswitch-off",
           "title": "Microswitch fallback",
           "description": "Microswitch off leaves reading available without cassette gating.",
           "preset": "dashboard_config_microswitch_off",
-          "capture": "screen"
-        },
-        {
-          "id": "dashboard-config-quant-curve-required",
-          "title": "Quant curve required",
-          "description": "Quantitative strip selected without a loaded curve.",
-          "preset": "dashboard_config_quant_curve_required",
-          "capture": "screen"
-        },
-        {
-          "id": "dashboard-curve-picker",
-          "title": "Load quant curve",
-          "description": "Quant curve picker opened from the dashboard configuration flow.",
-          "preset": "dashboard_curve_picker",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "configuration"
         },
         {
           "id": "dashboard-temperature-mismatch",
           "title": "Temperature not correct",
           "description": "Selected test needs a different reader temperature, so reading is blocked until the temperature matches.",
           "preset": "dashboard_temperature_mismatch",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "configuration"
         },
         {
-          "id": "dashboard-incubating",
-          "title": "Incubating",
-          "description": "Read plus incubate flow with countdown and abort action.",
-          "preset": "dashboard_incubating",
-          "capture": "device"
+          "id": "dashboard-config-test-type-disabled",
+          "title": "Test type disabled in profile",
+          "description": "Signed-in reader profile blocks the selected test type, so the configuration form shows a blocking error.",
+          "preset": "dashboard_config_test_type_disabled",
+          "capture": "screen",
+          "subsection": "configuration"
         },
         {
-          "id": "dashboard-error-no-cassette",
-          "title": "Read error: no cassette",
-          "description": "Unified red error state shown when a read starts without a readable cassette.",
-          "preset": "dashboard_error_no_cassette",
-          "capture": "device"
+          "id": "dashboard-type-picker",
+          "title": "Choose test type",
+          "description": "Manual test type picker showing different badge combinations across qualitative, quantitative, strip, and cassette tests.",
+          "preset": "dashboard_type_picker",
+          "capture": "screen",
+          "subsection": "test-selection"
+        },
+        {
+          "id": "dashboard-config-qr-disabled-manual",
+          "title": "QR cassette inserted, QR off",
+          "description": "A QR-capable cassette is inserted, but QR scanning is disabled, so the operator must choose the test type manually.",
+          "preset": "dashboard_config_qr_disabled_manual",
+          "capture": "screen",
+          "subsection": "test-selection"
+        },
+        {
+          "id": "dashboard-type-picker-quantitative",
+          "title": "Choose test type: quantitative",
+          "description": "Manual test type picker filtered to quantitative test types so the Quant badge is visible.",
+          "preset": "dashboard_type_picker_quantitative",
+          "capture": "screen",
+          "subsection": "test-selection"
+        },
+        {
+          "id": "dashboard-config-quant-curve-required",
+          "title": "Quant curve required",
+          "description": "Quantitative strip selected without a loaded curve.",
+          "preset": "dashboard_config_quant_curve_required",
+          "capture": "screen",
+          "subsection": "quant-curve-loading"
+        },
+        {
+          "id": "dashboard-curve-picker",
+          "title": "Load quant curve",
+          "description": "Quant curve picker opened from the dashboard configuration flow.",
+          "preset": "dashboard_curve_picker",
+          "capture": "screen",
+          "subsection": "quant-curve-loading"
         },
         {
           "id": "dashboard-decision-t1-positive",
           "title": "Decision after Test 1 positive",
           "description": "Confirmation modal prompting the operator to continue with Test 2.",
           "preset": "dashboard_decision_t1_positive",
-          "capture": "screen"
+          "capture": "decision_tall",
+          "subsection": "confirmation-flow"
         },
         {
           "id": "dashboard-ready-t2-waiting",
           "title": "Ready for Test 2",
           "description": "Confirmation flow waiting for a newly inserted cassette.",
           "preset": "dashboard_ready_t2_waiting_new_cassette",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "confirmation-flow"
         },
         {
           "id": "dashboard-ready-t2-inserted",
           "title": "Test 2 cassette ready",
-          "description": "Fresh cassette inserted and Start Test 2 enabled.",
+          "description": "Fresh cassette inserted and the confirmation flow is ready to continue.",
           "preset": "dashboard_ready_t2_new_cassette",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "confirmation-flow"
         },
         {
           "id": "dashboard-tiebreaker-t2-negative",
           "title": "Decision after Test 2 negative",
           "description": "Tie-breaker modal prompting the operator to continue with Test 3.",
           "preset": "dashboard_tiebreaker_t2_negative",
-          "capture": "screen"
+          "capture": "decision_tall",
+          "subsection": "confirmation-flow"
+        },
+        {
+          "id": "dashboard-stop-confirmation",
+          "title": "Abort flow confirmation",
+          "description": "Abort-flow modal summarizing the completed tests before the operator confirms an inconclusive result.",
+          "preset": "dashboard_stop_confirmation",
+          "capture": "decision_tall",
+          "subsection": "confirmation-flow"
+        },
+        {
+          "id": "dashboard-ready-t3-waiting",
+          "title": "Ready for Test 3",
+          "description": "Tie-breaker flow waiting for a newly inserted cassette before Test 3 can start.",
+          "preset": "dashboard_ready_t3_waiting_new_cassette",
+          "capture": "device",
+          "subsection": "confirmation-flow"
+        },
+        {
+          "id": "dashboard-ready-t3-inserted",
+          "title": "Test 3 cassette ready",
+          "description": "Fresh cassette inserted and the tie-breaker flow is ready to continue.",
+          "preset": "dashboard_ready_t3_new_cassette",
+          "capture": "device",
+          "subsection": "confirmation-flow"
         },
         {
           "id": "dashboard-error-wrong-cassette",
           "title": "Confirmation error: wrong cassette",
           "description": "Replacement cassette does not match the expected test type.",
           "preset": "dashboard_error_wrong_cassette",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "confirmation-flow"
+        },
+        {
+          "id": "dashboard-error-used-cassette",
+          "title": "Confirmation error: used cassette",
+          "description": "Replacement cassette was already used, so the operator must insert a new one.",
+          "preset": "dashboard_error_used_cassette",
+          "capture": "device",
+          "subsection": "confirmation-flow"
+        },
+        {
+          "id": "dashboard-incubating",
+          "title": "Incubating",
+          "description": "Read plus incubate flow with countdown and abort action.",
+          "preset": "dashboard_incubating",
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-reading-cassette",
+          "title": "Reading cassette",
+          "description": "Active read in progress after the cassette has been accepted and the run has started.",
+          "preset": "dashboard_reading_cassette",
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-error-no-cassette",
+          "title": "Read error: no cassette",
+          "description": "Unified red error state shown when a read starts without a readable cassette.",
+          "preset": "dashboard_error_no_cassette",
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-error-incubation-aborted",
+          "title": "Read error: incubation interrupted",
+          "description": "Incubation was stopped by the user, so the same retry-or-abort error state is shown.",
+          "preset": "dashboard_error_incubation_aborted",
+          "capture": "device",
+          "subsection": "read-results-errors"
         },
         {
           "id": "dashboard-complete-negative",
           "title": "Completed negative flow",
-          "description": "Single-test flow completed negative.",
+          "description": "Single-test flow completed negative without opening a confirmation modal.",
           "preset": "dashboard_complete_negative",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "read-results-errors"
         },
         {
           "id": "dashboard-complete-positive-confirmed",
           "title": "Completed positive flow",
           "description": "Confirmation flow resolved positive after the second test.",
           "preset": "dashboard_complete_positive_after_confirmation",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "read-results-errors"
         },
         {
           "id": "dashboard-complete-inconclusive",
           "title": "Completed inconclusive flow",
           "description": "Confirmation flow aborted after conflicting results.",
           "preset": "dashboard_complete_inconclusive_after_abort",
-          "capture": "device"
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-positive-control-positive",
+          "title": "Positive control: positive result",
+          "description": "Positive control completed with the expected positive result.",
+          "preset": "dashboard_positive_control_positive",
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-positive-control-negative",
+          "title": "Positive control: negative result",
+          "description": "Positive control completed with an unexpected negative result.",
+          "preset": "dashboard_positive_control_negative",
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-animal-control-positive",
+          "title": "Animal control: positive result",
+          "description": "Animal control completed with a positive result so the dashboard shows the distinct control labeling.",
+          "preset": "dashboard_animal_control_positive",
+          "capture": "device",
+          "subsection": "read-results-errors"
+        },
+        {
+          "id": "dashboard-detail-negative",
+          "title": "Flow detail: negative result",
+          "description": "Detailed modal for a completed single-test negative flow, including the full scrollable substance area.",
+          "preset": "dashboard_detail_negative",
+          "capture": "detail_tall",
+          "subsection": "flow-details"
+        },
+        {
+          "id": "dashboard-detail-positive-confirmed",
+          "title": "Flow detail: confirmed positive",
+          "description": "Detailed modal for a completed positive confirmation flow with both contained tests visible.",
+          "preset": "dashboard_detail_positive_confirmed",
+          "capture": "detail_tall",
+          "subsection": "flow-details"
+        },
+        {
+          "id": "dashboard-detail-inconclusive",
+          "title": "Flow detail: inconclusive",
+          "description": "Detailed modal for an inconclusive confirmation flow after conflicting test results.",
+          "preset": "dashboard_detail_inconclusive",
+          "capture": "detail_tall",
+          "subsection": "flow-details"
+        },
+        {
+          "id": "dashboard-detail-positive-control-positive",
+          "title": "Flow detail: positive control positive",
+          "description": "Detailed modal for a positive control with the expected positive result.",
+          "preset": "dashboard_detail_positive_control_positive",
+          "capture": "detail_tall",
+          "subsection": "flow-details"
+        },
+        {
+          "id": "dashboard-detail-positive-control-negative",
+          "title": "Flow detail: positive control negative",
+          "description": "Detailed modal for a positive control with an unexpected negative result.",
+          "preset": "dashboard_detail_positive_control_negative",
+          "capture": "detail_tall",
+          "subsection": "flow-details"
         }
       ]
     },

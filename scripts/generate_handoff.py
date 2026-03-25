@@ -77,6 +77,43 @@ def total_state_count(sections: list[dict]) -> int:
     return sum(len(section.get("states", [])) for section in sections)
 
 
+def group_section_states(section: dict) -> list[dict]:
+    states = section.get("states", [])
+    subsections = section.get("subsections", [])
+    if not subsections:
+        return []
+
+    grouped = []
+    assigned_ids = set()
+
+    for subsection in subsections:
+        subsection_states = [
+            state for state in states
+            if state.get("subsection") == subsection.get("id")
+        ]
+        if not subsection_states:
+            continue
+        grouped.append({
+            **subsection,
+            "states": subsection_states
+        })
+        assigned_ids.update(state["id"] for state in subsection_states)
+
+    ungrouped_states = [
+        state for state in states
+        if state.get("id") not in assigned_ids
+    ]
+    if ungrouped_states:
+        grouped.append({
+            "id": "other",
+            "title": "Other States",
+            "summary": "",
+            "states": ungrouped_states
+        })
+
+    return grouped
+
+
 def render_build_block(version: str, created_at: str) -> str:
     return f"""
     <section class="meta-block build-block">
@@ -241,6 +278,27 @@ def render_section_cards(section: dict) -> str:
     return "".join(render_state_card(state) for state in section.get("states", []))
 
 
+def render_subsection_block(subsection: dict) -> str:
+    states = subsection.get("states", [])
+    summary = subsection.get("summary", "")
+    summary_markup = f"<p class=\"subsection-summary\">{html.escape(summary)}</p>" if summary else ""
+    grid_class = "state-grid state-grid-single" if subsection.get("layout") == "single" else "state-grid"
+    return f"""
+    <section class="subsection-block" id="subsection-{html.escape(subsection.get('id', ''))}">
+        <header class="subsection-header">
+            <div>
+                <h3>{html.escape(subsection.get('title', ''))}</h3>
+                {summary_markup}
+            </div>
+            <span class="subsection-count">{len(states)} states</span>
+        </header>
+        <div class="{grid_class}">
+            {''.join(render_state_card(state) for state in states)}
+        </div>
+    </section>
+    """
+
+
 def render_section_header(kicker: str, title: str, summary: str, count_label: str = "") -> str:
     count_markup = f"<span class=\"section-count\">{html.escape(count_label)}</span>" if count_label else ""
     summary_markup = f"<p class=\"section-summary\">{html.escape(summary)}</p>" if summary else ""
@@ -253,6 +311,77 @@ def render_section_header(kicker: str, title: str, summary: str, count_label: st
         </div>
         {count_markup}
     </header>
+    """
+
+
+def render_overview_badge(item: dict) -> str:
+    tone = item.get("tone", "neutral")
+    label = item.get("label", "")
+    tone_class_map = {
+        "negative": "is-negative",
+        "positive": "is-positive",
+        "inconclusive": "is-inconclusive",
+        "warning": "is-warning",
+        "neutral": "is-neutral"
+    }
+    tone_class = tone_class_map.get(tone, "is-neutral")
+    return f"<span class=\"overview-badge {tone_class}\">{html.escape(label)}</span>"
+
+
+def render_overview_definitions(definitions: list[dict]) -> str:
+    if not definitions:
+        return ""
+
+    cards = []
+    for definition in definitions:
+        cards.append(
+            f"""
+            <article class="overview-definition-card">
+                {render_overview_badge(definition)}
+                <p>{html.escape(definition.get('description', ''))}</p>
+            </article>
+            """
+        )
+
+    return f"<div class=\"overview-definition-grid\">{''.join(cards)}</div>"
+
+
+def render_flow_branch(branch: dict) -> str:
+    event = render_overview_badge(branch.get("event", {}))
+    target = render_overview_badge(branch.get("result") or branch.get("next") or {"label": ""})
+    meta = branch.get("meta", "")
+    meta_markup = f"<span class=\"flow-meta\">{html.escape(meta)}</span>" if meta else ""
+    children = "".join(render_flow_branch(child) for child in branch.get("children", []))
+    children_markup = f"<div class=\"flow-children\">{children}</div>" if children else ""
+
+    return f"""
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            {event}
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            {target}
+            {meta_markup}
+        </div>
+        {children_markup}
+    </div>
+    """
+
+
+def render_overview_flow_diagram(flow: dict) -> str:
+    if not flow:
+        return ""
+
+    start = render_overview_badge(flow.get("start", {"label": ""}))
+    branches = "".join(render_flow_branch(branch) for branch in flow.get("branches", []))
+    return f"""
+    <section class="overview-flow">
+        <div class="flow-start">
+            {start}
+        </div>
+        <div class="flow-branches">
+            {branches}
+        </div>
+    </section>
     """
 
 
@@ -269,13 +398,22 @@ def render_overview_page(manifest: dict) -> str:
             for item in block.get("bullets", [])
         )
         bullets = f"<ul class=\"overview-list\">{bullet_items}</ul>" if bullet_items else ""
+        diagram_lines = block.get("diagram", [])
+        diagram = ""
+        if diagram_lines:
+            diagram = f"<pre class=\"overview-diagram\">{html.escape(chr(10).join(diagram_lines))}</pre>"
+        definitions = render_overview_definitions(block.get("definitions", []))
+        flow_diagram = render_overview_flow_diagram(block.get("flowDiagram", {}))
         blocks.append(
             f"""
             <section class="overview-card">
                 <h3>{html.escape(block.get('title', ''))}</h3>
                 <div class="overview-copy">
                     {paragraphs}
+                    {definitions}
                     {bullets}
+                    {flow_diagram}
+                    {diagram}
                 </div>
             </section>
             """
@@ -328,6 +466,19 @@ def render_change_log_page(manifest: dict) -> str:
 
 def render_section_page(section: dict) -> str:
     count = len(section.get("states", []))
+    grouped_subsections = group_section_states(section)
+    content = f"""
+    <div class="state-grid">
+        {render_section_cards(section)}
+    </div>
+    """
+    if grouped_subsections:
+        content = f"""
+        <div class="subsection-stack">
+            {''.join(render_subsection_block(subsection) for subsection in grouped_subsections)}
+        </div>
+        """
+
     return f"""
     {render_section_header(
         "Section",
@@ -335,9 +486,7 @@ def render_section_page(section: dict) -> str:
         section.get('summary', ''),
         f"{count} states"
     )}
-    <div class="state-grid">
-        {render_section_cards(section)}
-    </div>
+    {content}
     """
 
 
@@ -591,10 +740,162 @@ def build_document(manifest: dict, version: str, created_at: str, active_page: s
             gap: 8px;
             line-height: 1.5;
         }}
+        .overview-definition-grid {{
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }}
+        .overview-definition-card {{
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: grid;
+            gap: 8px;
+        }}
+        .overview-definition-card p {{
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }}
+        .overview-badge {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            width: fit-content;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+        }}
+        .overview-badge.is-positive {{
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }}
+        .overview-badge.is-negative {{
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+        }}
+        .overview-badge.is-inconclusive,
+        .overview-badge.is-warning {{
+            background: #fef3c7;
+            border-color: #fcd34d;
+            color: #92400e;
+        }}
+        .overview-badge.is-neutral {{
+            background: var(--primary-soft);
+            border-color: #bfdbfe;
+            color: var(--primary);
+        }}
+        .overview-flow {{
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: grid;
+            gap: 14px;
+        }}
+        .flow-start {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .flow-start::after {{
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }}
+        .flow-branches {{
+            display: grid;
+            gap: 12px;
+        }}
+        .flow-branch {{
+            display: grid;
+            gap: 10px;
+        }}
+        .flow-branch-line {{
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }}
+        .flow-arrow {{
+            color: var(--muted);
+            font-weight: 700;
+        }}
+        .flow-meta {{
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }}
+        .flow-children {{
+            margin-left: 14px;
+            padding-left: 16px;
+            border-left: 2px solid var(--line);
+            display: grid;
+            gap: 12px;
+        }}
+        .overview-diagram {{
+            margin: 0;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }}
         .state-grid {{
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 18px;
+        }}
+        .state-grid-single {{
+            grid-template-columns: 1fr;
+        }}
+        .subsection-stack {{
+            display: grid;
+            gap: 28px;
+        }}
+        .subsection-block {{
+            display: grid;
+            gap: 16px;
+        }}
+        .subsection-header {{
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+        }}
+        .subsection-header h3 {{
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.15;
+        }}
+        .subsection-summary {{
+            margin: 8px 0 0;
+            color: var(--muted);
+            max-width: 820px;
+            line-height: 1.55;
+        }}
+        .subsection-count {{
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
         }}
         .state-card {{
             overflow: hidden;
@@ -768,10 +1069,15 @@ def build_document(manifest: dict, version: str, created_at: str, active_page: s
         @media (max-width: 1100px) {{
             .state-grid,
             .section-grid,
-            .overview-grid {{
+            .overview-grid,
+            .overview-definition-grid {{
                 grid-template-columns: 1fr;
             }}
             .page-header {{
+                align-items: flex-start;
+                flex-direction: column;
+            }}
+            .subsection-header {{
                 align-items: flex-start;
                 flex-direction: column;
             }}

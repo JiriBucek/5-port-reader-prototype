@@ -428,7 +428,7 @@ function validateCassetteForCurrentTest(ch) {
     if (ch.testTypeId && !isTestTypeEnabledForCurrentUser(ch.testTypeId)) {
         return {
             ok: false,
-            message: `${ch.testTypeName || 'Selected test type'} is disabled in this reader profile.`,
+            message: `${ch.testTypeName || 'Selected test type'} is not enabled for the current site.`,
             clearCassette: false
         };
     }

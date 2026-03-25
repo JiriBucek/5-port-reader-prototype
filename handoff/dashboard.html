@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 53 states";
+            content: "6 sections · 70 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -244,10 +244,162 @@
             gap: 8px;
             line-height: 1.5;
         }
+        .overview-definition-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .overview-definition-card {
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: grid;
+            gap: 8px;
+        }
+        .overview-definition-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .overview-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            width: fit-content;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .overview-badge.is-positive {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .overview-badge.is-negative {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+        }
+        .overview-badge.is-inconclusive,
+        .overview-badge.is-warning {
+            background: #fef3c7;
+            border-color: #fcd34d;
+            color: #92400e;
+        }
+        .overview-badge.is-neutral {
+            background: var(--primary-soft);
+            border-color: #bfdbfe;
+            color: var(--primary);
+        }
+        .overview-flow {
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: grid;
+            gap: 14px;
+        }
+        .flow-start {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flow-start::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+        .flow-branches {
+            display: grid;
+            gap: 12px;
+        }
+        .flow-branch {
+            display: grid;
+            gap: 10px;
+        }
+        .flow-branch-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .flow-arrow {
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .flow-meta {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .flow-children {
+            margin-left: 14px;
+            padding-left: 16px;
+            border-left: 2px solid var(--line);
+            display: grid;
+            gap: 12px;
+        }
+        .overview-diagram {
+            margin: 0;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
         .state-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 18px;
+        }
+        .state-grid-single {
+            grid-template-columns: 1fr;
+        }
+        .subsection-stack {
+            display: grid;
+            gap: 28px;
+        }
+        .subsection-block {
+            display: grid;
+            gap: 16px;
+        }
+        .subsection-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .subsection-header h3 {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.15;
+        }
+        .subsection-summary {
+            margin: 8px 0 0;
+            color: var(--muted);
+            max-width: 820px;
+            line-height: 1.55;
+        }
+        .subsection-count {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
         }
         .state-card {
             overflow: hidden;
@@ -421,10 +573,15 @@
         @media (max-width: 1100px) {
             .state-grid,
             .section-grid,
-            .overview-grid {
+            .overview-grid,
+            .overview-definition-grid {
                 grid-template-columns: 1fr;
             }
             .page-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .subsection-header {
                 align-items: flex-start;
                 flex-direction: column;
             }
@@ -459,7 +616,7 @@
                 
             <a class="sidebar-link is-active" href="dashboard.html">
                 <span>Five-Port Dashboard</span>
-                <strong>20</strong>
+                <strong>37</strong>
             </a>
             
             <a class="sidebar-link" href="history.html">
@@ -495,7 +652,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-03-24 14:44</p>
+        <p><strong>Created:</strong> 2026-03-25 08:42</p>
     </section>
     
         </div>
@@ -508,13 +665,24 @@
         <div>
             <span class="section-kicker">Section</span>
             <h2>Five-Port Dashboard</h2>
-            <p class="section-summary">Core live dashboard states, configuration, processing, confirmation, errors, and completion.</p>
+            <p class="section-summary">Core dashboard states grouped by setup, selection, quant workflow, confirmation, and completion.</p>
         </div>
-        <span class="section-count">20 states</span>
+        <span class="section-count">37 states</span>
     </header>
     
-    <div class="state-grid">
-        
+    
+        <div class="subsection-stack">
+            
+    <section class="subsection-block" id="subsection-configuration">
+        <header class="subsection-header">
+            <div>
+                <h3>Configuration</h3>
+                <p class="subsection-summary">How a port is prepared before reading, including QR prefill, cassette gating, and temperature checks.</p>
+            </div>
+            <span class="subsection-count">8 states</span>
+        </header>
+        <div class="state-grid">
+            
     <article class="state-card" id="state-dashboard-empty">
         <div class="shot-frame">
             
@@ -555,6 +723,26 @@
         </div>
     </article>
     
+    <article class="state-card" id="state-dashboard-detected-strip">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-detected-strip.png"
+            data-viewer-title="Strip detected"
+            data-viewer-description="Inserted strip is detected before configuration, but the test type is not prefilled because strips do not have QR."
+        >
+            <img loading="lazy" src="screenshots/dashboard-detected-strip.png" alt="Strip detected">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Strip detected</h3>
+            <p>Inserted strip is detected before configuration, but the test type is not prefilled because strips do not have QR.</p>
+        </div>
+    </article>
+    
     <article class="state-card" id="state-dashboard-config-manual-before-insert">
         <div class="shot-frame">
             
@@ -572,46 +760,6 @@
         <div class="state-copy">
             <h3>Configure before insert</h3>
             <p>Manual configuration with microswitch on and read disabled until cassette insertion.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-dashboard-type-picker">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/dashboard-type-picker.png"
-            data-viewer-title="Choose test type"
-            data-viewer-description="Manual test type picker showing different badge combinations across qualitative, quantitative, strip, and cassette tests."
-        >
-            <img loading="lazy" src="screenshots/dashboard-type-picker.png" alt="Choose test type">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Choose test type</h3>
-            <p>Manual test type picker showing different badge combinations across qualitative, quantitative, strip, and cassette tests.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-dashboard-type-picker-quantitative">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/dashboard-type-picker-quantitative.png"
-            data-viewer-title="Choose test type: quantitative"
-            data-viewer-description="Manual test type picker filtered to quantitative test types so the Quant badge is visible."
-        >
-            <img loading="lazy" src="screenshots/dashboard-type-picker-quantitative.png" alt="Choose test type: quantitative">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Choose test type: quantitative</h3>
-            <p>Manual test type picker filtered to quantitative test types so the Quant badge is visible.</p>
         </div>
     </article>
     
@@ -655,6 +803,132 @@
         </div>
     </article>
     
+    <article class="state-card" id="state-dashboard-temperature-mismatch">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-temperature-mismatch.png"
+            data-viewer-title="Temperature not correct"
+            data-viewer-description="Selected test needs a different reader temperature, so reading is blocked until the temperature matches."
+        >
+            <img loading="lazy" src="screenshots/dashboard-temperature-mismatch.png" alt="Temperature not correct">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Temperature not correct</h3>
+            <p>Selected test needs a different reader temperature, so reading is blocked until the temperature matches.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-config-test-type-disabled">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-config-test-type-disabled.png"
+            data-viewer-title="Test type disabled in profile"
+            data-viewer-description="Signed-in reader profile blocks the selected test type, so the configuration form shows a blocking error."
+        >
+            <img loading="lazy" src="screenshots/dashboard-config-test-type-disabled.png" alt="Test type disabled in profile">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test type disabled in profile</h3>
+            <p>Signed-in reader profile blocks the selected test type, so the configuration form shows a blocking error.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-test-selection">
+        <header class="subsection-header">
+            <div>
+                <h3>Test Selection</h3>
+                <p class="subsection-summary">How manual test type selection looks across the different test families and badge combinations.</p>
+            </div>
+            <span class="subsection-count">3 states</span>
+        </header>
+        <div class="state-grid">
+            
+    <article class="state-card" id="state-dashboard-type-picker">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-type-picker.png"
+            data-viewer-title="Choose test type"
+            data-viewer-description="Manual test type picker showing different badge combinations across qualitative, quantitative, strip, and cassette tests."
+        >
+            <img loading="lazy" src="screenshots/dashboard-type-picker.png" alt="Choose test type">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Choose test type</h3>
+            <p>Manual test type picker showing different badge combinations across qualitative, quantitative, strip, and cassette tests.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-config-qr-disabled-manual">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-config-qr-disabled-manual.png"
+            data-viewer-title="QR cassette inserted, QR off"
+            data-viewer-description="A QR-capable cassette is inserted, but QR scanning is disabled, so the operator must choose the test type manually."
+        >
+            <img loading="lazy" src="screenshots/dashboard-config-qr-disabled-manual.png" alt="QR cassette inserted, QR off">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>QR cassette inserted, QR off</h3>
+            <p>A QR-capable cassette is inserted, but QR scanning is disabled, so the operator must choose the test type manually.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-type-picker-quantitative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-type-picker-quantitative.png"
+            data-viewer-title="Choose test type: quantitative"
+            data-viewer-description="Manual test type picker filtered to quantitative test types so the Quant badge is visible."
+        >
+            <img loading="lazy" src="screenshots/dashboard-type-picker-quantitative.png" alt="Choose test type: quantitative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Choose test type: quantitative</h3>
+            <p>Manual test type picker filtered to quantitative test types so the Quant badge is visible.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-quant-curve-loading">
+        <header class="subsection-header">
+            <div>
+                <h3>Quant Curve Loading</h3>
+                <p class="subsection-summary">How quantitative tests block, load, and confirm a required quant curve before reading.</p>
+            </div>
+            <span class="subsection-count">2 states</span>
+        </header>
+        <div class="state-grid">
+            
     <article class="state-card" id="state-dashboard-config-quant-curve-required">
         <div class="shot-frame">
             
@@ -695,66 +969,19 @@
         </div>
     </article>
     
-    <article class="state-card" id="state-dashboard-temperature-mismatch">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/dashboard-temperature-mismatch.png"
-            data-viewer-title="Temperature not correct"
-            data-viewer-description="Selected test needs a different reader temperature, so reading is blocked until the temperature matches."
-        >
-            <img loading="lazy" src="screenshots/dashboard-temperature-mismatch.png" alt="Temperature not correct">
-        </button>
-        
         </div>
-        <div class="state-copy">
-            <h3>Temperature not correct</h3>
-            <p>Selected test needs a different reader temperature, so reading is blocked until the temperature matches.</p>
-        </div>
-    </article>
+    </section>
     
-    <article class="state-card" id="state-dashboard-incubating">
-        <div class="shot-frame">
+    <section class="subsection-block" id="subsection-confirmation-flow">
+        <header class="subsection-header">
+            <div>
+                <h3>Confirmation Flow</h3>
+                <p class="subsection-summary">How Test 2 and Test 3 are guided, including fresh cassette requirements and cassette mismatch edge cases.</p>
+            </div>
+            <span class="subsection-count">9 states</span>
+        </header>
+        <div class="state-grid">
             
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/dashboard-incubating.png"
-            data-viewer-title="Incubating"
-            data-viewer-description="Read plus incubate flow with countdown and abort action."
-        >
-            <img loading="lazy" src="screenshots/dashboard-incubating.png" alt="Incubating">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Incubating</h3>
-            <p>Read plus incubate flow with countdown and abort action.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-dashboard-error-no-cassette">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/dashboard-error-no-cassette.png"
-            data-viewer-title="Read error: no cassette"
-            data-viewer-description="Unified red error state shown when a read starts without a readable cassette."
-        >
-            <img loading="lazy" src="screenshots/dashboard-error-no-cassette.png" alt="Read error: no cassette">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Read error: no cassette</h3>
-            <p>Unified red error state shown when a read starts without a readable cassette.</p>
-        </div>
-    </article>
-    
     <article class="state-card" id="state-dashboard-decision-t1-positive">
         <div class="shot-frame">
             
@@ -803,7 +1030,7 @@
             type="button"
             data-viewer-src="screenshots/dashboard-ready-t2-inserted.png"
             data-viewer-title="Test 2 cassette ready"
-            data-viewer-description="Fresh cassette inserted and Start Test 2 enabled."
+            data-viewer-description="Fresh cassette inserted and the confirmation flow is ready to continue."
         >
             <img loading="lazy" src="screenshots/dashboard-ready-t2-inserted.png" alt="Test 2 cassette ready">
         </button>
@@ -811,7 +1038,7 @@
         </div>
         <div class="state-copy">
             <h3>Test 2 cassette ready</h3>
-            <p>Fresh cassette inserted and Start Test 2 enabled.</p>
+            <p>Fresh cassette inserted and the confirmation flow is ready to continue.</p>
         </div>
     </article>
     
@@ -835,6 +1062,66 @@
         </div>
     </article>
     
+    <article class="state-card" id="state-dashboard-stop-confirmation">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-stop-confirmation.png"
+            data-viewer-title="Abort flow confirmation"
+            data-viewer-description="Abort-flow modal summarizing the completed tests before the operator confirms an inconclusive result."
+        >
+            <img loading="lazy" src="screenshots/dashboard-stop-confirmation.png" alt="Abort flow confirmation">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Abort flow confirmation</h3>
+            <p>Abort-flow modal summarizing the completed tests before the operator confirms an inconclusive result.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-ready-t3-waiting">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-ready-t3-waiting.png"
+            data-viewer-title="Ready for Test 3"
+            data-viewer-description="Tie-breaker flow waiting for a newly inserted cassette before Test 3 can start."
+        >
+            <img loading="lazy" src="screenshots/dashboard-ready-t3-waiting.png" alt="Ready for Test 3">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Ready for Test 3</h3>
+            <p>Tie-breaker flow waiting for a newly inserted cassette before Test 3 can start.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-ready-t3-inserted">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-ready-t3-inserted.png"
+            data-viewer-title="Test 3 cassette ready"
+            data-viewer-description="Fresh cassette inserted and the tie-breaker flow is ready to continue."
+        >
+            <img loading="lazy" src="screenshots/dashboard-ready-t3-inserted.png" alt="Test 3 cassette ready">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test 3 cassette ready</h3>
+            <p>Fresh cassette inserted and the tie-breaker flow is ready to continue.</p>
+        </div>
+    </article>
+    
     <article class="state-card" id="state-dashboard-error-wrong-cassette">
         <div class="shot-frame">
             
@@ -855,6 +1142,119 @@
         </div>
     </article>
     
+    <article class="state-card" id="state-dashboard-error-used-cassette">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-error-used-cassette.png"
+            data-viewer-title="Confirmation error: used cassette"
+            data-viewer-description="Replacement cassette was already used, so the operator must insert a new one."
+        >
+            <img loading="lazy" src="screenshots/dashboard-error-used-cassette.png" alt="Confirmation error: used cassette">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Confirmation error: used cassette</h3>
+            <p>Replacement cassette was already used, so the operator must insert a new one.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-read-results-errors">
+        <header class="subsection-header">
+            <div>
+                <h3>Read, Results, and Errors</h3>
+                <p class="subsection-summary">What active processing, retryable errors, and completed flows look like on the live dashboard.</p>
+            </div>
+            <span class="subsection-count">10 states</span>
+        </header>
+        <div class="state-grid">
+            
+    <article class="state-card" id="state-dashboard-incubating">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-incubating.png"
+            data-viewer-title="Incubating"
+            data-viewer-description="Read plus incubate flow with countdown and abort action."
+        >
+            <img loading="lazy" src="screenshots/dashboard-incubating.png" alt="Incubating">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Incubating</h3>
+            <p>Read plus incubate flow with countdown and abort action.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-reading-cassette">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-reading-cassette.png"
+            data-viewer-title="Reading cassette"
+            data-viewer-description="Active read in progress after the cassette has been accepted and the run has started."
+        >
+            <img loading="lazy" src="screenshots/dashboard-reading-cassette.png" alt="Reading cassette">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Reading cassette</h3>
+            <p>Active read in progress after the cassette has been accepted and the run has started.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-error-no-cassette">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-error-no-cassette.png"
+            data-viewer-title="Read error: no cassette"
+            data-viewer-description="Unified red error state shown when a read starts without a readable cassette."
+        >
+            <img loading="lazy" src="screenshots/dashboard-error-no-cassette.png" alt="Read error: no cassette">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Read error: no cassette</h3>
+            <p>Unified red error state shown when a read starts without a readable cassette.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-error-incubation-aborted">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-error-incubation-aborted.png"
+            data-viewer-title="Read error: incubation interrupted"
+            data-viewer-description="Incubation was stopped by the user, so the same retry-or-abort error state is shown."
+        >
+            <img loading="lazy" src="screenshots/dashboard-error-incubation-aborted.png" alt="Read error: incubation interrupted">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Read error: incubation interrupted</h3>
+            <p>Incubation was stopped by the user, so the same retry-or-abort error state is shown.</p>
+        </div>
+    </article>
+    
     <article class="state-card" id="state-dashboard-complete-negative">
         <div class="shot-frame">
             
@@ -863,7 +1263,7 @@
             type="button"
             data-viewer-src="screenshots/dashboard-complete-negative.png"
             data-viewer-title="Completed negative flow"
-            data-viewer-description="Single-test flow completed negative."
+            data-viewer-description="Single-test flow completed negative without opening a confirmation modal."
         >
             <img loading="lazy" src="screenshots/dashboard-complete-negative.png" alt="Completed negative flow">
         </button>
@@ -871,7 +1271,7 @@
         </div>
         <div class="state-copy">
             <h3>Completed negative flow</h3>
-            <p>Single-test flow completed negative.</p>
+            <p>Single-test flow completed negative without opening a confirmation modal.</p>
         </div>
     </article>
     
@@ -915,7 +1315,184 @@
         </div>
     </article>
     
-    </div>
+    <article class="state-card" id="state-dashboard-positive-control-positive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-positive-control-positive.png"
+            data-viewer-title="Positive control: positive result"
+            data-viewer-description="Positive control completed with the expected positive result."
+        >
+            <img loading="lazy" src="screenshots/dashboard-positive-control-positive.png" alt="Positive control: positive result">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Positive control: positive result</h3>
+            <p>Positive control completed with the expected positive result.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-positive-control-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-positive-control-negative.png"
+            data-viewer-title="Positive control: negative result"
+            data-viewer-description="Positive control completed with an unexpected negative result."
+        >
+            <img loading="lazy" src="screenshots/dashboard-positive-control-negative.png" alt="Positive control: negative result">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Positive control: negative result</h3>
+            <p>Positive control completed with an unexpected negative result.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-animal-control-positive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-animal-control-positive.png"
+            data-viewer-title="Animal control: positive result"
+            data-viewer-description="Animal control completed with a positive result so the dashboard shows the distinct control labeling."
+        >
+            <img loading="lazy" src="screenshots/dashboard-animal-control-positive.png" alt="Animal control: positive result">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Animal control: positive result</h3>
+            <p>Animal control completed with a positive result so the dashboard shows the distinct control labeling.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-flow-details">
+        <header class="subsection-header">
+            <div>
+                <h3>Flow Details</h3>
+                <p class="subsection-summary">The long scrollable detail modal that opens from View Details after a completed run.</p>
+            </div>
+            <span class="subsection-count">5 states</span>
+        </header>
+        <div class="state-grid">
+            
+    <article class="state-card" id="state-dashboard-detail-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-detail-negative.png"
+            data-viewer-title="Flow detail: negative result"
+            data-viewer-description="Detailed modal for a completed single-test negative flow, including the full scrollable substance area."
+        >
+            <img loading="lazy" src="screenshots/dashboard-detail-negative.png" alt="Flow detail: negative result">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: negative result</h3>
+            <p>Detailed modal for a completed single-test negative flow, including the full scrollable substance area.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-detail-positive-confirmed">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-detail-positive-confirmed.png"
+            data-viewer-title="Flow detail: confirmed positive"
+            data-viewer-description="Detailed modal for a completed positive confirmation flow with both contained tests visible."
+        >
+            <img loading="lazy" src="screenshots/dashboard-detail-positive-confirmed.png" alt="Flow detail: confirmed positive">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: confirmed positive</h3>
+            <p>Detailed modal for a completed positive confirmation flow with both contained tests visible.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-detail-inconclusive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-detail-inconclusive.png"
+            data-viewer-title="Flow detail: inconclusive"
+            data-viewer-description="Detailed modal for an inconclusive confirmation flow after conflicting test results."
+        >
+            <img loading="lazy" src="screenshots/dashboard-detail-inconclusive.png" alt="Flow detail: inconclusive">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: inconclusive</h3>
+            <p>Detailed modal for an inconclusive confirmation flow after conflicting test results.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-detail-positive-control-positive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-detail-positive-control-positive.png"
+            data-viewer-title="Flow detail: positive control positive"
+            data-viewer-description="Detailed modal for a positive control with the expected positive result."
+        >
+            <img loading="lazy" src="screenshots/dashboard-detail-positive-control-positive.png" alt="Flow detail: positive control positive">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: positive control positive</h3>
+            <p>Detailed modal for a positive control with the expected positive result.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-dashboard-detail-positive-control-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/dashboard-detail-positive-control-negative.png"
+            data-viewer-title="Flow detail: positive control negative"
+            data-viewer-description="Detailed modal for a positive control with an unexpected negative result."
+        >
+            <img loading="lazy" src="screenshots/dashboard-detail-positive-control-negative.png" alt="Flow detail: positive control negative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: positive control negative</h3>
+            <p>Detailed modal for a positive control with an unexpected negative result.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+        </div>
+        
     
         </main>
     </div>

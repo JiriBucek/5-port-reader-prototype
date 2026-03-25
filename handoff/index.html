@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 53 states";
+            content: "6 sections · 70 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -244,10 +244,162 @@
             gap: 8px;
             line-height: 1.5;
         }
+        .overview-definition-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .overview-definition-card {
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: grid;
+            gap: 8px;
+        }
+        .overview-definition-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .overview-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            width: fit-content;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .overview-badge.is-positive {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .overview-badge.is-negative {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+        }
+        .overview-badge.is-inconclusive,
+        .overview-badge.is-warning {
+            background: #fef3c7;
+            border-color: #fcd34d;
+            color: #92400e;
+        }
+        .overview-badge.is-neutral {
+            background: var(--primary-soft);
+            border-color: #bfdbfe;
+            color: var(--primary);
+        }
+        .overview-flow {
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: grid;
+            gap: 14px;
+        }
+        .flow-start {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flow-start::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+        .flow-branches {
+            display: grid;
+            gap: 12px;
+        }
+        .flow-branch {
+            display: grid;
+            gap: 10px;
+        }
+        .flow-branch-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .flow-arrow {
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .flow-meta {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .flow-children {
+            margin-left: 14px;
+            padding-left: 16px;
+            border-left: 2px solid var(--line);
+            display: grid;
+            gap: 12px;
+        }
+        .overview-diagram {
+            margin: 0;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--surface-2);
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
         .state-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 18px;
+        }
+        .state-grid-single {
+            grid-template-columns: 1fr;
+        }
+        .subsection-stack {
+            display: grid;
+            gap: 28px;
+        }
+        .subsection-block {
+            display: grid;
+            gap: 16px;
+        }
+        .subsection-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .subsection-header h3 {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.15;
+        }
+        .subsection-summary {
+            margin: 8px 0 0;
+            color: var(--muted);
+            max-width: 820px;
+            line-height: 1.55;
+        }
+        .subsection-count {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
         }
         .state-card {
             overflow: hidden;
@@ -421,10 +573,15 @@
         @media (max-width: 1100px) {
             .state-grid,
             .section-grid,
-            .overview-grid {
+            .overview-grid,
+            .overview-definition-grid {
                 grid-template-columns: 1fr;
             }
             .page-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .subsection-header {
                 align-items: flex-start;
                 flex-direction: column;
             }
@@ -459,7 +616,7 @@
                 
             <a class="sidebar-link" href="dashboard.html">
                 <span>Five-Port Dashboard</span>
-                <strong>20</strong>
+                <strong>37</strong>
             </a>
             
             <a class="sidebar-link" href="history.html">
@@ -495,7 +652,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-03-24 14:44</p>
+        <p><strong>Created:</strong> 2026-03-25 08:42</p>
     </section>
     
         </div>
@@ -519,7 +676,10 @@
                 <h3>Device Constraints</h3>
                 <div class="overview-copy">
                     <p>The target display is 800 x 480 px in landscape orientation.</p><p>There are five physical reader ports below the screen, so the UI often needs to show both the on-screen workflow state and the physical cassette state at the same time.</p><p>Assume this is an Android device. Where possible, use standard Android behavior for the keyboard, date and time pickers, navigation, and opening new screens instead of redesigning those patterns.</p>
+                    
                     <ul class="overview-list"><li>If a screen can fit without scrolling, that is preferred.</li><li>Scrolling should be limited as much as possible because the touchscreen does not scroll well.</li><li>The most important actions and the port status should be readable at a glance.</li></ul>
+                    
+                    
                 </div>
             </section>
             
@@ -527,15 +687,192 @@
                 <h3>Normal Test</h3>
                 <div class="overview-copy">
                     <p>A normal test is the standard workflow for a milk sample. The user chooses a port, enters sample and operator information, selects or confirms the test type, and starts the read.</p><p>Some tests are read only. Other tests need incubation before reading.</p>
+                    
                     <ul class="overview-list"><li>Configuration can happen before the cassette is inserted.</li><li>The test type can be chosen manually or prefilled from QR.</li><li>The main goal is to help the operator prepare the correct test on the correct port with as little friction as possible.</li></ul>
+                    
+                    
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Individual Test vs Test Flow</h3>
+                <div class="overview-copy">
+                    <p>An individual test is one single cassette read. It always describes the result of that one cassette only.</p><p>A test flow is the whole sequence for one sample on one port. A flow can contain one test, two tests, or three tests depending on whether confirmation is needed.</p>
+                    <div class="overview-definition-grid">
+            <article class="overview-definition-card">
+                <span class="overview-badge is-negative">Individual negative</span>
+                <p>One cassette read came out negative.</p>
+            </article>
+            
+            <article class="overview-definition-card">
+                <span class="overview-badge is-positive">Individual positive</span>
+                <p>One cassette read came out positive.</p>
+            </article>
+            
+            <article class="overview-definition-card">
+                <span class="overview-badge is-negative">Flow negative</span>
+                <p>The whole sample flow ended negative, even if more than one cassette was used.</p>
+            </article>
+            
+            <article class="overview-definition-card">
+                <span class="overview-badge is-positive">Flow positive</span>
+                <p>The whole sample flow ended positive, even if more than one cassette was used.</p>
+            </article>
+            
+            <article class="overview-definition-card">
+                <span class="overview-badge is-inconclusive">Flow inconclusive</span>
+                <p>The operator aborted the confirmation flow before it reached a final positive or negative end.</p>
+            </article>
+            </div>
+                    
+                    
+                    
+                </div>
+            </section>
+            
+            <section class="overview-card">
+                <h3>Test Labels Used In History</h3>
+                <div class="overview-copy">
+                    <p>The interface uses short names like T1, T2, and T3 in compact places such as buttons and dashboard cards.</p><p>In history and detail views, the same three steps are labeled with longer names so the user can see where each cassette belongs in the full sample flow.</p>
+                    <div class="overview-definition-grid">
+            <article class="overview-definition-card">
+                <span class="overview-badge is-neutral">Original</span>
+                <p>The first cassette read for the sample. This is the same step the dashboard often calls T1.</p>
+            </article>
+            
+            <article class="overview-definition-card">
+                <span class="overview-badge is-neutral">First Confirmation</span>
+                <p>The second cassette read for the same sample. This is the same step the dashboard often calls T2.</p>
+            </article>
+            
+            <article class="overview-definition-card">
+                <span class="overview-badge is-neutral">Second Confirmation</span>
+                <p>The third cassette read for the same sample. This is the same step the dashboard often calls T3.</p>
+            </article>
+            </div>
+                    <ul class="overview-list"><li>Original = Test 1 = T1</li><li>First Confirmation = Test 2 = T2</li><li>Second Confirmation = Test 3 = T3</li></ul>
+                    
+                    
                 </div>
             </section>
             
             <section class="overview-card">
                 <h3>Confirmation Flow</h3>
                 <div class="overview-copy">
-                    <p>If the first result needs confirmation, the device guides the operator to Test 2 and sometimes Test 3.</p><p>A modal appears only when the operator needs to make the next decision or take the next step. If the flow is already complete, no extra modal is shown.</p>
-                    <ul class="overview-list"><li>Test 2 and Test 3 always require a newly inserted cassette.</li><li>The next cassette must be the same test type as the original test.</li><li>If Test 1 is negative, the flow ends without a confirmation modal.</li></ul>
+                    <p>Confirmation starts only when the first individual test is positive. If the first individual test is negative, the whole flow finishes immediately and no confirmation modal is shown.</p><p>From there, the operator can continue to the next test or abort the flow. Aborting at any confirmation step leads to an inconclusive flow result.</p><p>In the dashboard, the steps are often shortened to T1, T2, and T3. In history, the same steps appear as Original, First Confirmation, and Second Confirmation.</p>
+                    
+                    <ul class="overview-list"><li>Flow negative can happen after 1 test or after 3 tests.</li><li>Flow positive can happen after 2 tests or after 3 tests.</li><li>Flow inconclusive happens only when the operator aborts the confirmation flow.</li><li>Test 2 and Test 3 always require a newly inserted cassette.</li><li>The next cassette must be the same test type as the original test.</li></ul>
+                    
+    <section class="overview-flow">
+        <div class="flow-start">
+            <span class="overview-badge is-neutral">T1 / Original individual result</span>
+        </div>
+        <div class="flow-branches">
+            
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-negative">Individual negative</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-negative">Flow negative</span>
+            <span class="flow-meta">1 test</span>
+        </div>
+        
+    </div>
+    
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-positive">Individual positive</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-neutral">Confirmation required</span>
+            
+        </div>
+        <div class="flow-children">
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-warning">Abort</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-inconclusive">Flow inconclusive</span>
+            
+        </div>
+        
+    </div>
+    
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-neutral">Continue</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-neutral">Insert new cassette and run T2 / First Confirmation</span>
+            
+        </div>
+        <div class="flow-children">
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-positive">T2 individual positive</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-positive">Flow positive</span>
+            <span class="flow-meta">2 tests</span>
+        </div>
+        
+    </div>
+    
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-negative">T2 individual negative</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-neutral">Tiebreaker required</span>
+            
+        </div>
+        <div class="flow-children">
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-warning">Abort</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-inconclusive">Flow inconclusive</span>
+            
+        </div>
+        
+    </div>
+    
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-neutral">Continue</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-neutral">Insert new cassette and run T3 / Second Confirmation</span>
+            
+        </div>
+        <div class="flow-children">
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-positive">T3 individual positive</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-positive">Flow positive</span>
+            <span class="flow-meta">3 tests</span>
+        </div>
+        
+    </div>
+    
+    <div class="flow-branch">
+        <div class="flow-branch-line">
+            <span class="overview-badge is-negative">T3 individual negative</span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="overview-badge is-negative">Flow negative</span>
+            <span class="flow-meta">3 tests</span>
+        </div>
+        
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+        </div>
+    </section>
+    
+                    
                 </div>
             </section>
             
@@ -544,6 +881,9 @@
                 <div class="overview-copy">
                     <p>Positive controls and animal controls are not normal sample tests. They are special runs where a positive result is expected.</p><p>They should stay clearly separated from normal tests in both the workflow and the history.</p>
                     
+                    
+                    
+                    
                 </div>
             </section>
             
@@ -551,7 +891,10 @@
                 <h3>Verification</h3>
                 <div class="overview-copy">
                     <p>Verification is a service workflow used to check port performance and reading behavior.</p><p>The operator places a physical thermometer into the port, measures the real temperature, and compares it to the selected 40 C or 50 C target.</p><p>The result also shows values such as light intensity and line ratios. These help show how well the device can read the cassette lines.</p>
+                    
                     <ul class="overview-list"><li>All ports always share the same reader temperature setting.</li><li>Each port should be verified every 250 tests.</li><li>The user can set a lower local warning threshold, but the cloud default stays 250.</li><li>After verification, the counter for that port resets to zero.</li></ul>
+                    
+                    
                 </div>
             </section>
             
@@ -559,7 +902,10 @@
                 <h3>Cassettes, Strips, and QR</h3>
                 <div class="overview-copy">
                     <p>The device supports both strip tests and cassette tests. Strips are the older format and do not have QR. Cassettes are the newer format and can have QR.</p><p>When QR is enabled and the cassette supports it, the device reads the test type from QR and does not let the user change it.</p><p>This matters because different test types can have different substances, different cassette layouts, and different numbers of lines.</p><p>During confirmation flows, the device also checks that the next cassette is the same test type as the original test.</p><p>If QR is turned off, the user must choose the test type manually.</p>
+                    
                     <ul class="overview-list"><li>A batch means a box of many cassettes of the same type.</li><li>The slot can show the control line and the test lines for the inserted cassette.</li><li>Test lines can use short substance abbreviations because some tests have fewer lines and some have more.</li><li>The control line is always present because it shows whether the test itself worked.</li></ul>
+                    
+                    
                 </div>
             </section>
             
@@ -568,6 +914,9 @@
                 <div class="overview-copy">
                     <p>The microswitch is the cassette insertion sensor.</p><p>Its main job is to detect that a cassette was inserted after configuration so the read action can be enabled.</p><p>Its limitation is that it can reliably detect insertion, but not removal.</p><p>When it is on, the read buttons unlock only after cassette insertion is detected. When it is off, the device allows a fallback mode without that check, for example if the sensor is broken.</p>
                     
+                    
+                    
+                    
                 </div>
             </section>
             
@@ -575,7 +924,10 @@
                 <h3>Account and Settings Access</h3>
                 <div class="overview-copy">
                     <p>The device can be signed in to the cloud or used in anonymous mode.</p><p>In anonymous mode, test records are not sent to the cloud.</p><p>When the device is signed in, the allowed test types come from the backend. When it is anonymous, the user can turn test types on and off locally in Settings.</p>
+                    
                     <ul class="overview-list"><li>Some settings are open to normal users.</li><li>Some settings require the reader password.</li><li>After the password is entered, protected settings stay unlocked while Settings remains open.</li></ul>
+                    
+                    
                 </div>
             </section>
             
@@ -583,7 +935,10 @@
                 <h3>Other Important Concepts</h3>
                 <div class="overview-copy">
                     
+                    
                     <ul class="overview-list"><li>Some tests require a specific reader temperature, usually 40 C or 50 C.</li><li>Quantitative tests need a loaded quant curve before they can start.</li><li>History separates normal tests and controls.</li><li>Exports are CSV or LIMS, not Excel.</li><li>Root full-screen screens use Close, while pushed child screens use Back.</li></ul>
+                    
+                    
                 </div>
             </section>
             

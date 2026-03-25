@@ -72,6 +72,121 @@ async function getCaptureClip(page, capture) {
     return padClip(frame);
 }
 
+async function setCaptureMode(page, capture) {
+    await page.evaluate((captureValue) => {
+        const root = document.documentElement;
+        if (!root) return;
+
+        if (captureValue === 'detail_tall') {
+            root.dataset.captureMode = 'detail_tall';
+        } else {
+            delete root.dataset.captureMode;
+        }
+    }, capture);
+}
+
+async function prepareModalCaptureClone(page, sourceId) {
+    await page.evaluate((sourceIdValue) => {
+        const existing = document.getElementById('handoff-detail-capture-root');
+        if (existing) {
+            existing.remove();
+        }
+
+        const source = document.getElementById(sourceIdValue);
+        if (!source || !source.classList.contains('active')) {
+            throw new Error(`Modal ${sourceIdValue} is not active for tall capture.`);
+        }
+
+        const root = document.createElement('div');
+        root.id = 'handoff-detail-capture-root';
+        Object.assign(root.style, {
+            display: 'block',
+            width: '856px',
+            padding: '18px',
+            background: '#ffffff',
+            position: 'relative'
+        });
+
+        const clone = source.cloneNode(true);
+        clone.id = 'handoff-detail-capture-modal';
+        clone.classList.add('active');
+        Object.assign(clone.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            width: '760px',
+            maxHeight: 'none',
+            overflow: 'visible',
+            margin: '0 auto',
+            background: '#ffffff'
+        });
+
+        const modalBody = clone.querySelector('.modal-body');
+        if (modalBody instanceof HTMLElement) {
+            Object.assign(modalBody.style, {
+                overflow: 'visible',
+                maxHeight: 'none',
+                padding: '10px 16px'
+            });
+        }
+
+        const modalHeader = clone.querySelector('.modal-header');
+        if (modalHeader instanceof HTMLElement) {
+            Object.assign(modalHeader.style, {
+                padding: '10px 16px 8px'
+            });
+        }
+
+        root.appendChild(clone);
+        document.body.appendChild(root);
+    }, sourceId);
+}
+
+async function cleanupModalCaptureClone(page) {
+    await page.evaluate(() => {
+        document.getElementById('handoff-detail-capture-root')?.remove();
+    });
+}
+
+async function captureStateImage(page, state, targetPath) {
+    const capture = state.capture || 'screen';
+    await setCaptureMode(page, capture);
+    await page.waitForTimeout(40);
+
+    if (capture === 'detail_tall' || capture === 'decision_tall') {
+        const sourceId = capture === 'detail_tall' ? 'detail-modal' : 'decision-modal';
+        await prepareModalCaptureClone(page, sourceId);
+        await page.waitForTimeout(40);
+        const clip = await page.evaluate(() => {
+            const root = document.getElementById('handoff-detail-capture-root');
+            if (!root) return null;
+            const rect = root.getBoundingClientRect();
+            return {
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: rect.width,
+                height: rect.height
+            };
+        });
+        if (!clip || clip.width <= 0 || clip.height <= 0) {
+            await cleanupModalCaptureClone(page);
+            throw new Error(`Modal clone clip could not be resolved for ${state.id}.`);
+        }
+        await page.screenshot({
+            path: targetPath,
+            clip
+        });
+        await cleanupModalCaptureClone(page);
+    } else {
+        const clip = await getCaptureClip(page, capture);
+        await page.screenshot({
+            path: targetPath,
+            clip
+        });
+    }
+
+    await setCaptureMode(page, 'screen');
+}
+
 async function resetPrototype(page) {
     await page.evaluate(() => {
         if (typeof clearPrototypeFullScreenTimer === 'function') {
@@ -276,6 +391,13 @@ async function applyPreset(page, presetId) {
             prototypeRuntime.settingsAccessUnlocked = true;
         }
 
+        function openChannelDetail(ch) {
+            if (ch.state !== STATES.COMPLETE) {
+                throw new Error('Detail modal can only be shown for completed channels.');
+            }
+            showDetailModal(ch);
+        }
+
         resetAndRefresh();
 
         switch (presetIdValue) {
@@ -285,6 +407,12 @@ async function applyPreset(page, presetId) {
             case 'dashboard_detected_qr': {
                 const ch = getChannel(1);
                 insertCassette(1, { testTypeId: 43, outcome: 'negative' });
+                ch.state = STATES.DETECTED;
+                break;
+            }
+            case 'dashboard_detected_strip': {
+                const ch = getChannel(1);
+                insertCassette(1, { testTypeId: 57, outcome: 'negative' });
                 ch.state = STATES.DETECTED;
                 break;
             }
@@ -330,6 +458,28 @@ async function applyPreset(page, presetId) {
                 if (mixedRow) {
                     mixedRow.scrollIntoView({ block: 'start' });
                 }
+                break;
+            }
+            case 'dashboard_config_qr_disabled_manual': {
+                const ch = getChannel(1);
+                deviceSettings.qrScanningEnabled = false;
+                insertCassette(1, { testTypeId: 43, outcome: 'negative' });
+                ch.state = STATES.CONFIGURING;
+                showConfigModal(ch, {
+                    scenario: 'test',
+                    testTypeId: 18,
+                    sampleId: 'MILK-240318',
+                    operatorId: 'OP-204',
+                    fallbackCassetteType: '4L',
+                    lockedToQr: false,
+                    forceQrOnly: false,
+                    brandFilter: 'MilkSafe',
+                    categoryFilter: 'cassette',
+                    measurementFilter: 'all',
+                    curveId: null,
+                    curveLoadSource: 'qr',
+                    curveLoadError: ''
+                }, 'type_picker');
                 break;
             }
             case 'dashboard_type_picker_quantitative': {
@@ -442,6 +592,27 @@ async function applyPreset(page, presetId) {
                 }, 'form');
                 break;
             }
+            case 'dashboard_config_test_type_disabled': {
+                setSignedIn('wifi');
+                const ch = getChannel(1);
+                ch.state = STATES.CONFIGURING;
+                showConfigModal(ch, {
+                    scenario: 'test',
+                    testTypeId: 24,
+                    sampleId: 'MILK-240318',
+                    operatorId: 'OP-204',
+                    fallbackCassetteType: '4L',
+                    lockedToQr: false,
+                    forceQrOnly: false,
+                    brandFilter: 'MilkSafe',
+                    categoryFilter: 'strip',
+                    measurementFilter: 'qual',
+                    curveId: null,
+                    curveLoadSource: 'qr',
+                    curveLoadError: ''
+                }, 'form');
+                break;
+            }
             case 'dashboard_incubating': {
                 const ch = configureChannel(1, {
                     testTypeId: 43,
@@ -530,6 +701,68 @@ async function applyPreset(page, presetId) {
                 showDecisionModal(ch, 'b');
                 break;
             }
+            case 'dashboard_stop_confirmation': {
+                const ch = configureChannel(1, {
+                    testTypeId: 18,
+                    processing: 'read_incubate'
+                });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 8
+                });
+                addTest(ch, {
+                    testNumber: 2,
+                    overall: 'negative',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 2;
+                ch.state = STATES.READY_FOR_TEST_N;
+                clearInsertedCassetteForNextStep(ch);
+                showStopConfirmationModal(ch);
+                break;
+            }
+            case 'dashboard_ready_t3_waiting_new_cassette': {
+                const ch = configureChannel(1, {
+                    testTypeId: 18,
+                    processing: 'read_incubate'
+                });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 8
+                });
+                addTest(ch, {
+                    testNumber: 2,
+                    overall: 'negative',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 2;
+                ch.state = STATES.READY_FOR_TEST_N;
+                clearInsertedCassetteForNextStep(ch);
+                break;
+            }
+            case 'dashboard_ready_t3_new_cassette': {
+                const ch = configureChannel(1, {
+                    testTypeId: 18,
+                    processing: 'read_incubate'
+                });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 8
+                });
+                addTest(ch, {
+                    testNumber: 2,
+                    overall: 'negative',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 2;
+                ch.state = STATES.READY_FOR_TEST_N;
+                clearInsertedCassetteForNextStep(ch);
+                insertCassette(1, { testTypeId: 18, outcome: 'positive' });
+                break;
+            }
             case 'dashboard_error_wrong_cassette': {
                 const ch = configureChannel(1, {
                     testTypeId: 18,
@@ -546,6 +779,41 @@ async function applyPreset(page, presetId) {
                 clearInsertedCassetteForNextStep(ch);
                 break;
             }
+            case 'dashboard_error_used_cassette': {
+                const ch = configureChannel(1, {
+                    testTypeId: 18,
+                    processing: 'read_incubate'
+                });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 4
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.ERROR;
+                ch.errorMessage = 'Cassette already used. Insert a new cassette and retry.';
+                clearInsertedCassetteForNextStep(ch);
+                break;
+            }
+            case 'dashboard_error_incubation_aborted': {
+                const ch = configureChannel(1, {
+                    testTypeId: 43,
+                    processing: 'read_incubate'
+                });
+                insertCassette(1, { testTypeId: 43, outcome: 'negative' });
+                ch.state = STATES.ERROR;
+                ch.errorMessage = 'Incubation interrupted. Retry or abort.';
+                break;
+            }
+            case 'dashboard_reading_cassette': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'negative' });
+                ch.state = STATES.READING;
+                break;
+            }
             case 'dashboard_complete_negative': {
                 const ch = configureChannel(1, {
                     testTypeId: 37,
@@ -560,6 +828,115 @@ async function applyPreset(page, presetId) {
                 ch.currentTestNumber = 1;
                 ch.state = STATES.COMPLETE;
                 ch.groupResult = 'negative';
+                break;
+            }
+            case 'dashboard_detail_negative': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'negative' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'negative',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                ch.groupResult = 'negative';
+                openChannelDetail(ch);
+                break;
+            }
+            case 'dashboard_positive_control_positive': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    scenario: 'pos_control',
+                    sampleId: 'POS-CTRL-01',
+                    operatorId: 'OP-204',
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'positive' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                break;
+            }
+            case 'dashboard_detail_positive_control_positive': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    scenario: 'pos_control',
+                    sampleId: 'POS-CTRL-01',
+                    operatorId: 'OP-204',
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'positive' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                openChannelDetail(ch);
+                break;
+            }
+            case 'dashboard_positive_control_negative': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    scenario: 'pos_control',
+                    sampleId: 'POS-CTRL-01',
+                    operatorId: 'OP-204',
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'negative' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'negative',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                break;
+            }
+            case 'dashboard_animal_control_positive': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    scenario: 'animal_control',
+                    sampleId: 'ANIMAL-CTRL-01',
+                    operatorId: 'OP-204',
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'positive' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                break;
+            }
+            case 'dashboard_detail_positive_control_negative': {
+                const ch = configureChannel(1, {
+                    testTypeId: 37,
+                    scenario: 'pos_control',
+                    sampleId: 'POS-CTRL-01',
+                    operatorId: 'OP-204',
+                    processing: 'read_only'
+                });
+                insertCassette(1, { testTypeId: 37, outcome: 'negative' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'negative',
+                    offsetMinutes: 2
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                openChannelDetail(ch);
                 break;
             }
             case 'dashboard_complete_positive_after_confirmation': {
@@ -583,6 +960,28 @@ async function applyPreset(page, presetId) {
                 ch.groupResult = 'positive';
                 break;
             }
+            case 'dashboard_detail_positive_confirmed': {
+                const ch = configureChannel(1, {
+                    testTypeId: 18,
+                    processing: 'read_incubate'
+                });
+                insertCassette(1, { testTypeId: 18, outcome: 'positive' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 6
+                });
+                addTest(ch, {
+                    testNumber: 2,
+                    overall: 'positive',
+                    offsetMinutes: 1
+                });
+                ch.currentTestNumber = 2;
+                ch.state = STATES.COMPLETE;
+                ch.groupResult = 'positive';
+                openChannelDetail(ch);
+                break;
+            }
             case 'dashboard_complete_inconclusive_after_abort': {
                 const ch = configureChannel(1, {
                     testTypeId: 18,
@@ -602,6 +1001,28 @@ async function applyPreset(page, presetId) {
                 ch.state = STATES.COMPLETE;
                 ch.groupResult = 'inconclusive';
                 clearInsertedCassetteForNextStep(ch);
+                break;
+            }
+            case 'dashboard_detail_inconclusive': {
+                const ch = configureChannel(1, {
+                    testTypeId: 18,
+                    processing: 'read_incubate'
+                });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'positive',
+                    offsetMinutes: 7
+                });
+                addTest(ch, {
+                    testNumber: 2,
+                    overall: 'negative',
+                    offsetMinutes: 3
+                });
+                ch.currentTestNumber = 2;
+                ch.state = STATES.COMPLETE;
+                ch.groupResult = 'inconclusive';
+                clearInsertedCassetteForNextStep(ch);
+                openChannelDetail(ch);
                 break;
             }
             case 'history_list_tests': {
@@ -985,18 +1406,43 @@ async function main() {
                 transition: none !important;
                 caret-color: transparent !important;
             }
+            #handoff-detail-capture-root {
+                display: none;
+            }
+            html[data-capture-mode="detail_tall"] #handoff-detail-capture-root,
+            html[data-capture-mode="decision_tall"] #handoff-detail-capture-root {
+                display: block !important;
+                width: 856px !important;
+                padding: 18px !important;
+                background: #ffffff !important;
+            }
+            html[data-capture-mode="detail_tall"] #handoff-detail-capture-modal,
+            html[data-capture-mode="decision_tall"] #handoff-detail-capture-modal {
+                display: block !important;
+                width: 760px !important;
+                max-height: none !important;
+                overflow: visible !important;
+                margin: 0 auto !important;
+                background: #ffffff !important;
+            }
+            html[data-capture-mode="detail_tall"] #handoff-detail-capture-modal .modal-body,
+            html[data-capture-mode="decision_tall"] #handoff-detail-capture-modal .modal-body {
+                overflow: visible !important;
+                max-height: none !important;
+                padding: 10px 16px !important;
+            }
+            html[data-capture-mode="detail_tall"] #handoff-detail-capture-modal .modal-header,
+            html[data-capture-mode="decision_tall"] #handoff-detail-capture-modal .modal-header {
+                padding: 10px 16px 8px !important;
+            }
         `
     });
 
     const states = manifest.sections.flatMap(section => section.states);
     for (const state of states) {
         await applyPreset(page, state.preset);
-        const clip = await getCaptureClip(page, state.capture || 'screen');
         const targetPath = path.join(outputDir, `${state.id}.png`);
-        await page.screenshot({
-            path: targetPath,
-            clip
-        });
+        await captureStateImage(page, state, targetPath);
         process.stdout.write(`Captured ${state.id}\n`);
     }
 

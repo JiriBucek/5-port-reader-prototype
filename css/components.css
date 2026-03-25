@@ -782,7 +782,7 @@
 .card-action .action-btn {
     width: 100%;
     padding: 8px 6px;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
     font-size: var(--font-base);
     font-weight: 600;
@@ -815,6 +815,14 @@
 .card-action .btn-ghost:disabled {
     background: var(--gray-100);
     color: var(--gray-500);
+    border-color: var(--gray-300);
+}
+
+.card-action .btn-secondary {
+    border-color: var(--gray-300);
+}
+
+.card-action .btn-ghost {
     border-color: var(--gray-300);
 }
 
