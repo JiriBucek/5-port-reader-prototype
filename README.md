@@ -152,4 +152,4 @@ For complete design philosophy and rationale, see [docs/UX_DESIGN_PHILOSOPHY.md]
 
 ## Notes
 
-This is a prototype for UX testing only. No backend or data persistence is implemented.
+This is a prototype for UX testing only. No backend or data persistence is implemented. 
