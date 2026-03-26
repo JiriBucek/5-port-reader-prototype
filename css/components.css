@@ -1559,6 +1559,171 @@
     color: var(--gray-800);
 }
 
+.settings-threshold-bubble-detail {
+    font-size: var(--font-sm);
+    color: var(--gray-500);
+}
+
+.settings-threshold-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-summary-card.settings-threshold-summary.is-ready {
+    border-color: rgba(8, 145, 178, 0.26);
+    border-left: 4px solid #0891b2;
+    background: rgba(8, 145, 178, 0.06);
+}
+
+.settings-threshold-summary-top,
+.settings-threshold-controls-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.settings-threshold-status-pill,
+.settings-threshold-controls-note {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid rgba(8, 145, 178, 0.3);
+    border-radius: 999px;
+    background: rgba(8, 145, 178, 0.08);
+    color: #0f5d78;
+    font-size: var(--font-sm);
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.settings-threshold-status-pill.is-warning {
+    border-color: rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.16);
+    color: #9a5b00;
+}
+
+.settings-threshold-summary-copy,
+.settings-threshold-controls-copy {
+    font-size: var(--font-sm);
+    line-height: 1.35;
+    color: var(--gray-600);
+}
+
+.settings-threshold-controls-head h2 {
+    font-size: 17px;
+    line-height: 1.1;
+    color: var(--gray-900);
+}
+
+.settings-threshold-port-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px dashed rgba(14, 116, 144, 0.22);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.settings-threshold-port-flow-label,
+.settings-threshold-scale {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--gray-500);
+}
+
+.settings-threshold-port-flow-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.settings-threshold-port-chip,
+.settings-threshold-shared-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--gray-300);
+    background: var(--white);
+    color: var(--gray-700);
+    font-size: var(--font-sm);
+    font-weight: 700;
+}
+
+.settings-threshold-shared-chip {
+    border-color: rgba(14, 116, 144, 0.26);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+.settings-threshold-flow-arrow {
+    color: var(--gray-500);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.settings-threshold-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.settings-threshold-meter-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.settings-threshold-meter-head strong {
+    font-size: 22px;
+    line-height: 1;
+    color: var(--gray-900);
+}
+
+.settings-threshold-meter-head span {
+    font-size: var(--font-sm);
+    color: var(--gray-600);
+    text-align: right;
+}
+
+.settings-threshold-progress {
+    height: 8px;
+    margin-top: 0;
+}
+
+.settings-threshold-scale {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.settings-threshold-summary-grid {
+    margin-top: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-threshold-controls-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-section-card.settings-threshold-controls-card.is-warning {
+    border-color: #f59e0b;
+    background: var(--warning-bg);
+}
+
 .settings-threshold-control-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;

@@ -68,7 +68,7 @@ No build process required. Make changes to HTML/CSS/JS files and refresh the bro
   - Current test results
   - Previous test results (for confirmation flow)
   - Group status (Negative 🟢 / Positive 🔴 / Pending 🟠)
-- **Verification alert** - Warning when >250 tests since verification
+- **Verification alert** - Warning when total tests across all 5 ports exceed the threshold since the last verification
 - **Bottom navigation** - Quick access to History, Settings, Verification
 
 ### Test Configuration Modal

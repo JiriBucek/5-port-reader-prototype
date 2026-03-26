@@ -105,8 +105,8 @@ Settings
 Sign In to the Cloud option
 The most used sections are Run Test, Tests history and Settings
 Device incubator temperature, time of the day and when connected to the internet, the symbol should be visible  on the screen (unless user disables incubation in the settings).
-Front screen notification if the number of passed tests since the last verification is above the set threshold - 250 tests
-Add an info bubble to the web to explain the threshold is 250
+Front screen notification if the total number of passed tests across all ports since the last verification is above the set threshold - 250 tests by default
+Add an info bubble to the web to explain the default threshold is 250 total tests across all ports
 
 
 Run Tests
@@ -191,7 +191,7 @@ Anonymous users can enable or disable all test types for this device
 QR scanning toggle
 When turned off, QR is not scanned from the cassette when inserted into the channel 
 Verification Settings
-Local setting for number of tests since last verification to label a device as outstanding a verification
+Local setting for the total number of tests across all ports since the last verification to label a device as outstanding for verification
 Connect to internet
 Wifi
 Ethernet cable

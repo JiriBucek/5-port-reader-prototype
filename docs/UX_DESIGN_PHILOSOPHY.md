@@ -209,7 +209,7 @@ Test completes → Modal appears → Must label → Returns to home
 - Menu access
 
 **Always Visible (Bottom/Home):**
-- Verification warning (if >250 tests since last verification)
+- Verification warning (if total tests across all ports exceed 250 since the last verification)
 - Navigation to History, Settings, Verification
 
 **Why:**

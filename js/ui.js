@@ -2945,17 +2945,69 @@ function renderSettingsActionRow({ title, detail = '', value = '', buttonLabel =
         </div>`;
 }
 
-function renderVerificationCountRows(thresholdValue = deviceSettings.verificationThreshold) {
-    return channels.map(channel => {
-        const count = getVerificationCountForChannel(channel.id);
-        const threshold = Number(thresholdValue || 250);
-        const stateClass = count > threshold ? ' is-warning' : '';
-        return `
-            <div class="settings-count-row${stateClass}">
-                <span class="settings-count-port">Port ${channel.id}</span>
-                <span class="settings-count-value">${count} / ${threshold}</span>
-            </div>`;
-    }).join('');
+function getVerificationThresholdProgressPercent(thresholdValue = deviceSettings.verificationThreshold) {
+    const threshold = Number(thresholdValue || 250);
+    if (!Number.isFinite(threshold) || threshold <= 0) return 0;
+    return Math.min(100, (getVerificationTestCount() / threshold) * 100);
+}
+
+function renderVerificationThresholdScope() {
+    const ports = (channels.length ? channels : Array.from({ length: 5 }, (_, index) => ({ id: index + 1 })))
+        .map(channel => `<span class="settings-threshold-port-chip">Port ${channel.id}</span>`)
+        .join('');
+
+    return `
+        <div class="settings-threshold-port-flow">
+            <span class="settings-threshold-port-flow-label">All five ports feed one shared verification counter</span>
+            <div class="settings-threshold-port-flow-row">
+                ${ports}
+                <span class="settings-threshold-flow-arrow" aria-hidden="true">→</span>
+                <span class="settings-threshold-shared-chip">Shared Reader Count</span>
+            </div>
+        </div>`;
+}
+
+function renderVerificationThresholdSummary(thresholdValue = deviceSettings.verificationThreshold) {
+    const count = getVerificationTestCount();
+    const threshold = Number(thresholdValue || 250);
+    const hasOutstandingWarning = isVerificationOutstanding(thresholdValue);
+    const progressPercent = getVerificationThresholdProgressPercent(thresholdValue);
+
+    return `
+        <section class="history-section-card settings-threshold-controls-card${hasOutstandingWarning ? ' is-warning' : ''}">
+            <div class="settings-threshold-controls-head">
+                <div>
+                    <span class="history-summary-kicker">Local reader warning</span>
+                    <h2>${hasOutstandingWarning ? 'Warning Active' : 'Adjust Threshold'}</h2>
+                </div>
+                <span class="settings-threshold-status-pill${hasOutstandingWarning ? ' is-warning' : ''}">
+                    ${hasOutstandingWarning ? 'Outstanding' : 'Within Limit'}
+                </span>
+            </div>
+            <p class="settings-threshold-controls-copy">
+                All tests from ports 1-5 are counted together. A successful verification in any port resets the shared count to 0.
+            </p>
+            <div class="settings-threshold-meter">
+                <div class="settings-threshold-meter-head">
+                    <strong>${count} / ${threshold}</strong>
+                </div>
+                <div class="progress-bar settings-threshold-progress">
+                    <div class="progress-fill${hasOutstandingWarning ? ' progress-alert' : ''}" style="width:${progressPercent.toFixed(2)}%"></div>
+                </div>
+                <div class="settings-threshold-scale">
+                    <span>0</span>
+                    <span>Local ${threshold}</span>
+                </div>
+            </div>
+            <div class="settings-threshold-control-row">
+                <div class="settings-inline-form settings-threshold-input">
+                    <label>Local Warning</label>
+                    <input class="form-input" id="settings-threshold-input" type="number" min="1" max="250" value="${escapeHtml(String(thresholdValue))}" placeholder="1 to 250">
+                </div>
+                <button class="history-inline-btn history-inline-btn-secondary" id="settings-threshold-reset">Reset To 250</button>
+                <button class="history-inline-btn" id="settings-threshold-save">Save Threshold</button>
+            </div>
+        </section>`;
 }
 
 function showSettingsPasswordScreen(errorMessage = '') {
@@ -3969,9 +4021,10 @@ function showSettingsDetailScreen(view, state = {}) {
             </section>`;
     } else if (view === 'verification_threshold') {
         const thresholdValue = sanitizeVerificationThreshold(detailState.thresholdInput);
-        const outstandingCount = getVerificationOutstandingCount(thresholdValue);
+        const totalCount = getVerificationTestCount();
+        const hasOutstandingWarning = isVerificationOutstanding(thresholdValue);
         title = 'Verification Threshold';
-        subtitle = 'Set the local reader warning count. Cloud default stays 250.';
+        subtitle = 'Set the local reader warning for total tests across all ports. Cloud default stays 250.';
         body = `
             <section class="settings-section settings-threshold-section">
                 <div class="settings-section-body settings-threshold-body">
@@ -3980,24 +4033,15 @@ function showSettingsDetailScreen(view, state = {}) {
                         <div class="settings-threshold-bubble">
                             <span>Cloud Default</span>
                             <strong>250</strong>
+                            <small class="settings-threshold-bubble-detail">Fixed in cloud</small>
                         </div>
-                        <div class="settings-threshold-bubble${outstandingCount > 0 ? ' is-warning' : ''}">
-                            <span>Status</span>
-                            <strong>${escapeHtml(getVerificationSummaryLabel(thresholdValue))}</strong>
+                        <div class="settings-threshold-bubble${hasOutstandingWarning ? ' is-warning' : ''}">
+                            <span>Total Tests</span>
+                            <strong>${escapeHtml(String(totalCount))}</strong>
+                            <small class="settings-threshold-bubble-detail">All ports combined</small>
                         </div>
                     </div>
-                    <div class="settings-threshold-control-row">
-                        <div class="settings-inline-form settings-threshold-input">
-                            <label>Local Warning</label>
-                            <input class="form-input" id="settings-threshold-input" type="number" min="1" max="250" value="${escapeHtml(String(thresholdValue))}" placeholder="1 to 250">
-                        </div>
-                        <button class="history-inline-btn history-inline-btn-secondary" id="settings-threshold-reset">Reset To 250</button>
-                        <button class="history-inline-btn" id="settings-threshold-save">Save Threshold</button>
-                    </div>
-                    <div class="settings-count-panel settings-count-panel-compact">
-                        <div class="settings-count-panel-head"><strong>${escapeHtml(getVerificationSummaryLabel(thresholdValue))}</strong><span>Per port</span></div>
-                        <div class="settings-count-grid settings-count-grid-compact">${renderVerificationCountRows(thresholdValue)}</div>
-                    </div>
+                    ${renderVerificationThresholdSummary(thresholdValue)}
                 </div>
             </section>`;
     } else if (view === 'brightness') {
@@ -4726,7 +4770,7 @@ function showSettingsScreen(focusSection = '') {
             ${renderSettingsSection('Verification', [
                 renderSettingsActionRow({
                     title: 'Run Verification',
-                    detail: 'Run a verification test that resets the verification threshold count for that port.',
+                    detail: 'Choose any free port for the verification run. A passing verification resets the shared reader test count.',
                     buttonLabel: 'Open',
                     action: 'open-verification',
                     locked: !canAccessSettingsItem('open-verification')
@@ -4740,8 +4784,8 @@ function showSettingsScreen(focusSection = '') {
                 }),
                 renderSettingsActionRow({
                     title: 'Verification Threshold',
-                    detail: `Local device warning set to ${deviceSettings.verificationThreshold}. The cloud default remains 250.`,
-                    value: getVerificationOutstandingCount() > 0 ? getVerificationSummaryLabel() : `Local ${deviceSettings.verificationThreshold}`,
+                    detail: `Local device warning set to ${deviceSettings.verificationThreshold} total tests across all ports. The cloud default remains 250.`,
+                    value: getVerificationSummaryLabel(),
                     buttonLabel: 'Manage',
                     action: 'open-verification-threshold',
                     locked: !canAccessSettingsItem('open-verification-threshold')
@@ -5161,19 +5205,19 @@ function renderVerificationThresholdInfoOverlay() {
                     <div class="verification-help-grid">
                         <div class="verification-help-row">
                             <strong>Cloud Default</strong>
-                            <span>MilkSafe Cloud always uses 250 tests without verification as the default threshold.</span>
+                            <span>MilkSafe Cloud always uses 250 total tests across all ports without verification as the default threshold.</span>
                         </div>
                         <div class="verification-help-row">
                             <strong>Outstanding In Cloud</strong>
-                            <span>A port is labeled Outstanding after more than 250 tests are run on that port without verification.</span>
+                            <span>The reader is labeled Outstanding after more than 250 total tests are run across all ports without verification.</span>
                         </div>
                         <div class="verification-help-row">
                             <strong>After Verification</strong>
-                            <span>When verification is completed on that port, the verification count resets to 0.</span>
+                            <span>When verification is completed successfully in any port, the shared verification count resets to 0.</span>
                         </div>
                         <div class="verification-help-row">
                             <strong>Local Reader Warning</strong>
-                            <span>You can set a lower threshold here if you want this reader to warn sooner than the cloud default.</span>
+                            <span>You can set a lower total-test threshold here if you want this reader to warn sooner than the cloud default.</span>
                         </div>
                     </div>
                 </div>

@@ -247,9 +247,9 @@
         ],
         "bullets": [
           "All ports always share the same reader temperature setting.",
-          "Each port should be verified every 250 tests.",
+          "The reader should be verified every 250 total tests across all ports.",
           "The user can set a lower local warning threshold, but the cloud default stays 250.",
-          "After verification, the counter for that port resets to zero."
+          "After verification, the shared reader counter resets to zero."
         ]
       },
       {
@@ -787,14 +787,14 @@
         {
           "id": "settings-verification-threshold",
           "title": "Verification threshold",
-          "description": "Local warning threshold and outstanding verification counts per port.",
+          "description": "Reader-wide threshold dashboard with one shared verification count across all ports.",
           "preset": "settings_verification_threshold",
           "capture": "screen"
         },
         {
           "id": "settings-verification-threshold-help",
           "title": "Verification threshold help",
-          "description": "Help overlay explaining cloud default versus local warning threshold.",
+          "description": "Help overlay explaining the shared reader-wide counter and the local warning threshold.",
           "preset": "settings_verification_threshold_help",
           "capture": "screen"
         },

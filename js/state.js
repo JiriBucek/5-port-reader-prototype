@@ -235,13 +235,8 @@ const DEFAULT_WIFI_NETWORKS = [
     { ssid: 'Reader Backup', security: 'WPA2', signal: 'Weak', password: '2026' },
     { ssid: 'Lab Guest', security: 'WPA2', signal: 'Weak', password: '2026' }
 ];
-const DEFAULT_CHANNEL_VERIFICATION_COUNTS = {
-    1: 184,
-    2: 251,
-    3: 96,
-    4: 228,
-    5: 61
-};
+// Seeded from the previous per-port mock data, now tracked as one reader-wide total.
+const DEFAULT_VERIFICATION_TEST_COUNT = 820;
 
 function createDefaultAccountState() {
     return {
@@ -273,7 +268,7 @@ function createDefaultDeviceSettings() {
         wifiNetwork: '',
         ethernetConnected: false,
         verificationThreshold: 250,
-        verificationCounts: { ...DEFAULT_CHANNEL_VERIFICATION_COUNTS },
+        verificationCount: DEFAULT_VERIFICATION_TEST_COUNT,
         testSelectionMode: 'all',
         softwareVersion: CURRENT_SOFTWARE_VERSION,
         screenBrightnessStep: 5,
@@ -409,36 +404,39 @@ function compareSoftwareVersions(left, right) {
     return 0;
 }
 
-function getVerificationCountForChannel(channelId) {
-    return Number(deviceSettings.verificationCounts?.[channelId] || 0);
+function getVerificationTestCount() {
+    const storedCount = Number(deviceSettings.verificationCount);
+    if (Number.isFinite(storedCount) && storedCount >= 0) {
+        return Math.round(storedCount);
+    }
+
+    const legacyCounts = deviceSettings.verificationCounts;
+    if (legacyCounts && typeof legacyCounts === 'object') {
+        return Object.values(legacyCounts).reduce((total, value) => total + (Number(value) || 0), 0);
+    }
+
+    return 0;
 }
 
-function incrementVerificationCount(channelId) {
-    deviceSettings.verificationCounts[channelId] = getVerificationCountForChannel(channelId) + 1;
+function incrementVerificationCount() {
+    deviceSettings.verificationCount = getVerificationTestCount() + 1;
 }
 
-function resetVerificationCount(channelId) {
-    deviceSettings.verificationCounts[channelId] = 0;
+function resetVerificationCount() {
+    deviceSettings.verificationCount = 0;
 }
 
-function getVerificationWarningChannels(thresholdValue = deviceSettings.verificationThreshold) {
+function isVerificationOutstanding(thresholdValue = deviceSettings.verificationThreshold) {
     const threshold = Number(thresholdValue || 250);
-    return channels
-        .map(channel => ({
-            id: channel.id,
-            count: getVerificationCountForChannel(channel.id),
-            threshold
-        }))
-        .filter(item => item.count > item.threshold);
-}
-
-function getVerificationOutstandingCount(thresholdValue = deviceSettings.verificationThreshold) {
-    return getVerificationWarningChannels(thresholdValue).length;
+    return getVerificationTestCount() > threshold;
 }
 
 function getVerificationSummaryLabel(thresholdValue = deviceSettings.verificationThreshold) {
-    const outstandingCount = getVerificationOutstandingCount(thresholdValue);
-    return outstandingCount > 0 ? `${outstandingCount} / ${channels.length} Outstanding` : 'All Clear';
+    const threshold = Number(thresholdValue || 250);
+    const totalCount = getVerificationTestCount();
+    return isVerificationOutstanding(threshold)
+        ? `${totalCount} / ${threshold} Outstanding`
+        : `${totalCount} / ${threshold} Tests`;
 }
 
 function getSelectedTimezone() {
@@ -1429,7 +1427,7 @@ function storeVerificationRecord(recordInput = {}) {
 
     verificationHistory.push(record);
     if (record.overallPass) {
-        resetVerificationCount(record.channelId);
+        resetVerificationCount();
     }
     return record;
 }
