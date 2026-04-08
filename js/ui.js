@@ -1973,26 +1973,6 @@ function buildHistoryExportFilename(destination) {
     }
 }
 
-function sanitizeHistoryFilenamePart(value) {
-    return String(value ?? '')
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'flow';
-}
-
-function buildHistoryFlowExportFilename(flow, destination) {
-    const flowPart = sanitizeHistoryFilenamePart(flow.flowId || flow.historyKey || `port-${flow.channelId || 'x'}`);
-    const datePart = formatHistoryDateInput(flow.timestamp || new Date()).replace(/-/g, '') || 'export';
-
-    switch (destination) {
-        case 'csv':
-            return `milksafe-${flowPart}-${datePart}.csv`;
-        default:
-            return `milksafe-${flowPart}-${datePart}.csv`;
-    }
-}
-
 function downloadHistoryExportFile(filename, content, mimeType) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -2016,25 +1996,6 @@ function exportHistoryRowsToCsv(rows) {
     });
 
     return `\ufeff${lines.join('\r\n')}`;
-}
-
-function performFlowHistoryExport(flow, destination) {
-    const rows = flattenHistoryFlowsForExport([flow]);
-    if (rows.length === 0) {
-        return { ok: false, notice: 'No records available for this flow export.' };
-    }
-
-    switch (destination) {
-        case 'csv':
-            downloadHistoryExportFile(
-                buildHistoryFlowExportFilename(flow, 'csv'),
-                exportHistoryRowsToCsv(rows),
-                'text/csv;charset=utf-8'
-            );
-            return { ok: true, notice: 'CSV export downloaded.' };
-        default:
-            return { ok: false, notice: '' };
-    }
 }
 
 function performHistoryExport(exportState) {
@@ -2109,7 +2070,7 @@ function renderHistoryListView({
             ${hasAnyHistory && !hasVisibleFlows ? `
                 <div class="history-placeholder-panel history-placeholder-panel-simple">
                     <strong>No ${escapeHtml(filteredLabel.toLowerCase())} history</strong>
-                    <p>Try switching filters or exporting everything.</p>
+                    <p>${filter === 'controls' ? 'No control records on this reader yet.' : 'No test records on this reader yet.'}</p>
                 </div>
             ` : ''}
             ${hasVisibleFlows ? `
@@ -2193,7 +2154,6 @@ function renderHistoryFlowView(flow, historyState) {
     const latestFlowTimestamp = formatHistoryDateTime(flow.timestamp, true);
     const flowActions = renderHistoryActionBar([
         '<button class="history-inline-btn" data-history-action="print-flow">Print Group</button>',
-        '<button class="history-inline-btn" data-history-action="export-flow-csv">Export CSV</button>',
         '<button class="history-inline-btn" data-history-action="send-lims">Send to LIMS</button>',
         `<button class="history-inline-btn history-inline-btn-secondary" data-history-action="edit-comment">${commentActionLabel}</button>`
     ]);
@@ -2670,20 +2630,6 @@ function showHistoryScreen(nextState = {}) {
                         notice: 'Group print queued.'
                     });
                     break;
-                case 'export-flow-csv': {
-                    const flow = findHistoryFlowByKey(historyState.flowKey);
-                    const result = flow
-                        ? performFlowHistoryExport(flow, 'csv')
-                        : { ok: false, notice: 'Flow export unavailable.' };
-                    showHistoryScreen({
-                        view: 'flow',
-                        flowKey: historyState.flowKey,
-                        page: historyState.page,
-                        filter: historyState.filter,
-                        notice: result.notice
-                    });
-                    break;
-                }
                 case 'print-test':
                     showHistoryScreen({
                         view: 'test',

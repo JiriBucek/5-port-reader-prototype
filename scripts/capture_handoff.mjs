@@ -77,8 +77,8 @@ async function setCaptureMode(page, capture) {
         const root = document.documentElement;
         if (!root) return;
 
-        if (captureValue === 'detail_tall') {
-            root.dataset.captureMode = 'detail_tall';
+        if (captureValue === 'detail_tall' || captureValue === 'decision_tall' || captureValue === 'history_tall') {
+            root.dataset.captureMode = captureValue;
         } else {
             delete root.dataset.captureMode;
         }
@@ -147,6 +147,69 @@ async function cleanupModalCaptureClone(page) {
     });
 }
 
+async function prepareHistoryCaptureClone(page) {
+    await page.evaluate(() => {
+        document.getElementById('handoff-history-capture-root')?.remove();
+
+        const source = document.getElementById('history-screen');
+        if (!source || !source.classList.contains('active')) {
+            throw new Error('History screen is not active for tall capture.');
+        }
+
+        const root = document.createElement('div');
+        root.id = 'handoff-history-capture-root';
+        Object.assign(root.style, {
+            display: 'block',
+            width: '856px',
+            padding: '18px',
+            background: '#ffffff',
+            position: 'relative'
+        });
+
+        const frame = document.createElement('div');
+        frame.id = 'handoff-history-capture-frame';
+        Object.assign(frame.style, {
+            background: 'var(--gray-800)',
+            borderRadius: '6px',
+            padding: '10px',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px var(--gray-900)'
+        });
+
+        const clone = source.cloneNode(true);
+        clone.id = 'handoff-history-capture-screen';
+        clone.classList.add('active');
+        Object.assign(clone.style, {
+            position: 'relative',
+            inset: 'auto',
+            display: 'flex',
+            width: '800px',
+            minHeight: '480px',
+            height: 'auto',
+            overflow: 'visible',
+            padding: '12px'
+        });
+
+        const body = clone.querySelector('.history-screen-body');
+        if (body instanceof HTMLElement) {
+            Object.assign(body.style, {
+                flex: 'none',
+                minHeight: 'auto',
+                overflow: 'visible'
+            });
+        }
+
+        frame.appendChild(clone);
+        root.appendChild(frame);
+        document.body.appendChild(root);
+    });
+}
+
+async function cleanupHistoryCaptureClone(page) {
+    await page.evaluate(() => {
+        document.getElementById('handoff-history-capture-root')?.remove();
+    });
+}
+
 async function captureStateImage(page, state, targetPath) {
     const capture = state.capture || 'screen';
     await setCaptureMode(page, capture);
@@ -176,6 +239,29 @@ async function captureStateImage(page, state, targetPath) {
             clip
         });
         await cleanupModalCaptureClone(page);
+    } else if (capture === 'history_tall') {
+        await prepareHistoryCaptureClone(page);
+        await page.waitForTimeout(40);
+        const clip = await page.evaluate(() => {
+            const root = document.getElementById('handoff-history-capture-root');
+            if (!root) return null;
+            const rect = root.getBoundingClientRect();
+            return {
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: rect.width,
+                height: rect.height
+            };
+        });
+        if (!clip || clip.width <= 0 || clip.height <= 0) {
+            await cleanupHistoryCaptureClone(page);
+            throw new Error(`History clone clip could not be resolved for ${state.id}.`);
+        }
+        await page.screenshot({
+            path: targetPath,
+            clip
+        });
+        await cleanupHistoryCaptureClone(page);
     } else {
         const clip = await getCaptureClip(page, capture);
         await page.screenshot({
@@ -344,30 +430,63 @@ async function applyPreset(page, presetId) {
             prototypeRuntime.onboardingCompleted = true;
         }
 
-        function showHistoryFlow(filter = 'tests') {
-            const flow = getHistoryFlows().find(item => filter === 'controls'
-                ? item.scenario !== 'test'
-                : item.scenario === 'test');
+        function setHistoryRecords(records) {
+            sessionHistory = records;
+            historyEntryIdCounter = sessionHistory.reduce((maxId, entry) => Math.max(maxId, Number(entry.historyId) || 0), 0) + 1;
+        }
+
+        function getHistoryFlowById(historyId) {
+            const flow = getHistoryFlows().find(item => String(item.historyId) === String(historyId));
             if (!flow) {
-                throw new Error(`No history flow available for filter ${filter}`);
+                throw new Error(`No history flow available for historyId ${historyId}`);
             }
+            return flow;
+        }
+
+        function showHistoryList(filter = 'tests', page = 0, notice = '') {
+            showHistoryScreen({
+                view: 'list',
+                filter,
+                page,
+                notice
+            });
+        }
+
+        function showHistoryFlowById(historyId, filter = 'tests', nextState = {}) {
+            const flow = getHistoryFlowById(historyId);
             showHistoryScreen({
                 view: 'flow',
                 flowKey: flow.historyKey,
-                filter
+                filter,
+                ...nextState
             });
             return flow;
         }
 
-        function showHistoryTest(filter = 'tests') {
-            const flow = showHistoryFlow(filter);
-            const test = flow.tests[0];
+        function showHistoryTestById(historyId, testNumber = 1, filter = 'tests', nextState = {}) {
+            const flow = getHistoryFlowById(historyId);
+            const test = flow.tests.find(item => String(item.testNumber) === String(testNumber));
+            if (!test) {
+                throw new Error(`No history test ${testNumber} available for historyId ${historyId}`);
+            }
             showHistoryScreen({
                 view: 'test',
                 flowKey: flow.historyKey,
                 testNumber: test.testNumber,
-                filter
+                filter,
+                ...nextState
             });
+            return test;
+        }
+
+        function showHistoryExport(filter = 'tests', page = 0, modalState = {}) {
+            const historyState = {
+                view: 'list',
+                filter,
+                page
+            };
+            showHistoryScreen(historyState);
+            showHistoryExportModal(historyState, modalState);
         }
 
         function showVerificationDetailRecord() {
@@ -1027,43 +1146,100 @@ async function applyPreset(page, presetId) {
             }
             case 'history_list_tests': {
                 setSignedIn('wifi');
-                showHistoryScreen({
-                    filter: 'tests',
-                    view: 'list',
-                    page: 0
-                });
+                showHistoryList('tests', 0);
                 break;
             }
             case 'history_list_controls': {
                 setSignedIn('wifi');
-                showHistoryScreen({
-                    filter: 'controls',
-                    view: 'list',
-                    page: 0
-                });
+                showHistoryList('controls', 0);
+                break;
+            }
+            case 'history_list_empty': {
+                setSignedIn('wifi');
+                setHistoryRecords([]);
+                showHistoryList('tests', 0);
+                break;
+            }
+            case 'history_list_controls_empty': {
+                setSignedIn('wifi');
+                setHistoryRecords(buildMockHistory().filter(item => item.scenario === 'test'));
+                showHistoryList('controls', 0);
                 break;
             }
             case 'history_flow_detail': {
                 setSignedIn('wifi');
-                showHistoryFlow('tests');
+                showHistoryFlowById(1, 'tests');
+                break;
+            }
+            case 'history_flow_detail_negative': {
+                setSignedIn('wifi');
+                showHistoryFlowById(2, 'tests');
+                break;
+            }
+            case 'history_flow_detail_inconclusive': {
+                setSignedIn('wifi');
+                showHistoryFlowById(6, 'tests');
+                break;
+            }
+            case 'history_flow_detail_control_positive': {
+                setSignedIn('wifi');
+                showHistoryFlowById(4, 'controls');
+                break;
+            }
+            case 'history_flow_detail_control_negative': {
+                setSignedIn('wifi');
+                showHistoryFlowById(3, 'controls');
+                break;
+            }
+            case 'history_flow_detail_edit_comment': {
+                setSignedIn('wifi');
+                const flow = getHistoryFlowById(1);
+                showHistoryFlowById(1, 'tests', {
+                    editingComment: true,
+                    commentDraft: flow.comment
+                });
                 break;
             }
             case 'history_test_detail': {
                 setSignedIn('wifi');
-                showHistoryTest('tests');
+                showHistoryTestById(1, 1, 'tests');
+                break;
+            }
+            case 'history_test_detail_negative': {
+                setSignedIn('wifi');
+                showHistoryTestById(2, 3, 'tests');
+                break;
+            }
+            case 'history_test_detail_quantitative': {
+                setSignedIn('wifi');
+                showHistoryTestById(5, 1, 'tests');
+                break;
+            }
+            case 'history_test_detail_rejected': {
+                setSignedIn('wifi');
+                showHistoryTestById(6, 1, 'tests');
+                break;
+            }
+            case 'history_test_detail_control_positive': {
+                setSignedIn('wifi');
+                showHistoryTestById(9, 1, 'controls');
+                break;
+            }
+            case 'history_test_detail_control_negative': {
+                setSignedIn('wifi');
+                showHistoryTestById(3, 1, 'controls');
                 break;
             }
             case 'history_export_modal': {
                 setSignedIn('wifi');
-                showHistoryScreen({
-                    filter: 'tests',
-                    view: 'list',
-                    page: 0
-                });
-                showHistoryExportModal({
-                    filter: 'tests',
-                    view: 'list',
-                    page: 0
+                showHistoryExport('tests', 0);
+                break;
+            }
+            case 'history_export_modal_invalid_range': {
+                setSignedIn('wifi');
+                showHistoryExport('tests', 0, {
+                    startDate: '2026-03-20',
+                    endDate: '2026-03-18'
                 });
                 break;
             }

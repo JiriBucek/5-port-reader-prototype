@@ -649,42 +649,173 @@
     {
       "id": "history",
       "title": "History",
-      "summary": "Archived tests and controls, detail drill-down, and export entry points.",
+      "summary": "Archived tests and controls, paginated list states, flow and test drill-down, comments, and export states.",
+      "subsections": [
+        {
+          "id": "history-lists",
+          "title": "History Lists",
+          "summary": "Tests and controls filters, pagination states, and empty placeholders."
+        },
+        {
+          "id": "history-flow-details",
+          "title": "Flow Details",
+          "summary": "Tall captures of the full scrollable flow detail screen, including comments and contained tests."
+        },
+        {
+          "id": "history-test-details",
+          "title": "Test Details",
+          "summary": "Tall captures of the full scrollable test detail screen across result and record types."
+        },
+        {
+          "id": "history-export",
+          "title": "Export",
+          "summary": "Export modal variants for destination, scope, and validation feedback."
+        }
+      ],
       "states": [
         {
           "id": "history-list-tests",
           "title": "History list: tests",
           "description": "Default history list filtered to regular tests.",
           "preset": "history_list_tests",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "history-lists"
         },
         {
           "id": "history-list-controls",
           "title": "History list: controls",
-          "description": "History list filtered to controls only.",
+          "description": "History list filtered to controls only so the control-specific row treatment is included in the handoff.",
           "preset": "history_list_controls",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "history-lists"
+        },
+        {
+          "id": "history-list-empty",
+          "title": "History list: empty reader",
+          "description": "No history records exist yet, so the screen shows the global empty placeholder and disabled export entry.",
+          "preset": "history_list_empty",
+          "capture": "screen",
+          "subsection": "history-lists"
+        },
+        {
+          "id": "history-list-controls-empty",
+          "title": "History list: controls filter empty",
+          "description": "Records exist on the reader, but the selected controls filter has no matches and shows the filtered empty placeholder.",
+          "preset": "history_list_controls_empty",
+          "capture": "screen",
+          "subsection": "history-lists"
         },
         {
           "id": "history-flow-detail",
-          "title": "Flow detail",
-          "description": "Flow-level summary with contained tests and actions.",
+          "title": "Flow detail: positive",
+          "description": "Tall capture of a confirmed positive sample flow with comment, sync metadata, and three contained tests.",
           "preset": "history_flow_detail",
-          "capture": "screen"
+          "capture": "history_tall",
+          "subsection": "history-flow-details"
+        },
+        {
+          "id": "history-flow-detail-negative",
+          "title": "Flow detail: negative",
+          "description": "Tall capture of a negative sample flow that needed three tests before resolving.",
+          "preset": "history_flow_detail_negative",
+          "capture": "history_tall",
+          "subsection": "history-flow-details"
+        },
+        {
+          "id": "history-flow-detail-inconclusive",
+          "title": "Flow detail: inconclusive",
+          "description": "Tall capture of an inconclusive sample flow with a rejected test and pending sync state.",
+          "preset": "history_flow_detail_inconclusive",
+          "capture": "history_tall",
+          "subsection": "history-flow-details"
+        },
+        {
+          "id": "history-flow-detail-control-positive",
+          "title": "Flow detail: positive control",
+          "description": "Tall capture of a positive control flow showing the control-specific summary treatment.",
+          "preset": "history_flow_detail_control_positive",
+          "capture": "history_tall",
+          "subsection": "history-flow-details"
+        },
+        {
+          "id": "history-flow-detail-control-negative",
+          "title": "Flow detail: animal control negative",
+          "description": "Tall capture of a negative animal control flow so the control layout is documented with a negative result badge.",
+          "preset": "history_flow_detail_control_negative",
+          "capture": "history_tall",
+          "subsection": "history-flow-details"
+        },
+        {
+          "id": "history-flow-detail-edit-comment",
+          "title": "Flow detail: edit comment",
+          "description": "Tall capture of the inline flow comment editor with textarea plus save and cancel actions.",
+          "preset": "history_flow_detail_edit_comment",
+          "capture": "history_tall",
+          "subsection": "history-flow-details"
         },
         {
           "id": "history-test-detail",
-          "title": "Test detail",
-          "description": "Single-test result detail with substance rows.",
+          "title": "Test detail: positive",
+          "description": "Tall capture of a positive individual test with qualitative substance results and light-intensity chart.",
           "preset": "history_test_detail",
-          "capture": "screen"
+          "capture": "history_tall",
+          "subsection": "history-test-details"
+        },
+        {
+          "id": "history-test-detail-negative",
+          "title": "Test detail: negative",
+          "description": "Tall capture of a negative individual test from a confirmation sequence.",
+          "preset": "history_test_detail_negative",
+          "capture": "history_tall",
+          "subsection": "history-test-details"
+        },
+        {
+          "id": "history-test-detail-quantitative",
+          "title": "Test detail: quantitative",
+          "description": "Tall capture of a quantitative test so the measured-value layout is included in the handoff.",
+          "preset": "history_test_detail_quantitative",
+          "capture": "history_tall",
+          "subsection": "history-test-details"
+        },
+        {
+          "id": "history-test-detail-rejected",
+          "title": "Test detail: rejected",
+          "description": "Tall capture of a rejected test record so the alternate annotation label is documented.",
+          "preset": "history_test_detail_rejected",
+          "capture": "history_tall",
+          "subsection": "history-test-details"
+        },
+        {
+          "id": "history-test-detail-control-positive",
+          "title": "Test detail: positive control",
+          "description": "Tall capture of an archived positive control test detail.",
+          "preset": "history_test_detail_control_positive",
+          "capture": "history_tall",
+          "subsection": "history-test-details"
+        },
+        {
+          "id": "history-test-detail-control-negative",
+          "title": "Test detail: animal control negative",
+          "description": "Tall capture of an archived animal control test detail with a negative result.",
+          "preset": "history_test_detail_control_negative",
+          "capture": "history_tall",
+          "subsection": "history-test-details"
         },
         {
           "id": "history-export-modal",
           "title": "Export modal",
           "description": "Compact export modal with destination, scope, and date range.",
           "preset": "history_export_modal",
-          "capture": "screen"
+          "capture": "screen",
+          "subsection": "history-export"
+        },
+        {
+          "id": "history-export-modal-invalid-range",
+          "title": "Export modal: invalid date range",
+          "description": "Export modal showing the inline validation notice when the start date falls after the end date.",
+          "preset": "history_export_modal_invalid_range",
+          "capture": "screen",
+          "subsection": "history-export"
         }
       ]
     },

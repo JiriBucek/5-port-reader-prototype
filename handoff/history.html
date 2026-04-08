@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 70 states";
+            content: "6 sections · 83 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -621,7 +621,7 @@
             
             <a class="sidebar-link is-active" href="history.html">
                 <span>History</span>
-                <strong>5</strong>
+                <strong>18</strong>
             </a>
             
             <a class="sidebar-link" href="verification.html">
@@ -652,7 +652,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-03-26 16:08</p>
+        <p><strong>Created:</strong> 2026-04-08 10:44</p>
     </section>
     
         </div>
@@ -665,14 +665,24 @@
         <div>
             <span class="section-kicker">Section</span>
             <h2>History</h2>
-            <p class="section-summary">Archived tests and controls, detail drill-down, and export entry points.</p>
+            <p class="section-summary">Archived tests and controls, paginated list states, flow and test drill-down, comments, and export states.</p>
         </div>
-        <span class="section-count">5 states</span>
+        <span class="section-count">18 states</span>
     </header>
     
     
-    <div class="state-grid">
-        
+        <div class="subsection-stack">
+            
+    <section class="subsection-block" id="subsection-history-lists">
+        <header class="subsection-header">
+            <div>
+                <h3>History Lists</h3>
+                <p class="subsection-summary">Tests and controls filters, pagination states, and empty placeholders.</p>
+            </div>
+            <span class="subsection-count">4 states</span>
+        </header>
+        <div class="state-grid">
+            
     <article class="state-card" id="state-history-list-tests">
         <div class="shot-frame">
             
@@ -701,7 +711,7 @@
             type="button"
             data-viewer-src="screenshots/history-list-controls.png"
             data-viewer-title="History list: controls"
-            data-viewer-description="History list filtered to controls only."
+            data-viewer-description="History list filtered to controls only so the control-specific row treatment is included in the handoff."
         >
             <img loading="lazy" src="screenshots/history-list-controls.png" alt="History list: controls">
         </button>
@@ -709,10 +719,63 @@
         </div>
         <div class="state-copy">
             <h3>History list: controls</h3>
-            <p>History list filtered to controls only.</p>
+            <p>History list filtered to controls only so the control-specific row treatment is included in the handoff.</p>
         </div>
     </article>
     
+    <article class="state-card" id="state-history-list-empty">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-list-empty.png"
+            data-viewer-title="History list: empty reader"
+            data-viewer-description="No history records exist yet, so the screen shows the global empty placeholder and disabled export entry."
+        >
+            <img loading="lazy" src="screenshots/history-list-empty.png" alt="History list: empty reader">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>History list: empty reader</h3>
+            <p>No history records exist yet, so the screen shows the global empty placeholder and disabled export entry.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-list-controls-empty">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-list-controls-empty.png"
+            data-viewer-title="History list: controls filter empty"
+            data-viewer-description="Records exist on the reader, but the selected controls filter has no matches and shows the filtered empty placeholder."
+        >
+            <img loading="lazy" src="screenshots/history-list-controls-empty.png" alt="History list: controls filter empty">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>History list: controls filter empty</h3>
+            <p>Records exist on the reader, but the selected controls filter has no matches and shows the filtered empty placeholder.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-history-flow-details">
+        <header class="subsection-header">
+            <div>
+                <h3>Flow Details</h3>
+                <p class="subsection-summary">Tall captures of the full scrollable flow detail screen, including comments and contained tests.</p>
+            </div>
+            <span class="subsection-count">6 states</span>
+        </header>
+        <div class="state-grid">
+            
     <article class="state-card" id="state-history-flow-detail">
         <div class="shot-frame">
             
@@ -720,19 +783,132 @@
             class="shot-open"
             type="button"
             data-viewer-src="screenshots/history-flow-detail.png"
-            data-viewer-title="Flow detail"
-            data-viewer-description="Flow-level summary with contained tests and actions."
+            data-viewer-title="Flow detail: positive"
+            data-viewer-description="Tall capture of a confirmed positive sample flow with comment, sync metadata, and three contained tests."
         >
-            <img loading="lazy" src="screenshots/history-flow-detail.png" alt="Flow detail">
+            <img loading="lazy" src="screenshots/history-flow-detail.png" alt="Flow detail: positive">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Flow detail</h3>
-            <p>Flow-level summary with contained tests and actions.</p>
+            <h3>Flow detail: positive</h3>
+            <p>Tall capture of a confirmed positive sample flow with comment, sync metadata, and three contained tests.</p>
         </div>
     </article>
     
+    <article class="state-card" id="state-history-flow-detail-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-flow-detail-negative.png"
+            data-viewer-title="Flow detail: negative"
+            data-viewer-description="Tall capture of a negative sample flow that needed three tests before resolving."
+        >
+            <img loading="lazy" src="screenshots/history-flow-detail-negative.png" alt="Flow detail: negative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: negative</h3>
+            <p>Tall capture of a negative sample flow that needed three tests before resolving.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-flow-detail-inconclusive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-flow-detail-inconclusive.png"
+            data-viewer-title="Flow detail: inconclusive"
+            data-viewer-description="Tall capture of an inconclusive sample flow with a rejected test and pending sync state."
+        >
+            <img loading="lazy" src="screenshots/history-flow-detail-inconclusive.png" alt="Flow detail: inconclusive">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: inconclusive</h3>
+            <p>Tall capture of an inconclusive sample flow with a rejected test and pending sync state.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-flow-detail-control-positive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-flow-detail-control-positive.png"
+            data-viewer-title="Flow detail: positive control"
+            data-viewer-description="Tall capture of a positive control flow showing the control-specific summary treatment."
+        >
+            <img loading="lazy" src="screenshots/history-flow-detail-control-positive.png" alt="Flow detail: positive control">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: positive control</h3>
+            <p>Tall capture of a positive control flow showing the control-specific summary treatment.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-flow-detail-control-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-flow-detail-control-negative.png"
+            data-viewer-title="Flow detail: animal control negative"
+            data-viewer-description="Tall capture of a negative animal control flow so the control layout is documented with a negative result badge."
+        >
+            <img loading="lazy" src="screenshots/history-flow-detail-control-negative.png" alt="Flow detail: animal control negative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: animal control negative</h3>
+            <p>Tall capture of a negative animal control flow so the control layout is documented with a negative result badge.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-flow-detail-edit-comment">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-flow-detail-edit-comment.png"
+            data-viewer-title="Flow detail: edit comment"
+            data-viewer-description="Tall capture of the inline flow comment editor with textarea plus save and cancel actions."
+        >
+            <img loading="lazy" src="screenshots/history-flow-detail-edit-comment.png" alt="Flow detail: edit comment">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Flow detail: edit comment</h3>
+            <p>Tall capture of the inline flow comment editor with textarea plus save and cancel actions.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-history-test-details">
+        <header class="subsection-header">
+            <div>
+                <h3>Test Details</h3>
+                <p class="subsection-summary">Tall captures of the full scrollable test detail screen across result and record types.</p>
+            </div>
+            <span class="subsection-count">6 states</span>
+        </header>
+        <div class="state-grid">
+            
     <article class="state-card" id="state-history-test-detail">
         <div class="shot-frame">
             
@@ -740,19 +916,132 @@
             class="shot-open"
             type="button"
             data-viewer-src="screenshots/history-test-detail.png"
-            data-viewer-title="Test detail"
-            data-viewer-description="Single-test result detail with substance rows."
+            data-viewer-title="Test detail: positive"
+            data-viewer-description="Tall capture of a positive individual test with qualitative substance results and light-intensity chart."
         >
-            <img loading="lazy" src="screenshots/history-test-detail.png" alt="Test detail">
+            <img loading="lazy" src="screenshots/history-test-detail.png" alt="Test detail: positive">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Test detail</h3>
-            <p>Single-test result detail with substance rows.</p>
+            <h3>Test detail: positive</h3>
+            <p>Tall capture of a positive individual test with qualitative substance results and light-intensity chart.</p>
         </div>
     </article>
     
+    <article class="state-card" id="state-history-test-detail-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-test-detail-negative.png"
+            data-viewer-title="Test detail: negative"
+            data-viewer-description="Tall capture of a negative individual test from a confirmation sequence."
+        >
+            <img loading="lazy" src="screenshots/history-test-detail-negative.png" alt="Test detail: negative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test detail: negative</h3>
+            <p>Tall capture of a negative individual test from a confirmation sequence.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-test-detail-quantitative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-test-detail-quantitative.png"
+            data-viewer-title="Test detail: quantitative"
+            data-viewer-description="Tall capture of a quantitative test so the measured-value layout is included in the handoff."
+        >
+            <img loading="lazy" src="screenshots/history-test-detail-quantitative.png" alt="Test detail: quantitative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test detail: quantitative</h3>
+            <p>Tall capture of a quantitative test so the measured-value layout is included in the handoff.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-test-detail-rejected">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-test-detail-rejected.png"
+            data-viewer-title="Test detail: rejected"
+            data-viewer-description="Tall capture of a rejected test record so the alternate annotation label is documented."
+        >
+            <img loading="lazy" src="screenshots/history-test-detail-rejected.png" alt="Test detail: rejected">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test detail: rejected</h3>
+            <p>Tall capture of a rejected test record so the alternate annotation label is documented.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-test-detail-control-positive">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-test-detail-control-positive.png"
+            data-viewer-title="Test detail: positive control"
+            data-viewer-description="Tall capture of an archived positive control test detail."
+        >
+            <img loading="lazy" src="screenshots/history-test-detail-control-positive.png" alt="Test detail: positive control">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test detail: positive control</h3>
+            <p>Tall capture of an archived positive control test detail.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-history-test-detail-control-negative">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-test-detail-control-negative.png"
+            data-viewer-title="Test detail: animal control negative"
+            data-viewer-description="Tall capture of an archived animal control test detail with a negative result."
+        >
+            <img loading="lazy" src="screenshots/history-test-detail-control-negative.png" alt="Test detail: animal control negative">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Test detail: animal control negative</h3>
+            <p>Tall capture of an archived animal control test detail with a negative result.</p>
+        </div>
+    </article>
+    
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-history-export">
+        <header class="subsection-header">
+            <div>
+                <h3>Export</h3>
+                <p class="subsection-summary">Export modal variants for destination, scope, and validation feedback.</p>
+            </div>
+            <span class="subsection-count">2 states</span>
+        </header>
+        <div class="state-grid">
+            
     <article class="state-card" id="state-history-export-modal">
         <div class="shot-frame">
             
@@ -773,8 +1062,31 @@
         </div>
     </article>
     
-    </div>
+    <article class="state-card" id="state-history-export-modal-invalid-range">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/history-export-modal-invalid-range.png"
+            data-viewer-title="Export modal: invalid date range"
+            data-viewer-description="Export modal showing the inline validation notice when the start date falls after the end date."
+        >
+            <img loading="lazy" src="screenshots/history-export-modal-invalid-range.png" alt="Export modal: invalid date range">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Export modal: invalid date range</h3>
+            <p>Export modal showing the inline validation notice when the start date falls after the end date.</p>
+        </div>
+    </article>
     
+        </div>
+    </section>
+    
+        </div>
+        
     
         </main>
     </div>
