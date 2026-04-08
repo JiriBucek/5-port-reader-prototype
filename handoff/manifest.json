@@ -304,6 +304,15 @@
   },
   "changeLog": [
     {
+      "date": "2026-04-08",
+      "items": [
+        "Expanded the History handoff coverage with additional list, flow detail, test detail, and export states.",
+        "Added tall History detail captures so scrollable flow and test screens export at full height for Figma handoff.",
+        "Removed the flow-level CSV export action from the History source UI and corrected the empty controls copy to say no control records exist on the reader yet.",
+        "Trimmed redundant History handoff states after review, while keeping the controls list state so the blue control rows remain documented."
+      ]
+    },
+    {
       "date": "2026-03-24",
       "items": [
         "Initial version 1."
