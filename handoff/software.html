@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 106 states";
+            content: "6 sections · 123 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -631,17 +631,17 @@
             
             <a class="sidebar-link" href="settings.html">
                 <span>Settings</span>
-                <strong>24</strong>
+                <strong>23</strong>
             </a>
             
             <a class="sidebar-link is-active" href="software.html">
                 <span>Software Update</span>
-                <strong>4</strong>
+                <strong>10</strong>
             </a>
             
             <a class="sidebar-link" href="onboarding.html">
                 <span>Onboarding</span>
-                <strong>7</strong>
+                <strong>19</strong>
             </a>
             
             </div>
@@ -652,7 +652,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-04-16 14:25</p>
+        <p><strong>Created:</strong> 2026-04-16 15:22</p>
     </section>
     
         </div>
@@ -665,9 +665,9 @@
         <div>
             <span class="section-kicker">Section</span>
             <h2>Software Update</h2>
-            <p class="section-summary">Software update entry and progress states captured from the settings detail flow.</p>
+            <p class="section-summary">Software update flow for Cloud and USB, including checking, transfer, install, and restart states.</p>
         </div>
-        <span class="section-count">4 states</span>
+        <span class="section-count">10 states</span>
     </header>
     
     
@@ -681,7 +681,7 @@
             type="button"
             data-viewer-src="screenshots/software-home.png"
             data-viewer-title="Software update home"
-            data-viewer-description="Default software update screen before checking for an update."
+            data-viewer-description="Default software update screen before the user checks Cloud or USB."
         >
             <img loading="lazy" src="screenshots/software-home.png" alt="Software update home">
         </button>
@@ -689,7 +689,67 @@
         </div>
         <div class="state-copy">
             <h3>Software update home</h3>
-            <p>Default software update screen before checking for an update.</p>
+            <p>Default software update screen before the user checks Cloud or USB.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-checking-cloud">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-checking-cloud.png"
+            data-viewer-title="Checking Cloud"
+            data-viewer-description="Cloud version check in progress."
+        >
+            <img loading="lazy" src="screenshots/software-checking-cloud.png" alt="Checking Cloud">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Checking Cloud</h3>
+            <p>Cloud version check in progress.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-offline-blocked">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-offline-blocked.png"
+            data-viewer-title="Cloud check blocked offline"
+            data-viewer-description="Cloud update check blocked until the reader is connected to Wi-Fi or Ethernet."
+        >
+            <img loading="lazy" src="screenshots/software-offline-blocked.png" alt="Cloud check blocked offline">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Cloud check blocked offline</h3>
+            <p>Cloud update check blocked until the reader is connected to Wi-Fi or Ethernet.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-up-to-date">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-up-to-date.png"
+            data-viewer-title="Software up to date"
+            data-viewer-description="Cloud check completed with no newer version available."
+        >
+            <img loading="lazy" src="screenshots/software-up-to-date.png" alt="Software up to date">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Software up to date</h3>
+            <p>Cloud check completed with no newer version available.</p>
         </div>
     </article>
     
@@ -700,16 +760,96 @@
             class="shot-open"
             type="button"
             data-viewer-src="screenshots/software-package-ready.png"
-            data-viewer-title="Update available"
-            data-viewer-description="Cloud update found and ready to download."
+            data-viewer-title="Cloud update ready"
+            data-viewer-description="Cloud check found a newer version and the reader can start the update."
         >
-            <img loading="lazy" src="screenshots/software-package-ready.png" alt="Update available">
+            <img loading="lazy" src="screenshots/software-package-ready.png" alt="Cloud update ready">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Update available</h3>
-            <p>Cloud update found and ready to download.</p>
+            <h3>Cloud update ready</h3>
+            <p>Cloud check found a newer version and the reader can start the update.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-checking-usb">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-checking-usb.png"
+            data-viewer-title="Checking USB"
+            data-viewer-description="USB package check in progress."
+        >
+            <img loading="lazy" src="screenshots/software-checking-usb.png" alt="Checking USB">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Checking USB</h3>
+            <p>USB package check in progress.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-package-ready-usb">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-package-ready-usb.png"
+            data-viewer-title="USB update ready"
+            data-viewer-description="USB package found and ready to apply on the reader."
+        >
+            <img loading="lazy" src="screenshots/software-package-ready-usb.png" alt="USB update ready">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>USB update ready</h3>
+            <p>USB package found and ready to apply on the reader.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-transferring-cloud">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-transferring-cloud.png"
+            data-viewer-title="Downloading from Cloud"
+            data-viewer-description="Cloud update is being downloaded before installation."
+        >
+            <img loading="lazy" src="screenshots/software-transferring-cloud.png" alt="Downloading from Cloud">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Downloading from Cloud</h3>
+            <p>Cloud update is being downloaded before installation.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-software-transferring-usb">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/software-transferring-usb.png"
+            data-viewer-title="Loading from USB"
+            data-viewer-description="USB package is being loaded before installation."
+        >
+            <img loading="lazy" src="screenshots/software-transferring-usb.png" alt="Loading from USB">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Loading from USB</h3>
+            <p>USB package is being loaded before installation.</p>
         </div>
     </article>
     
@@ -721,7 +861,7 @@
             type="button"
             data-viewer-src="screenshots/software-installing.png"
             data-viewer-title="Installing update"
-            data-viewer-description="Software update actively installing."
+            data-viewer-description="Reader is applying the new software package."
         >
             <img loading="lazy" src="screenshots/software-installing.png" alt="Installing update">
         </button>
@@ -729,27 +869,7 @@
         </div>
         <div class="state-copy">
             <h3>Installing update</h3>
-            <p>Software update actively installing.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-software-restart-required">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/software-restart-required.png"
-            data-viewer-title="Restart required"
-            data-viewer-description="Update loaded and waiting for a restart to complete."
-        >
-            <img loading="lazy" src="screenshots/software-restart-required.png" alt="Restart required">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Restart required</h3>
-            <p>Update loaded and waiting for a restart to complete.</p>
+            <p>Reader is applying the new software package.</p>
         </div>
     </article>
     

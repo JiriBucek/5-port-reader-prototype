@@ -3088,6 +3088,9 @@ function renderTimezoneSelectionRows(selectedTimezone, valueAttributeName, searc
                 <label for="${searchInputId}">Search</label>
                 <input class="form-input" id="${searchInputId}" type="text" value="" placeholder="Type Europe, Prague, Pacific..." ${getAutofillIgnoreAttrs('text')}>
             </div>
+            <div class="settings-detail-note">
+                Choose the time zone where this reader is used. MilkSafe Cloud uses this setting to show the correct local time.
+            </div>
             <div class="type-picker-list-block settings-timezone-list">
                 <div class="type-picker-results">
                     ${timezoneOptions.map(timezone => `
@@ -3322,7 +3325,7 @@ function renderCloudAccountPanel(cloudState, options = {}) {
                 ? renderAsyncStateBlock('success', 'Signed in.')
                 : (cloudState.signInError
                     ? renderAsyncStateBlock('error', cloudState.signInError)
-                    : renderAsyncStateBlock('info', `Use ${getCloudCredentialHint()}.`))));
+                    : '')));
 
     return `
         <div class="settings-section-body">
@@ -3456,9 +3459,22 @@ function buildSoftwareState(source = {}) {
     };
 }
 
+function getSoftwareSourceSummary(softwareState) {
+    if (softwareState.stage === 'home') return 'Choose Cloud or USB';
+    return softwareState.source === 'usb' ? 'USB Package' : 'MilkSafe Cloud';
+}
+
+function getSoftwareAvailableVersionSummary(softwareState, currentVersion) {
+    if (softwareState.stage === 'home') return 'Not checked';
+    if (softwareState.stage === 'checking') return 'Checking Cloud...';
+    if (softwareState.stage === 'detecting_usb') return 'Checking USB...';
+    if (softwareState.stage === 'offline_blocked') return 'Unavailable offline';
+    if (softwareState.stage === 'up_to_date') return currentVersion;
+    return softwareState.availableVersion;
+}
+
 function renderSoftwarePanel(softwareState) {
     const currentVersion = softwareState.installedVersion;
-    const sourceLabel = softwareState.source === 'usb' ? 'USB Package' : 'Cloud Latest';
     const progressMarkup = softwareState.progress > 0 ? `
         <div class="progress-bar">
             <div class="progress-fill" style="width:${softwareState.progress}%"></div>
@@ -3468,53 +3484,52 @@ function renderSoftwarePanel(softwareState) {
     let detail = `
         <div class="settings-summary-card">
             <div class="settings-summary-row"><span>Installed Version</span><strong>${escapeHtml(currentVersion)}</strong></div>
-            <div class="settings-summary-row"><span>${escapeHtml(sourceLabel)}</span><strong>${escapeHtml(softwareState.availableVersion)}</strong></div>
-            <div class="settings-summary-row"><span>Source</span><strong>${softwareState.source === 'usb' ? 'USB' : getConnectivityLabel()}</strong></div>
+            <div class="settings-summary-row"><span>Update Source</span><strong>${escapeHtml(getSoftwareSourceSummary(softwareState))}</strong></div>
+            <div class="settings-summary-row"><span>New Version</span><strong>${escapeHtml(getSoftwareAvailableVersionSummary(softwareState, currentVersion))}</strong></div>
         </div>`;
 
     if (softwareState.stage === 'checking') {
-        detail += renderAsyncStateBlock('loading', 'Checking for updates...');
+        detail += renderAsyncStateBlock('loading', 'Checking MilkSafe Cloud for a new version...');
     } else if (softwareState.stage === 'detecting_usb') {
-        detail += renderAsyncStateBlock('loading', 'Reading USB package...');
+        detail += renderAsyncStateBlock('loading', 'Checking the USB package...');
     } else if (softwareState.stage === 'offline_blocked') {
-        detail += renderAsyncStateBlock('error', 'Connect to Wi-Fi or Ethernet before checking for updates.');
+        detail += renderAsyncStateBlock('error', 'Connect to Wi-Fi or Ethernet before checking MilkSafe Cloud for updates.');
     } else if (softwareState.stage === 'up_to_date') {
-        detail += renderAsyncStateBlock('success', `Software is up to date. Current version: ${currentVersion}.`);
+        detail += renderAsyncStateBlock('success', `This reader is already on the latest version: ${currentVersion}.`);
     } else if (softwareState.stage === 'package_ready') {
-        detail += renderAsyncStateBlock('info', softwareState.source === 'usb' ? 'USB package is ready to install.' : 'An update is available.');
+        detail += renderAsyncStateBlock('info', softwareState.source === 'usb'
+            ? `${softwareState.availableVersion} was found on the USB package and is ready to install.`
+            : `${softwareState.availableVersion} is available in MilkSafe Cloud and is ready to install.`);
     } else if (softwareState.stage === 'transferring') {
         detail += `
-            ${renderAsyncStateBlock('loading', softwareState.source === 'usb' ? 'Loading update package...' : 'Downloading update...')}
+            ${renderAsyncStateBlock('loading', softwareState.source === 'usb'
+                ? `Loading ${softwareState.availableVersion} from USB...`
+                : `Downloading ${softwareState.availableVersion} from MilkSafe Cloud...`)}
             ${progressMarkup}`;
     } else if (softwareState.stage === 'installing') {
         detail += `
-            ${renderAsyncStateBlock('loading', `Installing ${softwareState.availableVersion}...`)}
+            ${renderAsyncStateBlock('loading', `Updating reader firmware to ${softwareState.availableVersion}. The device restarts automatically when the update is complete.`)}
             ${progressMarkup}`;
-    } else if (softwareState.stage === 'restart_required') {
-        detail += renderAsyncStateBlock('success', 'Update loaded. Restart the reader to finish.');
     } else if (softwareState.stage === 'restarting') {
         detail += renderAsyncStateBlock('loading', 'Restarting reader...');
     } else {
-        detail += renderAsyncStateBlock('info', 'Choose USB or cloud update.');
+        detail += renderAsyncStateBlock('info', 'Choose Cloud or USB to check for a new software version.');
     }
 
     const actions = [];
-    actions.push('<button class="history-inline-btn history-inline-btn-secondary" data-settings-software-action="usb">USB Update</button>');
     if (softwareState.stage === 'home' || softwareState.stage === 'offline_blocked' || softwareState.stage === 'up_to_date') {
-        actions.push('<button class="history-inline-btn" data-settings-software-action="check">Check Cloud</button>');
+        actions.push('<button class="history-inline-btn history-inline-btn-secondary" data-settings-software-action="check-usb">Check USB</button>');
+        actions.push('<button class="history-inline-btn" data-settings-software-action="check-cloud">Check Cloud</button>');
     }
     if (softwareState.stage === 'package_ready') {
-        actions.push(`<button class="history-inline-btn" data-settings-software-action="download">${softwareState.source === 'usb' ? 'Install' : 'Download'}</button>`);
-    }
-    if (softwareState.stage === 'restart_required') {
-        actions.push('<button class="history-inline-btn" data-settings-software-action="restart">Restart Reader</button>');
+        actions.push('<button class="history-inline-btn" data-settings-software-action="update">Update Reader</button>');
     }
 
     return `
         <div class="settings-section-body">
             ${softwareState.notice ? renderHistoryNotice(softwareState.notice) : ''}
             ${detail}
-            <div class="history-action-row">${actions.join('')}</div>
+            ${actions.length > 0 ? `<div class="history-action-row">${actions.join('')}</div>` : ''}
         </div>`;
 }
 
@@ -3560,8 +3575,8 @@ function showOnboardingScreen(stepIndex = 0, draft = buildOnboardingDraftFromSta
             title: 'Display And Sound',
             body: `
                 <div class="settings-section-body">
-                    <div class="settings-summary-card">
-                        <div class="settings-summary-row"><span>Screen Brightness</span><strong>${escapeHtml(getScreenBrightnessLabel(normalizedDraft.screenBrightnessStep))}</strong></div>
+                    <div class="settings-item-copy">
+                        <h3>Screen Brightness</h3>
                     </div>
                     <div class="settings-section-body onboarding-inline-stack">
                         ${renderSettingsSegmentedControl('onboarding-brightness', normalizedDraft.screenBrightnessStep, Array.from({ length: 7 }, (_, index) => ({
@@ -4094,6 +4109,9 @@ function showSettingsDetailScreen(view, state = {}) {
             <section class="settings-section">
                 <div class="settings-section-body">
                     ${renderHistoryNotice(detailState.notice)}
+                    <div class="settings-detail-note">
+                        Factory reset returns the reader to factory settings and starts onboarding again. Local test records not uploaded to MilkSafe Cloud and verifications stored on this reader will be permanently deleted. Wi-Fi, internet, and time zone must be configured again.
+                    </div>
                     <div class="settings-inline-form" data-1p-ignore="true" data-lpignore="true">
                         <label>Password</label>
                         <input class="form-input" id="settings-factory-password" type="password" inputmode="numeric" value="${escapeHtml(SETTINGS_PASSWORD)}" placeholder="Enter password" ${getAutofillIgnoreAttrs('password')}>
@@ -4141,7 +4159,7 @@ function showSettingsDetailScreen(view, state = {}) {
 
     screen.classList.add('active');
 
-    const playSoftwareSequence = (softwareStates, delay = 850) => {
+    const playSoftwareSequence = (softwareStates, delay = 850, onComplete = null) => {
         if (!Array.isArray(softwareStates) || softwareStates.length === 0) return;
         const [currentState, ...remainingStates] = softwareStates;
         showSettingsDetailScreen('software', {
@@ -4150,6 +4168,8 @@ function showSettingsDetailScreen(view, state = {}) {
         });
         if (remainingStates.length > 0) {
             schedulePrototypeFullScreenTransition(() => playSoftwareSequence(remainingStates, delay), delay);
+        } else if (typeof onComplete === 'function') {
+            schedulePrototypeFullScreenTransition(onComplete, delay);
         }
     };
 
@@ -4465,7 +4485,7 @@ function showSettingsDetailScreen(view, state = {}) {
     screen.querySelectorAll('[data-settings-software-action]').forEach(button => {
         button.addEventListener('click', () => {
             const action = button.dataset.settingsSoftwareAction;
-            if (action === 'usb') {
+            if (action === 'check-usb') {
                 showSettingsDetailScreen('software', {
                     focusSection: detailState.focusSection,
                     softwareState: {
@@ -4490,12 +4510,13 @@ function showSettingsDetailScreen(view, state = {}) {
                 return;
             }
 
-            if (action === 'check') {
+            if (action === 'check-cloud') {
                 if (deviceSettings.connectivity === 'offline') {
                     showSettingsDetailScreen('software', {
                         focusSection: detailState.focusSection,
                         softwareState: {
                             ...detailState.softwareState,
+                            source: 'cloud',
                             stage: 'offline_blocked'
                         }
                     });
@@ -4527,7 +4548,7 @@ function showSettingsDetailScreen(view, state = {}) {
                 return;
             }
 
-            if (action === 'download') {
+            if (action === 'update') {
                 const source = detailState.softwareState.source || 'cloud';
                 playSoftwareSequence([
                     { ...detailState.softwareState, source, stage: 'transferring', progress: source === 'usb' ? 46 : 22 },
@@ -4535,34 +4556,35 @@ function showSettingsDetailScreen(view, state = {}) {
                     { ...detailState.softwareState, source, stage: 'transferring', progress: 100 },
                     { ...detailState.softwareState, source, stage: 'installing', progress: 34 },
                     { ...detailState.softwareState, source, stage: 'installing', progress: 82 },
-                    { ...detailState.softwareState, source, stage: 'restart_required', progress: 100 }
-                ]);
-                return;
-            }
-
-            if (action === 'restart') {
-                showSettingsDetailScreen('software', {
-                    focusSection: detailState.focusSection,
-                    softwareState: {
-                        ...detailState.softwareState,
-                        stage: 'restarting',
-                        progress: 100
-                    }
-                });
-
-                schedulePrototypeFullScreenTransition(() => {
-                    deviceSettings.softwareVersion = LATEST_SOFTWARE_VERSION;
+                    { ...detailState.softwareState, source, stage: 'installing', progress: 100 }
+                ], 850, () => {
                     showSettingsDetailScreen('software', {
                         focusSection: detailState.focusSection,
                         softwareState: {
                             ...detailState.softwareState,
-                            installedVersion: deviceSettings.softwareVersion,
-                            stage: 'up_to_date',
-                            progress: 0,
-                            notice: `Reader restarted on ${deviceSettings.softwareVersion}. Software is now up to date.`
+                            source,
+                            stage: 'restarting',
+                            progress: 100
                         }
                     });
+
+                    schedulePrototypeFullScreenTransition(() => {
+                        deviceSettings.softwareVersion = LATEST_SOFTWARE_VERSION;
+                        showSettingsDetailScreen('software', {
+                            focusSection: detailState.focusSection,
+                            softwareState: {
+                                ...detailState.softwareState,
+                                source,
+                                installedVersion: deviceSettings.softwareVersion,
+                                availableVersion: deviceSettings.softwareVersion,
+                                stage: 'up_to_date',
+                                progress: 0,
+                                notice: `Reader restarted automatically on ${deviceSettings.softwareVersion}. Software is now up to date.`
+                            }
+                        });
+                    }, 900);
                 });
+                return;
             }
         });
     });

@@ -1013,7 +1013,7 @@
           "title": "Language",
           "description": "Dedicated language picker inside settings.",
           "preset": "settings_language",
-          "capture": "settings_tall"
+          "capture": "screen"
         },
         {
           "id": "settings-cloud-login",
@@ -1034,13 +1034,6 @@
           "title": "MilkSafe Cloud: incorrect password",
           "description": "Cloud sign-in error shown after the operator enters invalid credentials.",
           "preset": "settings_cloud_error",
-          "capture": "screen"
-        },
-        {
-          "id": "settings-cloud-success",
-          "title": "MilkSafe Cloud: correct password",
-          "description": "Successful Cloud sign-in confirmation before the screen settles into the signed-in summary.",
-          "preset": "settings_cloud_success",
           "capture": "screen"
         },
         {
@@ -1125,34 +1118,76 @@
     {
       "id": "software",
       "title": "Software Update",
-      "summary": "Software update entry and progress states captured from the settings detail flow.",
+      "summary": "Software update flow for Cloud and USB, including checking, transfer, install, and restart states.",
       "states": [
         {
           "id": "software-home",
           "title": "Software update home",
-          "description": "Default software update screen before checking for an update.",
+          "description": "Default software update screen before the user checks Cloud or USB.",
           "preset": "software_home",
           "capture": "screen"
         },
         {
+          "id": "software-checking-cloud",
+          "title": "Checking Cloud",
+          "description": "Cloud version check in progress.",
+          "preset": "software_checking_cloud",
+          "capture": "screen"
+        },
+        {
+          "id": "software-offline-blocked",
+          "title": "Cloud check blocked offline",
+          "description": "Cloud update check blocked until the reader is connected to Wi-Fi or Ethernet.",
+          "preset": "software_offline_blocked",
+          "capture": "screen"
+        },
+        {
+          "id": "software-up-to-date",
+          "title": "Software up to date",
+          "description": "Cloud check completed with no newer version available.",
+          "preset": "software_up_to_date",
+          "capture": "screen"
+        },
+        {
           "id": "software-package-ready",
-          "title": "Update available",
-          "description": "Cloud update found and ready to download.",
+          "title": "Cloud update ready",
+          "description": "Cloud check found a newer version and the reader can start the update.",
           "preset": "software_package_ready",
+          "capture": "screen"
+        },
+        {
+          "id": "software-checking-usb",
+          "title": "Checking USB",
+          "description": "USB package check in progress.",
+          "preset": "software_checking_usb",
+          "capture": "screen"
+        },
+        {
+          "id": "software-package-ready-usb",
+          "title": "USB update ready",
+          "description": "USB package found and ready to apply on the reader.",
+          "preset": "software_package_ready_usb",
+          "capture": "screen"
+        },
+        {
+          "id": "software-transferring-cloud",
+          "title": "Downloading from Cloud",
+          "description": "Cloud update is being downloaded before installation.",
+          "preset": "software_transferring_cloud",
+          "capture": "screen"
+        },
+        {
+          "id": "software-transferring-usb",
+          "title": "Loading from USB",
+          "description": "USB package is being loaded before installation.",
+          "preset": "software_transferring_usb",
           "capture": "screen"
         },
         {
           "id": "software-installing",
           "title": "Installing update",
-          "description": "Software update actively installing.",
+          "description": "Reader is applying the new software package.",
           "preset": "software_installing",
-          "capture": "screen"
-        },
-        {
-          "id": "software-restart-required",
-          "title": "Restart required",
-          "description": "Update loaded and waiting for a restart to complete.",
-          "preset": "software_restart_required",
           "capture": "screen"
         }
       ]
@@ -1160,13 +1195,27 @@
     {
       "id": "onboarding",
       "title": "Onboarding",
-      "summary": "First-time setup flow, including required choices, connectivity, and cloud account states.",
+      "summary": "First-time setup flow, including every setup step plus Internet and Cloud branching states.",
       "states": [
         {
           "id": "onboarding-language",
           "title": "Language",
-          "description": "First onboarding step for choosing device language.",
+          "description": "First onboarding step for choosing device language from the full list.",
           "preset": "onboarding_language",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-display-sound",
+          "title": "Display And Sound",
+          "description": "Brightness and sound step using the same control layout as the Device settings screen.",
+          "preset": "onboarding_display_sound",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-date-time",
+          "title": "Date And Time",
+          "description": "Date and time entry step during first-time setup.",
+          "preset": "onboarding_date_time",
           "capture": "screen"
         },
         {
@@ -1177,6 +1226,27 @@
           "capture": "screen"
         },
         {
+          "id": "onboarding-timezone-selected",
+          "title": "Time zone selected",
+          "description": "Timezone step after the operator selects a matching result and can continue.",
+          "preset": "onboarding_timezone_selected",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-internet-offline",
+          "title": "Internet: offline",
+          "description": "Offline connectivity mode with a warning that internet-dependent actions are unavailable.",
+          "preset": "onboarding_internet_offline",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-internet-wifi-list",
+          "title": "Internet: Wi-Fi networks",
+          "description": "Wi-Fi network list before a network is chosen.",
+          "preset": "onboarding_internet_wifi_list",
+          "capture": "screen"
+        },
+        {
           "id": "onboarding-internet-wifi-password",
           "title": "Internet: Wi-Fi password",
           "description": "Wi-Fi selected and waiting for network password entry.",
@@ -1184,10 +1254,52 @@
           "capture": "screen"
         },
         {
+          "id": "onboarding-internet-wifi-connecting",
+          "title": "Internet: Wi-Fi connecting",
+          "description": "Loading state while the reader connects to the selected Wi-Fi network.",
+          "preset": "onboarding_internet_wifi_connecting",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-internet-wifi-error",
+          "title": "Internet: Wi-Fi password error",
+          "description": "Wi-Fi password entry with an incorrect-password error message.",
+          "preset": "onboarding_internet_wifi_error",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-internet-wifi-success",
+          "title": "Internet: Wi-Fi connected",
+          "description": "Successful Wi-Fi connection state with Next enabled.",
+          "preset": "onboarding_internet_wifi_success",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-internet-ethernet",
+          "title": "Internet: Ethernet connected",
+          "description": "Ethernet mode selected and connected.",
+          "preset": "onboarding_internet_ethernet",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-cloud-offline",
+          "title": "Cloud account: offline blocked",
+          "description": "Cloud step while the reader is offline, with Sign In disabled until connectivity is restored.",
+          "preset": "onboarding_cloud_offline",
+          "capture": "screen"
+        },
+        {
           "id": "onboarding-cloud-idle",
           "title": "Cloud account choice",
           "description": "Operator must either sign in or explicitly continue without login before moving on.",
           "preset": "onboarding_cloud_idle",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-cloud-loading",
+          "title": "Cloud account signing in",
+          "description": "Loading state after the operator submits Cloud credentials.",
+          "preset": "onboarding_cloud_loading",
           "capture": "screen"
         },
         {
@@ -1202,6 +1314,13 @@
           "title": "Cloud sign-in success",
           "description": "Cloud account step after a successful sign-in, with Next enabled.",
           "preset": "onboarding_cloud_success",
+          "capture": "screen"
+        },
+        {
+          "id": "onboarding-cloud-anonymous",
+          "title": "Cloud continue without login",
+          "description": "Cloud account step after the operator explicitly chooses to continue without login.",
+          "preset": "onboarding_cloud_anonymous",
           "capture": "screen"
         },
         {

@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 106 states";
+            content: "6 sections · 123 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -631,17 +631,17 @@
             
             <a class="sidebar-link" href="settings.html">
                 <span>Settings</span>
-                <strong>24</strong>
+                <strong>23</strong>
             </a>
             
             <a class="sidebar-link" href="software.html">
                 <span>Software Update</span>
-                <strong>4</strong>
+                <strong>10</strong>
             </a>
             
             <a class="sidebar-link is-active" href="onboarding.html">
                 <span>Onboarding</span>
-                <strong>7</strong>
+                <strong>19</strong>
             </a>
             
             </div>
@@ -652,7 +652,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-04-16 14:25</p>
+        <p><strong>Created:</strong> 2026-04-16 15:22</p>
     </section>
     
         </div>
@@ -665,9 +665,9 @@
         <div>
             <span class="section-kicker">Section</span>
             <h2>Onboarding</h2>
-            <p class="section-summary">First-time setup flow, including required choices, connectivity, and cloud account states.</p>
+            <p class="section-summary">First-time setup flow, including every setup step plus Internet and Cloud branching states.</p>
         </div>
-        <span class="section-count">7 states</span>
+        <span class="section-count">19 states</span>
     </header>
     
     
@@ -681,7 +681,7 @@
             type="button"
             data-viewer-src="screenshots/onboarding-language.png"
             data-viewer-title="Language"
-            data-viewer-description="First onboarding step for choosing device language."
+            data-viewer-description="First onboarding step for choosing device language from the full list."
         >
             <img loading="lazy" src="screenshots/onboarding-language.png" alt="Language">
         </button>
@@ -689,7 +689,47 @@
         </div>
         <div class="state-copy">
             <h3>Language</h3>
-            <p>First onboarding step for choosing device language.</p>
+            <p>First onboarding step for choosing device language from the full list.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-display-sound">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-display-sound.png"
+            data-viewer-title="Display And Sound"
+            data-viewer-description="Brightness and sound step using the same control layout as the Device settings screen."
+        >
+            <img loading="lazy" src="screenshots/onboarding-display-sound.png" alt="Display And Sound">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Display And Sound</h3>
+            <p>Brightness and sound step using the same control layout as the Device settings screen.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-date-time">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-date-time.png"
+            data-viewer-title="Date And Time"
+            data-viewer-description="Date and time entry step during first-time setup."
+        >
+            <img loading="lazy" src="screenshots/onboarding-date-time.png" alt="Date And Time">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Date And Time</h3>
+            <p>Date and time entry step during first-time setup.</p>
         </div>
     </article>
     
@@ -713,6 +753,66 @@
         </div>
     </article>
     
+    <article class="state-card" id="state-onboarding-timezone-selected">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-timezone-selected.png"
+            data-viewer-title="Time zone selected"
+            data-viewer-description="Timezone step after the operator selects a matching result and can continue."
+        >
+            <img loading="lazy" src="screenshots/onboarding-timezone-selected.png" alt="Time zone selected">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Time zone selected</h3>
+            <p>Timezone step after the operator selects a matching result and can continue.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-internet-offline">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-internet-offline.png"
+            data-viewer-title="Internet: offline"
+            data-viewer-description="Offline connectivity mode with a warning that internet-dependent actions are unavailable."
+        >
+            <img loading="lazy" src="screenshots/onboarding-internet-offline.png" alt="Internet: offline">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Internet: offline</h3>
+            <p>Offline connectivity mode with a warning that internet-dependent actions are unavailable.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-internet-wifi-list">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-internet-wifi-list.png"
+            data-viewer-title="Internet: Wi-Fi networks"
+            data-viewer-description="Wi-Fi network list before a network is chosen."
+        >
+            <img loading="lazy" src="screenshots/onboarding-internet-wifi-list.png" alt="Internet: Wi-Fi networks">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Internet: Wi-Fi networks</h3>
+            <p>Wi-Fi network list before a network is chosen.</p>
+        </div>
+    </article>
+    
     <article class="state-card" id="state-onboarding-internet-wifi-password">
         <div class="shot-frame">
             
@@ -733,6 +833,106 @@
         </div>
     </article>
     
+    <article class="state-card" id="state-onboarding-internet-wifi-connecting">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-internet-wifi-connecting.png"
+            data-viewer-title="Internet: Wi-Fi connecting"
+            data-viewer-description="Loading state while the reader connects to the selected Wi-Fi network."
+        >
+            <img loading="lazy" src="screenshots/onboarding-internet-wifi-connecting.png" alt="Internet: Wi-Fi connecting">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Internet: Wi-Fi connecting</h3>
+            <p>Loading state while the reader connects to the selected Wi-Fi network.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-internet-wifi-error">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-internet-wifi-error.png"
+            data-viewer-title="Internet: Wi-Fi password error"
+            data-viewer-description="Wi-Fi password entry with an incorrect-password error message."
+        >
+            <img loading="lazy" src="screenshots/onboarding-internet-wifi-error.png" alt="Internet: Wi-Fi password error">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Internet: Wi-Fi password error</h3>
+            <p>Wi-Fi password entry with an incorrect-password error message.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-internet-wifi-success">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-internet-wifi-success.png"
+            data-viewer-title="Internet: Wi-Fi connected"
+            data-viewer-description="Successful Wi-Fi connection state with Next enabled."
+        >
+            <img loading="lazy" src="screenshots/onboarding-internet-wifi-success.png" alt="Internet: Wi-Fi connected">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Internet: Wi-Fi connected</h3>
+            <p>Successful Wi-Fi connection state with Next enabled.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-internet-ethernet">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-internet-ethernet.png"
+            data-viewer-title="Internet: Ethernet connected"
+            data-viewer-description="Ethernet mode selected and connected."
+        >
+            <img loading="lazy" src="screenshots/onboarding-internet-ethernet.png" alt="Internet: Ethernet connected">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Internet: Ethernet connected</h3>
+            <p>Ethernet mode selected and connected.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-cloud-offline">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-cloud-offline.png"
+            data-viewer-title="Cloud account: offline blocked"
+            data-viewer-description="Cloud step while the reader is offline, with Sign In disabled until connectivity is restored."
+        >
+            <img loading="lazy" src="screenshots/onboarding-cloud-offline.png" alt="Cloud account: offline blocked">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Cloud account: offline blocked</h3>
+            <p>Cloud step while the reader is offline, with Sign In disabled until connectivity is restored.</p>
+        </div>
+    </article>
+    
     <article class="state-card" id="state-onboarding-cloud-idle">
         <div class="shot-frame">
             
@@ -750,6 +950,26 @@
         <div class="state-copy">
             <h3>Cloud account choice</h3>
             <p>Operator must either sign in or explicitly continue without login before moving on.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-cloud-loading">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-cloud-loading.png"
+            data-viewer-title="Cloud account signing in"
+            data-viewer-description="Loading state after the operator submits Cloud credentials."
+        >
+            <img loading="lazy" src="screenshots/onboarding-cloud-loading.png" alt="Cloud account signing in">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Cloud account signing in</h3>
+            <p>Loading state after the operator submits Cloud credentials.</p>
         </div>
     </article>
     
@@ -790,6 +1010,26 @@
         <div class="state-copy">
             <h3>Cloud sign-in success</h3>
             <p>Cloud account step after a successful sign-in, with Next enabled.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-onboarding-cloud-anonymous">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/onboarding-cloud-anonymous.png"
+            data-viewer-title="Cloud continue without login"
+            data-viewer-description="Cloud account step after the operator explicitly chooses to continue without login."
+        >
+            <img loading="lazy" src="screenshots/onboarding-cloud-anonymous.png" alt="Cloud continue without login">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Cloud continue without login</h3>
+            <p>Cloud account step after the operator explicitly chooses to continue without login.</p>
         </div>
     </article>
     

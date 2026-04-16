@@ -77,7 +77,7 @@ async function setCaptureMode(page, capture) {
         const root = document.documentElement;
         if (!root) return;
 
-        if (captureValue === 'detail_tall' || captureValue === 'decision_tall' || captureValue === 'history_tall' || captureValue === 'settings_tall') {
+        if (captureValue === 'detail_tall' || captureValue === 'decision_tall' || captureValue === 'history_tall' || captureValue === 'settings_tall' || captureValue === 'onboarding_tall') {
             root.dataset.captureMode = captureValue;
         } else {
             delete root.dataset.captureMode;
@@ -282,6 +282,78 @@ async function cleanupSettingsCaptureClone(page) {
     });
 }
 
+async function prepareOnboardingCaptureClone(page, sourceId) {
+    await page.evaluate((sourceIdValue) => {
+        document.getElementById('handoff-onboarding-capture-root')?.remove();
+
+        const source = document.getElementById(sourceIdValue);
+        if (!source || !source.classList.contains('active')) {
+            throw new Error(`Onboarding screen ${sourceIdValue} is not active for tall capture.`);
+        }
+
+        const root = document.createElement('div');
+        root.id = 'handoff-onboarding-capture-root';
+        Object.assign(root.style, {
+            display: 'block',
+            width: '856px',
+            padding: '18px',
+            background: '#ffffff',
+            position: 'relative'
+        });
+
+        const frame = document.createElement('div');
+        frame.id = 'handoff-onboarding-capture-frame';
+        Object.assign(frame.style, {
+            background: 'var(--gray-800)',
+            borderRadius: '6px',
+            padding: '10px',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px var(--gray-900)'
+        });
+
+        const clone = source.cloneNode(true);
+        clone.id = 'handoff-onboarding-capture-screen';
+        clone.classList.add('active');
+        Object.assign(clone.style, {
+            position: 'relative',
+            inset: 'auto',
+            display: 'flex',
+            width: '800px',
+            minHeight: '480px',
+            height: 'auto',
+            overflow: 'visible',
+            padding: '12px'
+        });
+
+        const body = clone.querySelector('.onboarding-screen-body');
+        if (body instanceof HTMLElement) {
+            Object.assign(body.style, {
+                flex: 'none',
+                minHeight: 'auto',
+                overflow: 'visible'
+            });
+        }
+
+        clone.querySelectorAll('.type-picker-results').forEach(list => {
+            if (list instanceof HTMLElement) {
+                Object.assign(list.style, {
+                    maxHeight: 'none',
+                    overflow: 'visible'
+                });
+            }
+        });
+
+        frame.appendChild(clone);
+        root.appendChild(frame);
+        document.body.appendChild(root);
+    }, sourceId);
+}
+
+async function cleanupOnboardingCaptureClone(page) {
+    await page.evaluate(() => {
+        document.getElementById('handoff-onboarding-capture-root')?.remove();
+    });
+}
+
 async function captureStateImage(page, state, targetPath) {
     const capture = state.capture || 'screen';
     await setCaptureMode(page, capture);
@@ -357,6 +429,29 @@ async function captureStateImage(page, state, targetPath) {
             clip
         });
         await cleanupSettingsCaptureClone(page);
+    } else if (capture === 'onboarding_tall') {
+        await prepareOnboardingCaptureClone(page, 'onboarding-screen');
+        await page.waitForTimeout(40);
+        const clip = await page.evaluate(() => {
+            const root = document.getElementById('handoff-onboarding-capture-root');
+            if (!root) return null;
+            const rect = root.getBoundingClientRect();
+            return {
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: rect.width,
+                height: rect.height
+            };
+        });
+        if (!clip || clip.width <= 0 || clip.height <= 0) {
+            await cleanupOnboardingCaptureClone(page);
+            throw new Error(`Onboarding clone clip could not be resolved for ${state.id}.`);
+        }
+        await page.screenshot({
+            path: targetPath,
+            clip
+        });
+        await cleanupOnboardingCaptureClone(page);
     } else {
         const clip = await getCaptureClip(page, capture);
         await page.screenshot({
@@ -1783,6 +1878,44 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
+            case 'software_checking_cloud': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'cloud',
+                        stage: 'checking',
+                        progress: 0
+                    }
+                });
+                break;
+            }
+            case 'software_offline_blocked': {
+                setSignedIn('offline');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'cloud',
+                        stage: 'offline_blocked',
+                        progress: 0
+                    }
+                });
+                break;
+            }
+            case 'software_up_to_date': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'cloud',
+                        stage: 'up_to_date',
+                        installedVersion: LATEST_SOFTWARE_VERSION,
+                        availableVersion: LATEST_SOFTWARE_VERSION,
+                        progress: 0
+                    }
+                });
+                break;
+            }
             case 'software_package_ready': {
                 setSignedIn('wifi');
                 showSettingsDetailScreen('software', {
@@ -1791,6 +1924,54 @@ async function applyPreset(page, presetId) {
                         source: 'cloud',
                         stage: 'package_ready',
                         progress: 0
+                    }
+                });
+                break;
+            }
+            case 'software_checking_usb': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'usb',
+                        stage: 'detecting_usb',
+                        progress: 0
+                    }
+                });
+                break;
+            }
+            case 'software_package_ready_usb': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'usb',
+                        stage: 'package_ready',
+                        progress: 0
+                    }
+                });
+                break;
+            }
+            case 'software_transferring_cloud': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'cloud',
+                        stage: 'transferring',
+                        progress: 56
+                    }
+                });
+                break;
+            }
+            case 'software_transferring_usb': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('software', {
+                    focusSection: 'settings-maintenance',
+                    softwareState: {
+                        source: 'usb',
+                        stage: 'transferring',
+                        progress: 64
                     }
                 });
                 break;
@@ -1807,21 +1988,27 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
-            case 'software_restart_required': {
-                setSignedIn('wifi');
-                showSettingsDetailScreen('software', {
-                    focusSection: 'settings-maintenance',
-                    softwareState: {
-                        source: 'cloud',
-                        stage: 'restart_required',
-                        progress: 100
-                    }
-                });
-                break;
-            }
             case 'onboarding_language': {
                 prototypeRuntime.onboardingCompleted = false;
                 showOnboardingScreen(0);
+                break;
+            }
+            case 'onboarding_display_sound': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(1, {
+                    ...buildOnboardingDraftFromState(),
+                    screenBrightnessStep: 5,
+                    soundEnabled: true
+                });
+                break;
+            }
+            case 'onboarding_date_time': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(2, {
+                    ...buildOnboardingDraftFromState(),
+                    dateInput: '2026-03-22',
+                    timeInput: '09:32'
+                });
                 break;
             }
             case 'onboarding_timezone': {
@@ -1838,6 +2025,42 @@ async function applyPreset(page, presetId) {
                 }
                 break;
             }
+            case 'onboarding_timezone_selected': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(3, {
+                    ...buildOnboardingDraftFromState(),
+                    timezone: 'Europe/Prague',
+                    timezoneChoiceConfirmed: true
+                });
+                const input = document.getElementById('onboarding-timezone-search');
+                if (input) {
+                    input.value = 'Prague';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                break;
+            }
+            case 'onboarding_internet_offline': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(4, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'offline',
+                    wifiNetwork: '',
+                    wifiStage: 'offline',
+                    wifiError: ''
+                });
+                break;
+            }
+            case 'onboarding_internet_wifi_list': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(4, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'wifi',
+                    wifiNetwork: '',
+                    wifiStage: 'wifi_list',
+                    wifiError: ''
+                });
+                break;
+            }
             case 'onboarding_internet_wifi_password': {
                 prototypeRuntime.onboardingCompleted = false;
                 showOnboardingScreen(4, {
@@ -1846,6 +2069,66 @@ async function applyPreset(page, presetId) {
                     wifiNetwork: getDefaultWifiNetworkName(),
                     wifiStage: 'wifi_password',
                     wifiError: ''
+                });
+                break;
+            }
+            case 'onboarding_internet_wifi_connecting': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(4, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'wifi',
+                    wifiNetwork: getDefaultWifiNetworkName(),
+                    wifiStage: 'wifi_connecting',
+                    wifiError: ''
+                });
+                break;
+            }
+            case 'onboarding_internet_wifi_error': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(4, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'wifi',
+                    wifiNetwork: getDefaultWifiNetworkName(),
+                    wifiPassword: '0000',
+                    wifiStage: 'wifi_error',
+                    wifiError: 'Password incorrect. Re-enter the Wi-Fi password to continue.'
+                });
+                break;
+            }
+            case 'onboarding_internet_wifi_success': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(4, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'wifi',
+                    wifiNetwork: getDefaultWifiNetworkName(),
+                    wifiStage: 'wifi_success',
+                    wifiError: ''
+                });
+                break;
+            }
+            case 'onboarding_internet_ethernet': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(4, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'ethernet',
+                    wifiNetwork: '',
+                    wifiStage: 'ethernet_ready',
+                    wifiError: ''
+                });
+                break;
+            }
+            case 'onboarding_cloud_offline': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(5, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'offline',
+                    wifiNetwork: '',
+                    accountMode: 'signed_in',
+                    cloudChoiceConfirmed: false,
+                    username: DEFAULT_CLOUD_USERNAME,
+                    password: DEFAULT_CLOUD_PASSWORD,
+                    signInState: 'idle',
+                    signInError: ''
                 });
                 break;
             }
@@ -1862,6 +2145,21 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
+            case 'onboarding_cloud_loading': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(5, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'wifi',
+                    wifiNetwork: getDefaultWifiNetworkName(),
+                    accountMode: 'signed_in',
+                    cloudChoiceConfirmed: false,
+                    username: DEFAULT_CLOUD_USERNAME,
+                    password: DEFAULT_CLOUD_PASSWORD,
+                    signInState: 'loading',
+                    signInError: ''
+                });
+                break;
+            }
             case 'onboarding_cloud_error': {
                 prototypeRuntime.onboardingCompleted = false;
                 showOnboardingScreen(5, {
@@ -1871,7 +2169,7 @@ async function applyPreset(page, presetId) {
                     accountMode: 'signed_in',
                     cloudChoiceConfirmed: false,
                     username: DEFAULT_CLOUD_USERNAME,
-                    password: SETTINGS_PASSWORD,
+                    password: '0000',
                     signInState: 'idle',
                     signInError: 'Username or password is incorrect.'
                 });
@@ -1888,6 +2186,19 @@ async function applyPreset(page, presetId) {
                     username: DEFAULT_CLOUD_USERNAME,
                     password: '',
                     signInState: 'success',
+                    signInError: ''
+                });
+                break;
+            }
+            case 'onboarding_cloud_anonymous': {
+                prototypeRuntime.onboardingCompleted = false;
+                showOnboardingScreen(5, {
+                    ...buildOnboardingDraftFromState(),
+                    connectivity: 'wifi',
+                    wifiNetwork: getDefaultWifiNetworkName(),
+                    accountMode: 'anonymous',
+                    cloudChoiceConfirmed: true,
+                    signInState: 'idle',
                     signInError: ''
                 });
                 break;
