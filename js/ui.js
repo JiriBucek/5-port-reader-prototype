@@ -4882,11 +4882,11 @@ function normalizeVerificationTargetTemperature(value) {
 
 function getDefaultVerificationChannelId(preferredChannelId = null) {
     const preferred = Number(preferredChannelId);
-    if (isChannelAvailableForVerification(preferred)) {
+    if (Number.isInteger(preferred) && preferred >= 1 && preferred <= channels.length) {
         return preferred;
     }
 
-    return channels.find(channel => isChannelAvailableForVerification(channel.id))?.id || 1;
+    return 1;
 }
 
 function buildVerificationScreenState(source = {}) {
@@ -4894,6 +4894,8 @@ function buildVerificationScreenState(source = {}) {
     const targetTemperature = normalizeVerificationTargetTemperature(source.targetTemperature ?? currentState.targetTemperature ?? 40);
     const measuredTemperature = source.measuredTemperature ?? currentState.measuredTemperature;
     const channelId = getDefaultVerificationChannelId(source.channelId ?? currentState.channelId);
+    const cassetteInserted = source.cassetteInserted ?? currentState.cassetteInserted ?? false;
+    const readingOutcome = source.readingOutcome ?? currentState.readingOutcome ?? 'success';
 
     return {
         type: 'verification',
@@ -4901,7 +4903,7 @@ function buildVerificationScreenState(source = {}) {
         channelId,
         targetTemperature,
         waitStage: source.waitStage || currentState.waitStage || 'heating',
-        measuredTemperature: measuredTemperature != null && measuredTemperature !== ''
+        measuredTemperature: measuredTemperature != null
             ? String(measuredTemperature)
             : targetTemperature.toFixed(1),
         readingStage: source.readingStage || currentState.readingStage || 'scanning',
@@ -4910,7 +4912,9 @@ function buildVerificationScreenState(source = {}) {
         notice: source.notice ?? currentState.notice ?? '',
         error: source.error ?? currentState.error ?? '',
         origin: source.origin || currentState.origin || 'run',
-        showInfo: source.showInfo ?? currentState.showInfo ?? false
+        showInfo: source.showInfo ?? currentState.showInfo ?? false,
+        cassetteInserted: Boolean(cassetteInserted),
+        readingOutcome
     };
 }
 
@@ -4959,14 +4963,10 @@ function renderVerificationMessages(state) {
 }
 
 function renderVerificationSetupView(state) {
-    const hasAvailablePort = channels.some(channel => isChannelAvailableForVerification(channel.id));
-    const selectedChannelId = hasAvailablePort
-        ? getDefaultVerificationChannelId(state.channelId)
-        : (Number(state.channelId) || 1);
+    const selectedChannelId = getDefaultVerificationChannelId(state.channelId);
     const channelOptions = channels.map(channel => ({
         value: channel.id,
-        label: String(channel.id),
-        disabled: !isChannelAvailableForVerification(channel.id)
+        label: String(channel.id)
     }));
 
     return `
@@ -4979,7 +4979,7 @@ function renderVerificationSetupView(state) {
             <section class="history-section-card verification-step-card">
                 <div class="history-section-header">
                     <h2>Port</h2>
-                    <span>${channels.filter(channel => isChannelAvailableForVerification(channel.id)).length} available</span>
+                    <span>Select the verification slot</span>
                 </div>
                 ${renderSettingsSegmentedControl('verification-channel', selectedChannelId, channelOptions)}
             </section>
@@ -4993,15 +4993,9 @@ function renderVerificationSetupView(state) {
                     { value: 50, label: '50 C' }
                 ])}
             </section>
-            ${hasAvailablePort ? '' : `
-                <div class="history-placeholder-panel history-placeholder-panel-simple">
-                    <strong>No free ports</strong>
-                    <p>Clear a port on the dashboard before starting verification.</p>
-                </div>`}
         </div>
         <div class="verification-screen-footer">
-            <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="open-history">Verification History</button>
-            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="setup-next"${hasAvailablePort ? '' : ' disabled'}>Next</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="setup-next">Next</button>
         </div>`;
 }
 
@@ -5038,6 +5032,7 @@ function renderVerificationWarmupView(state) {
 function renderVerificationMeasureView(state) {
     const minimum = state.targetTemperature - VERIFICATION_TEMPERATURE_TOLERANCE;
     const maximum = state.targetTemperature + VERIFICATION_TEMPERATURE_TOLERANCE;
+    const canProceed = Number.isFinite(Number.parseFloat(String(state.measuredTemperature ?? '')));
     return `
         ${renderVerificationHeader({
             title: 'Measured Temperature',
@@ -5059,11 +5054,15 @@ function renderVerificationMeasureView(state) {
         </div>
         <div class="verification-screen-footer">
             <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="back-to-warmup">Back</button>
-            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="measure-next">Next</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="measure-next"${canProceed ? '' : ' disabled'}>Next</button>
         </div>`;
 }
 
 function renderVerificationInsertView(state) {
+    const cassetteDetected = state.cassetteInserted;
+    const assetActionAttrs = cassetteDetected
+        ? ''
+        : ` data-verification-action="detect-cassette" role="button" tabindex="0" aria-label="Mark verification cassette as inserted in port ${state.channelId}"`;
     return `
         ${renderVerificationHeader({
             title: 'Insert Verification Cassette',
@@ -5074,17 +5073,19 @@ function renderVerificationInsertView(state) {
             <section class="history-section-card verification-step-card">
                 <div class="history-section-header">
                     <h2>Verification Cassette</h2>
-                    <span>Insert into port ${state.channelId}</span>
+                    <span>${cassetteDetected ? `Detected in port ${state.channelId}` : `Waiting for cassette in port ${state.channelId}`}</span>
                 </div>
-                <p class="verification-copy">Insert the standard 5 line verification cassette into port ${state.channelId}, then start the verification test.</p>
-                <div class="verification-asset-card">
+                <p class="verification-copy">${cassetteDetected
+                    ? `The verification cassette is detected in port ${state.channelId}. Start the verification test when you are ready.`
+                    : `Insert the standard 5 line verification cassette into port ${state.channelId}. Start Verification Test stays disabled until the cassette is detected.`}</p>
+                <div class="verification-asset-card"${assetActionAttrs}>
                     <img class="verification-asset-image" src="assets/images/InsertCassette.png" alt="Insert the standard 5 line verification cassette into the selected port">
                 </div>
             </section>
         </div>
         <div class="verification-screen-footer">
             <button class="history-inline-btn history-inline-btn-secondary" data-verification-action="back-to-measure">Back</button>
-            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="start-reading">Start Verification Test</button>
+            <button class="history-inline-btn history-inline-btn-primary" data-verification-action="start-reading"${cassetteDetected ? '' : ' disabled'}>Start Verification Test</button>
         </div>`;
 }
 
@@ -5393,6 +5394,18 @@ function showVerificationScreen(nextState = {}) {
     if (state.view === 'reading') {
         if (state.readingStage === 'scanning') {
             schedulePrototypeFullScreenTransition(() => {
+                if (state.readingOutcome === 'failure') {
+                    showVerificationScreen({
+                        ...state,
+                        view: 'insert_asset',
+                        cassetteInserted: false,
+                        readingOutcome: 'success',
+                        notice: '',
+                        error: 'Cassette could not be read. Reinsert the verification cassette and try again.'
+                    });
+                    return;
+                }
+
                 showVerificationScreen({
                     ...state,
                     view: 'reading',
@@ -5458,16 +5471,6 @@ function showVerificationScreen(nextState = {}) {
             }
 
             if (action === 'setup-next') {
-                if (!isChannelAvailableForVerification(state.channelId)) {
-                    showVerificationScreen({
-                        ...state,
-                        view: 'setup',
-                        error: `Port ${state.channelId} is not available. Choose a free port to continue.`,
-                        notice: ''
-                    });
-                    return;
-                }
-
                 showVerificationScreen({
                     ...state,
                     view: 'warmup',
@@ -5513,13 +5516,6 @@ function showVerificationScreen(nextState = {}) {
                 const measuredTemperature = document.getElementById('verification-measured-temp')?.value || '';
                 const parsedTemperature = Number.parseFloat(measuredTemperature);
                 if (!Number.isFinite(parsedTemperature)) {
-                    showVerificationScreen({
-                        ...state,
-                        view: 'measure',
-                        error: 'Enter the measured thermometer temperature to continue.',
-                        notice: '',
-                        measuredTemperature
-                    });
                     return;
                 }
 
@@ -5527,6 +5523,8 @@ function showVerificationScreen(nextState = {}) {
                     ...state,
                     view: 'insert_asset',
                     measuredTemperature: parsedTemperature.toFixed(1),
+                    cassetteInserted: false,
+                    readingOutcome: 'success',
                     notice: '',
                     error: ''
                 });
@@ -5537,6 +5535,18 @@ function showVerificationScreen(nextState = {}) {
                 showVerificationScreen({
                     ...state,
                     view: 'measure',
+                    cassetteInserted: false,
+                    notice: '',
+                    error: ''
+                });
+                return;
+            }
+
+            if (action === 'detect-cassette') {
+                showVerificationScreen({
+                    ...state,
+                    view: 'insert_asset',
+                    cassetteInserted: true,
                     notice: '',
                     error: ''
                 });
@@ -5544,13 +5554,7 @@ function showVerificationScreen(nextState = {}) {
             }
 
             if (action === 'start-reading') {
-                if (!isChannelAvailableForVerification(state.channelId)) {
-                    showVerificationScreen({
-                        ...state,
-                        view: 'setup',
-                        error: `Port ${state.channelId} is no longer free. Choose another port to continue.`,
-                        notice: ''
-                    });
+                if (!state.cassetteInserted) {
                     return;
                 }
 
@@ -5558,6 +5562,7 @@ function showVerificationScreen(nextState = {}) {
                     ...state,
                     view: 'reading',
                     readingStage: 'scanning',
+                    cassetteInserted: true,
                     notice: '',
                     error: ''
                 });
@@ -5640,11 +5645,18 @@ function showVerificationScreen(nextState = {}) {
                 });
             }
         });
+
+        if (button.tagName !== 'BUTTON') {
+            button.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                button.click();
+            });
+        }
     });
 
     screen.querySelectorAll('#verification-channel .seg-option').forEach(button => {
         button.addEventListener('click', () => {
-            if (button.disabled) return;
             showVerificationScreen({
                 ...state,
                 view: 'setup',
@@ -5667,6 +5679,22 @@ function showVerificationScreen(nextState = {}) {
             });
         });
     });
+
+    const measuredTemperatureInput = screen.querySelector('#verification-measured-temp');
+    const measureNextButton = screen.querySelector('[data-verification-action="measure-next"]');
+    if (measuredTemperatureInput && measureNextButton) {
+        measuredTemperatureInput.addEventListener('input', () => {
+            const nextValue = measuredTemperatureInput.value;
+            const isValid = Number.isFinite(Number.parseFloat(nextValue));
+
+            state.measuredTemperature = nextValue;
+            if (activeModal && activeModal.type === 'verification') {
+                activeModal.measuredTemperature = nextValue;
+            }
+
+            measureNextButton.disabled = !isValid;
+        });
+    }
 
     screen.querySelectorAll('.verification-help-dialog').forEach(dialog => {
         dialog.addEventListener('click', event => {

@@ -489,7 +489,12 @@ async function applyPreset(page, presetId) {
             showHistoryExportModal(historyState, modalState);
         }
 
-        function showVerificationDetailRecord() {
+        function clearVerificationHistory() {
+            verificationHistory = [];
+            verificationEntryIdCounter = 1;
+        }
+
+        function showVerificationDetailRecord(recordInput = {}, screenState = {}) {
             setSignedIn('wifi');
             const record = storeVerificationRecord({
                 channelId: 2,
@@ -497,12 +502,14 @@ async function applyPreset(page, presetId) {
                 measuredTemperature: 47.8,
                 lightIntensity: 533200,
                 lineRatios: buildMockVerificationLineRatios({ seed: 14, failingIndex: 1 }),
-                timestamp: minutesAgo(18)
+                timestamp: minutesAgo(18),
+                ...recordInput
             });
             showVerificationScreen({
                 view: 'detail',
                 recordKey: record.verificationKey,
-                origin: 'history'
+                origin: 'history',
+                ...screenState
             });
         }
 
@@ -1252,6 +1259,16 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
+            case 'verification_warmup_heating': {
+                setSignedIn('wifi');
+                showVerificationScreen({
+                    view: 'warmup',
+                    channelId: 1,
+                    targetTemperature: 50,
+                    waitStage: 'heating'
+                });
+                break;
+            }
             case 'verification_warmup_ready': {
                 setSignedIn('wifi');
                 showVerificationScreen({
@@ -1272,13 +1289,59 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
+            case 'verification_measure_disabled': {
+                setSignedIn('wifi');
+                showVerificationScreen({
+                    view: 'measure',
+                    channelId: 1,
+                    targetTemperature: 40,
+                    measuredTemperature: ''
+                });
+                break;
+            }
             case 'verification_insert_asset': {
                 setSignedIn('wifi');
                 showVerificationScreen({
                     view: 'insert_asset',
                     channelId: 1,
                     targetTemperature: 40,
-                    measuredTemperature: '39.9'
+                    measuredTemperature: '39.9',
+                    cassetteInserted: false
+                });
+                break;
+            }
+            case 'verification_insert_asset_ready': {
+                setSignedIn('wifi');
+                showVerificationScreen({
+                    view: 'insert_asset',
+                    channelId: 1,
+                    targetTemperature: 40,
+                    measuredTemperature: '39.9',
+                    cassetteInserted: true
+                });
+                break;
+            }
+            case 'verification_insert_asset_read_error': {
+                setSignedIn('wifi');
+                showVerificationScreen({
+                    view: 'insert_asset',
+                    channelId: 1,
+                    targetTemperature: 40,
+                    measuredTemperature: '39.9',
+                    cassetteInserted: false,
+                    error: 'Cassette could not be read. Reinsert the verification cassette and try again.'
+                });
+                break;
+            }
+            case 'verification_reading_scanning': {
+                setSignedIn('wifi');
+                showVerificationScreen({
+                    view: 'reading',
+                    channelId: 1,
+                    targetTemperature: 40,
+                    measuredTemperature: '39.9',
+                    cassetteInserted: true,
+                    readingStage: 'scanning'
                 });
                 break;
             }
@@ -1289,6 +1352,7 @@ async function applyPreset(page, presetId) {
                     channelId: 1,
                     targetTemperature: 40,
                     measuredTemperature: '39.9',
+                    cassetteInserted: true,
                     readingStage: 'analyzing'
                 });
                 break;
@@ -1297,8 +1361,51 @@ async function applyPreset(page, presetId) {
                 showVerificationDetailRecord();
                 break;
             }
+            case 'verification_result_detail_passed_run': {
+                showVerificationDetailRecord({
+                    channelId: 4,
+                    targetTemperature: 50,
+                    measuredTemperature: 49.8,
+                    lightIntensity: 548920,
+                    lineRatios: buildMockVerificationLineRatios({ seed: 9 }),
+                    synced: true,
+                    timestamp: minutesAgo(6)
+                }, {
+                    origin: 'run'
+                });
+                break;
+            }
+            case 'verification_result_detail_light_fail': {
+                showVerificationDetailRecord({
+                    channelId: 3,
+                    targetTemperature: 40,
+                    measuredTemperature: 40.2,
+                    lightIntensity: 492400,
+                    lineRatios: buildMockVerificationLineRatios({ seed: 11 }),
+                    timestamp: minutesAgo(24)
+                });
+                break;
+            }
+            case 'verification_result_detail_info': {
+                showVerificationDetailRecord({}, {
+                    origin: 'history',
+                    showInfo: true
+                });
+                break;
+            }
             case 'verification_history': {
                 showVerificationDetailRecord();
+                showVerificationScreen({
+                    view: 'history',
+                    page: 0,
+                    notice: '',
+                    error: ''
+                });
+                break;
+            }
+            case 'verification_history_empty': {
+                setSignedIn('wifi');
+                clearVerificationHistory();
                 showVerificationScreen({
                     view: 'history',
                     page: 0,

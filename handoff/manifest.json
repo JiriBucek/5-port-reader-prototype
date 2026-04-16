@@ -836,8 +836,15 @@
         {
           "id": "verification-setup",
           "title": "Verification setup",
-          "description": "Choose a free port and target temperature before starting verification.",
+          "description": "Choose the verification port and target temperature before starting verification.",
           "preset": "verification_setup",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-warmup-heating",
+          "title": "Verification warmup heating",
+          "description": "Reader is heating the selected port to the verification target temperature.",
+          "preset": "verification_warmup_heating",
           "capture": "screen"
         },
         {
@@ -855,10 +862,38 @@
           "capture": "screen"
         },
         {
+          "id": "verification-measure-disabled",
+          "title": "Measured temperature: next disabled",
+          "description": "The measured-temperature step keeps the next action disabled until the operator enters a valid thermometer reading.",
+          "preset": "verification_measure_disabled",
+          "capture": "screen"
+        },
+        {
           "id": "verification-insert-asset",
-          "title": "Insert verification asset",
-          "description": "Guided step before starting the verification read.",
+          "title": "Insert verification asset: waiting",
+          "description": "Insert step before the cassette is detected, with Start Verification Test disabled.",
           "preset": "verification_insert_asset",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-insert-asset-ready",
+          "title": "Insert verification asset: detected",
+          "description": "Insert step after the cassette is detected and the verification read can be started.",
+          "preset": "verification_insert_asset_ready",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-insert-asset-read-error",
+          "title": "Insert verification asset: read failed",
+          "description": "Insert step shown after a failed read attempt, with guidance to reinsert the cassette and try again.",
+          "preset": "verification_insert_asset_read_error",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-reading-scanning",
+          "title": "Verification reading: scanning",
+          "description": "Initial loading stage while the reader scans the verification cassette.",
+          "preset": "verification_reading_scanning",
           "capture": "screen"
         },
         {
@@ -876,10 +911,38 @@
           "capture": "screen"
         },
         {
+          "id": "verification-result-detail-passed-run",
+          "title": "Verification result detail: passed live run",
+          "description": "Successful verification result opened directly after a live run, including the post-run footer actions.",
+          "preset": "verification_result_detail_passed_run",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-result-detail-light-fail",
+          "title": "Verification result detail: light intensity fail",
+          "description": "Failed verification result where only the light-intensity check fails.",
+          "preset": "verification_result_detail_light_fail",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-result-detail-info",
+          "title": "Verification result detail: info overlay",
+          "description": "Verification result detail with the help overlay open and all three pass criteria explained.",
+          "preset": "verification_result_detail_info",
+          "capture": "screen"
+        },
+        {
           "id": "verification-history",
           "title": "Verification history",
           "description": "List of previously saved verification runs.",
           "preset": "verification_history",
+          "capture": "screen"
+        },
+        {
+          "id": "verification-history-empty",
+          "title": "Verification history: empty",
+          "description": "Empty-state history screen shown before any verification run has been saved on the reader.",
+          "preset": "verification_history_empty",
           "capture": "screen"
         }
       ]
