@@ -1330,7 +1330,17 @@
     width: 100%;
 }
 
+.settings-detail-screen .onboarding-brightness-control.settings-toggle-wide {
+    width: 100%;
+}
+
 .onboarding-screen .onboarding-brightness-control .seg-option {
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: var(--font-base);
+}
+
+.settings-detail-screen .onboarding-brightness-control .seg-option {
     min-width: 0;
     padding: 8px 4px;
     font-size: var(--font-base);

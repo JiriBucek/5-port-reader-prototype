@@ -3991,20 +3991,31 @@ function showSettingsDetailScreen(view, state = {}) {
                 </div>
             </section>`;
     } else if (view === 'brightness') {
-        title = 'Screen Brightness';
-        subtitle = '';
+        title = 'Device';
+        subtitle = 'Adjust screen brightness and reader sound.';
         body = `
             <section class="settings-section">
                 <div class="settings-section-body">
-                    ${renderSelectableListRows(
-                        Array.from({ length: 7 }, (_, index) => ({
-                            value: String(index + 1),
-                            label: `Level ${index + 1}`,
-                            meta: index === 0 ? 'Least bright' : (index === 6 ? 'Most bright' : '')
-                        })),
-                        String(getScreenBrightnessStep()),
-                        'data-settings-brightness'
-                    )}
+                    ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
+                    <div class="settings-item-copy">
+                        <h3>Screen Brightness</h3>
+                    </div>
+                    <div class="settings-section-body onboarding-inline-stack">
+                        ${renderSettingsSegmentedControl('settings-device-brightness', getScreenBrightnessStep(), Array.from({ length: 7 }, (_, index) => ({
+                            value: index + 1,
+                            label: String(index + 1)
+                        }))).replace('settings-toggle settings-toggle-wide', 'settings-toggle settings-toggle-wide onboarding-brightness-control')}
+                    </div>
+                    ${renderSettingsToggleRow({
+                        title: 'Sound',
+                        detail: 'Turn reader sound on or off.',
+                        id: 'settings-device-sound',
+                        value: deviceSettings.soundEnabled ? 'on' : 'off',
+                        options: [
+                            { value: 'on', label: 'On' },
+                            { value: 'off', label: 'Off' }
+                        ]
+                    })}
                 </div>
             </section>`;
     } else if (view === 'test_types') {
@@ -4183,9 +4194,19 @@ function showSettingsDetailScreen(view, state = {}) {
         });
     });
 
-    screen.querySelectorAll('[data-settings-brightness]').forEach(button => {
+    screen.querySelectorAll('#settings-device-brightness .seg-option').forEach(button => {
         button.addEventListener('click', () => {
-            handleSettingsApply({ screenBrightnessStep: Number(button.dataset.settingsBrightness) });
+            handleSettingsApply({ screenBrightnessStep: Number(button.dataset.value) });
+            renderStatusBar();
+            showSettingsDetailScreen('brightness', {
+                focusSection: detailState.focusSection
+            });
+        });
+    });
+
+    screen.querySelectorAll('#settings-device-sound .seg-option').forEach(button => {
+        button.addEventListener('click', () => {
+            handleSettingsApply({ soundEnabled: button.dataset.value === 'on' });
             renderStatusBar();
             showSettingsDetailScreen('brightness', {
                 focusSection: detailState.focusSection
@@ -4779,9 +4800,9 @@ function showSettingsScreen(focusSection = '') {
                     locked: !canAccessSettingsItem('open-language')
                 }),
                 renderSettingsActionRow({
-                    title: 'Screen Brightness',
-                    detail: 'Set the display brightness from the dimmest to the brightest step.',
-                    value: getScreenBrightnessLabel(),
+                    title: 'Device',
+                    detail: 'Adjust screen brightness and reader sound.',
+                    value: `${getScreenBrightnessLabel()} · Sound ${deviceSettings.soundEnabled ? 'On' : 'Off'}`,
                     buttonLabel: 'Open',
                     action: 'open-brightness',
                     locked: !canAccessSettingsItem('open-brightness')

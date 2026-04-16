@@ -962,7 +962,7 @@
         {
           "id": "settings-password-prompt",
           "title": "Protected settings password",
-          "description": "Password prompt shown when opening a protected setting.",
+          "description": "Password prompt shown when opening a protected settings screen.",
           "preset": "settings_password_prompt",
           "capture": "screen"
         },
@@ -988,6 +988,83 @@
           "capture": "screen"
         },
         {
+          "id": "settings-connectivity-offline",
+          "title": "Connectivity: offline",
+          "description": "Offline mode inside settings with cloud and internet actions unavailable.",
+          "preset": "settings_connectivity_offline",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-connectivity-ethernet",
+          "title": "Connectivity: Ethernet connected",
+          "description": "Ethernet connected state inside settings.",
+          "preset": "settings_connectivity_ethernet",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-device",
+          "title": "Device",
+          "description": "Combined device preferences screen for display brightness and reader sound.",
+          "preset": "settings_device",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-language",
+          "title": "Language",
+          "description": "Dedicated language picker inside settings.",
+          "preset": "settings_language",
+          "capture": "settings_tall"
+        },
+        {
+          "id": "settings-cloud-login",
+          "title": "MilkSafe Cloud: sign-in form",
+          "description": "Default Cloud sign-in form inside settings before the operator submits credentials.",
+          "preset": "settings_cloud_login",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-cloud-loading",
+          "title": "MilkSafe Cloud: signing in",
+          "description": "Cloud sign-in in progress after valid credentials are submitted.",
+          "preset": "settings_cloud_loading",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-cloud-error",
+          "title": "MilkSafe Cloud: incorrect password",
+          "description": "Cloud sign-in error shown after the operator enters invalid credentials.",
+          "preset": "settings_cloud_error",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-cloud-success",
+          "title": "MilkSafe Cloud: correct password",
+          "description": "Successful Cloud sign-in confirmation before the screen settles into the signed-in summary.",
+          "preset": "settings_cloud_success",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-cloud",
+          "title": "MilkSafe Cloud",
+          "description": "Signed-in cloud account summary and logout action inside settings.",
+          "preset": "settings_cloud",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-date-time",
+          "title": "Date And Time",
+          "description": "Date and time editor with timezone summary.",
+          "preset": "settings_date_time",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-timezone",
+          "title": "Time Zone",
+          "description": "Timezone picker used from the date and time flow.",
+          "preset": "settings_timezone",
+          "capture": "screen"
+        },
+        {
           "id": "settings-verification-threshold",
           "title": "Verification threshold",
           "description": "Reader-wide threshold dashboard with one shared verification count across all ports.",
@@ -1009,6 +1086,20 @@
           "capture": "screen"
         },
         {
+          "id": "settings-test-types-brand",
+          "title": "Test types: brand selection",
+          "description": "First Test Types step where the operator chooses MilkSafe or BioEasy.",
+          "preset": "settings_test_types_brand",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-test-types-category",
+          "title": "Test types: cassette or strip",
+          "description": "Second Test Types step where the operator chooses cassette tests or strip tests.",
+          "preset": "settings_test_types_category",
+          "capture": "screen"
+        },
+        {
           "id": "settings-curve-loader",
           "title": "Load quant curve",
           "description": "Curve loader screen with saved quantitative curves.",
@@ -1020,6 +1111,13 @@
           "title": "About",
           "description": "Reader identity and software summary.",
           "preset": "settings_about",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-factory-reset",
+          "title": "Factory Reset",
+          "description": "Password-protected factory reset screen inside maintenance settings.",
+          "preset": "settings_factory_reset",
           "capture": "screen"
         }
       ]

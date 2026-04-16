@@ -77,7 +77,7 @@ async function setCaptureMode(page, capture) {
         const root = document.documentElement;
         if (!root) return;
 
-        if (captureValue === 'detail_tall' || captureValue === 'decision_tall' || captureValue === 'history_tall') {
+        if (captureValue === 'detail_tall' || captureValue === 'decision_tall' || captureValue === 'history_tall' || captureValue === 'settings_tall') {
             root.dataset.captureMode = captureValue;
         } else {
             delete root.dataset.captureMode;
@@ -210,6 +210,78 @@ async function cleanupHistoryCaptureClone(page) {
     });
 }
 
+async function prepareSettingsCaptureClone(page, sourceId) {
+    await page.evaluate((sourceIdValue) => {
+        document.getElementById('handoff-settings-capture-root')?.remove();
+
+        const source = document.getElementById(sourceIdValue);
+        if (!source || !source.classList.contains('active')) {
+            throw new Error(`Settings screen ${sourceIdValue} is not active for tall capture.`);
+        }
+
+        const root = document.createElement('div');
+        root.id = 'handoff-settings-capture-root';
+        Object.assign(root.style, {
+            display: 'block',
+            width: '856px',
+            padding: '18px',
+            background: '#ffffff',
+            position: 'relative'
+        });
+
+        const frame = document.createElement('div');
+        frame.id = 'handoff-settings-capture-frame';
+        Object.assign(frame.style, {
+            background: 'var(--gray-800)',
+            borderRadius: '6px',
+            padding: '10px',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px var(--gray-900)'
+        });
+
+        const clone = source.cloneNode(true);
+        clone.id = 'handoff-settings-capture-screen';
+        clone.classList.add('active');
+        Object.assign(clone.style, {
+            position: 'relative',
+            inset: 'auto',
+            display: 'flex',
+            width: '800px',
+            minHeight: '480px',
+            height: 'auto',
+            overflow: 'visible',
+            padding: '12px'
+        });
+
+        const body = clone.querySelector('.settings-detail-screen-body');
+        if (body instanceof HTMLElement) {
+            Object.assign(body.style, {
+                flex: 'none',
+                minHeight: 'auto',
+                overflow: 'visible'
+            });
+        }
+
+        clone.querySelectorAll('.type-picker-results').forEach(list => {
+            if (list instanceof HTMLElement) {
+                Object.assign(list.style, {
+                    maxHeight: 'none',
+                    overflow: 'visible'
+                });
+            }
+        });
+
+        frame.appendChild(clone);
+        root.appendChild(frame);
+        document.body.appendChild(root);
+    }, sourceId);
+}
+
+async function cleanupSettingsCaptureClone(page) {
+    await page.evaluate(() => {
+        document.getElementById('handoff-settings-capture-root')?.remove();
+    });
+}
+
 async function captureStateImage(page, state, targetPath) {
     const capture = state.capture || 'screen';
     await setCaptureMode(page, capture);
@@ -262,6 +334,29 @@ async function captureStateImage(page, state, targetPath) {
             clip
         });
         await cleanupHistoryCaptureClone(page);
+    } else if (capture === 'settings_tall') {
+        await prepareSettingsCaptureClone(page, 'settings-detail-screen');
+        await page.waitForTimeout(40);
+        const clip = await page.evaluate(() => {
+            const root = document.getElementById('handoff-settings-capture-root');
+            if (!root) return null;
+            const rect = root.getBoundingClientRect();
+            return {
+                x: Math.max(0, rect.x),
+                y: Math.max(0, rect.y),
+                width: rect.width,
+                height: rect.height
+            };
+        });
+        if (!clip || clip.width <= 0 || clip.height <= 0) {
+            await cleanupSettingsCaptureClone(page);
+            throw new Error(`Settings clone clip could not be resolved for ${state.id}.`);
+        }
+        await page.screenshot({
+            path: targetPath,
+            clip
+        });
+        await cleanupSettingsCaptureClone(page);
     } else {
         const clip = await getCaptureClip(page, capture);
         await page.screenshot({
@@ -1422,7 +1517,7 @@ async function applyPreset(page, presetId) {
             case 'settings_password_prompt': {
                 setSignedIn('wifi');
                 showSettingsScreen();
-                openSettingsAction('open-test-types');
+                openSettingsAction('open-cloud');
                 break;
             }
             case 'settings_unlocked': {
@@ -1457,6 +1552,149 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
+            case 'settings_connectivity_offline': {
+                setSignedIn('wifi');
+                handleSettingsApply({
+                    connectivity: 'offline',
+                    wifiNetwork: ''
+                });
+                showSettingsDetailScreen('connectivity', {
+                    focusSection: 'settings-setup',
+                    connectivityDraft: {
+                        connectivity: 'offline',
+                        wifiStage: 'offline',
+                        wifiError: ''
+                    }
+                });
+                break;
+            }
+            case 'settings_connectivity_ethernet': {
+                setSignedIn('ethernet');
+                showSettingsDetailScreen('connectivity', {
+                    focusSection: 'settings-setup',
+                    connectivityDraft: {
+                        connectivity: 'ethernet',
+                        wifiStage: 'ethernet_ready',
+                        wifiError: ''
+                    }
+                });
+                break;
+            }
+            case 'settings_device': {
+                setSignedIn('wifi');
+                handleSettingsApply({
+                    screenBrightnessStep: 6,
+                    soundEnabled: false
+                });
+                showSettingsDetailScreen('brightness', {
+                    focusSection: 'settings-setup'
+                });
+                break;
+            }
+            case 'settings_language': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('language', {
+                    focusSection: 'settings-setup'
+                });
+                break;
+            }
+            case 'settings_cloud': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('cloud', {
+                    focusSection: 'settings-setup'
+                });
+                break;
+            }
+            case 'settings_cloud_login': {
+                applyAccountMode('anonymous');
+                deviceSettings.connectivity = 'wifi';
+                deviceSettings.wifiNetwork = getDefaultWifiNetworkName();
+                deviceSettings.ethernetConnected = false;
+                prototypeRuntime.onboardingCompleted = true;
+                showSettingsDetailScreen('cloud', {
+                    focusSection: 'settings-setup',
+                    cloudState: {
+                        accountMode: 'anonymous',
+                        username: DEFAULT_CLOUD_USERNAME,
+                        password: DEFAULT_CLOUD_PASSWORD,
+                        signInState: 'idle',
+                        signInError: ''
+                    }
+                });
+                break;
+            }
+            case 'settings_cloud_loading': {
+                applyAccountMode('anonymous');
+                deviceSettings.connectivity = 'wifi';
+                deviceSettings.wifiNetwork = getDefaultWifiNetworkName();
+                deviceSettings.ethernetConnected = false;
+                prototypeRuntime.onboardingCompleted = true;
+                showSettingsDetailScreen('cloud', {
+                    focusSection: 'settings-setup',
+                    cloudState: {
+                        accountMode: 'anonymous',
+                        username: DEFAULT_CLOUD_USERNAME,
+                        password: DEFAULT_CLOUD_PASSWORD,
+                        signInState: 'loading',
+                        signInError: ''
+                    }
+                });
+                break;
+            }
+            case 'settings_cloud_error': {
+                applyAccountMode('anonymous');
+                deviceSettings.connectivity = 'wifi';
+                deviceSettings.wifiNetwork = getDefaultWifiNetworkName();
+                deviceSettings.ethernetConnected = false;
+                prototypeRuntime.onboardingCompleted = true;
+                showSettingsDetailScreen('cloud', {
+                    focusSection: 'settings-setup',
+                    cloudState: {
+                        accountMode: 'anonymous',
+                        username: DEFAULT_CLOUD_USERNAME,
+                        password: '0000',
+                        signInState: 'idle',
+                        signInError: 'Username or password is incorrect.'
+                    }
+                });
+                break;
+            }
+            case 'settings_cloud_success': {
+                applyAccountMode('anonymous');
+                deviceSettings.connectivity = 'wifi';
+                deviceSettings.wifiNetwork = getDefaultWifiNetworkName();
+                deviceSettings.ethernetConnected = false;
+                prototypeRuntime.onboardingCompleted = true;
+                showSettingsDetailScreen('cloud', {
+                    focusSection: 'settings-setup',
+                    cloudState: {
+                        accountMode: 'anonymous',
+                        username: DEFAULT_CLOUD_USERNAME,
+                        password: '',
+                        signInState: 'success_feedback',
+                        signInError: ''
+                    }
+                });
+                break;
+            }
+            case 'settings_date_time': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('date_time', {
+                    focusSection: 'settings-setup',
+                    dateInput: '2026-03-22',
+                    timeInput: '09:32'
+                });
+                break;
+            }
+            case 'settings_timezone': {
+                setSignedIn('wifi');
+                showSettingsDetailScreen('timezone', {
+                    focusSection: 'settings-setup',
+                    dateInput: '2026-03-22',
+                    timeInput: '09:32'
+                });
+                break;
+            }
             case 'settings_verification_threshold': {
                 setSignedIn('wifi');
                 showSettingsDetailScreen('verification_threshold', {
@@ -1487,6 +1725,32 @@ async function applyPreset(page, presetId) {
                 });
                 break;
             }
+            case 'settings_test_types_brand': {
+                setSignedIn('wifi');
+                unlockSettingsSession();
+                showSettingsDetailScreen('test_types', {
+                    focusSection: 'settings-setup',
+                    testTypeState: {
+                        step: 'brand',
+                        brandFilter: '',
+                        categoryFilter: ''
+                    }
+                });
+                break;
+            }
+            case 'settings_test_types_category': {
+                setSignedIn('wifi');
+                unlockSettingsSession();
+                showSettingsDetailScreen('test_types', {
+                    focusSection: 'settings-setup',
+                    testTypeState: {
+                        step: 'category',
+                        brandFilter: 'MilkSafe',
+                        categoryFilter: ''
+                    }
+                });
+                break;
+            }
             case 'settings_curve_loader': {
                 setSignedIn('wifi');
                 showSettingsCurveScreen();
@@ -1495,6 +1759,14 @@ async function applyPreset(page, presetId) {
             case 'settings_about': {
                 setSignedIn('wifi');
                 showSettingsDetailScreen('about', {
+                    focusSection: 'settings-maintenance'
+                });
+                break;
+            }
+            case 'settings_factory_reset': {
+                setSignedIn('wifi');
+                unlockSettingsSession();
+                showSettingsDetailScreen('factory_reset', {
                     focusSection: 'settings-maintenance'
                 });
                 break;
