@@ -1069,9 +1069,23 @@
         },
         {
           "id": "settings-verification-threshold",
-          "title": "Verification threshold",
-          "description": "Reader-wide threshold dashboard with one shared verification count across all ports.",
+          "title": "Verification threshold: over 250",
+          "description": "Reader-wide threshold dashboard when the shared count is above the 250-test cloud default.",
           "preset": "settings_verification_threshold",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-verification-threshold-under",
+          "title": "Verification threshold: under 250",
+          "description": "Reader-wide threshold dashboard when the shared count is still below the 250-test cloud default.",
+          "preset": "settings_verification_threshold_under",
+          "capture": "screen"
+        },
+        {
+          "id": "settings-verification-threshold-local-warning",
+          "title": "Verification threshold: local warning",
+          "description": "Local threshold lowered below 250 so the reader warns before the cloud default is reached.",
+          "preset": "settings_verification_threshold_local_warning",
           "capture": "screen"
         },
         {

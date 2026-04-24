@@ -137,7 +137,7 @@
             margin-top: 8px;
         }
         .sidebar-meta::before {
-            content: "6 sections · 123 states";
+            content: "6 sections · 125 states";
             display: block;
             margin-bottom: 10px;
             color: var(--muted);
@@ -631,7 +631,7 @@
             
             <a class="sidebar-link is-active" href="settings.html">
                 <span>Settings</span>
-                <strong>23</strong>
+                <strong>25</strong>
             </a>
             
             <a class="sidebar-link" href="software.html">
@@ -652,7 +652,7 @@
     <section class="meta-block build-block">
         <h3>Build</h3>
         <p><strong>Version:</strong> Version 1</p>
-        <p><strong>Created:</strong> 2026-04-16 15:25</p>
+        <p><strong>Created:</strong> 2026-04-24 10:14</p>
     </section>
     
         </div>
@@ -667,7 +667,7 @@
             <h2>Settings</h2>
             <p class="section-summary">Settings home, locking model, and the main detail screens used during setup and maintenance.</p>
         </div>
-        <span class="section-count">23 states</span>
+        <span class="section-count">25 states</span>
     </header>
     
     
@@ -980,16 +980,56 @@
             class="shot-open"
             type="button"
             data-viewer-src="screenshots/settings-verification-threshold.png"
-            data-viewer-title="Verification threshold"
-            data-viewer-description="Reader-wide threshold dashboard with one shared verification count across all ports."
+            data-viewer-title="Verification threshold: over 250"
+            data-viewer-description="Reader-wide threshold dashboard when the shared count is above the 250-test cloud default."
         >
-            <img loading="lazy" src="screenshots/settings-verification-threshold.png" alt="Verification threshold">
+            <img loading="lazy" src="screenshots/settings-verification-threshold.png" alt="Verification threshold: over 250">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Verification threshold</h3>
-            <p>Reader-wide threshold dashboard with one shared verification count across all ports.</p>
+            <h3>Verification threshold: over 250</h3>
+            <p>Reader-wide threshold dashboard when the shared count is above the 250-test cloud default.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-settings-verification-threshold-under">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/settings-verification-threshold-under.png"
+            data-viewer-title="Verification threshold: under 250"
+            data-viewer-description="Reader-wide threshold dashboard when the shared count is still below the 250-test cloud default."
+        >
+            <img loading="lazy" src="screenshots/settings-verification-threshold-under.png" alt="Verification threshold: under 250">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Verification threshold: under 250</h3>
+            <p>Reader-wide threshold dashboard when the shared count is still below the 250-test cloud default.</p>
+        </div>
+    </article>
+    
+    <article class="state-card" id="state-settings-verification-threshold-local-warning">
+        <div class="shot-frame">
+            
+        <button
+            class="shot-open"
+            type="button"
+            data-viewer-src="screenshots/settings-verification-threshold-local-warning.png"
+            data-viewer-title="Verification threshold: local warning"
+            data-viewer-description="Local threshold lowered below 250 so the reader warns before the cloud default is reached."
+        >
+            <img loading="lazy" src="screenshots/settings-verification-threshold-local-warning.png" alt="Verification threshold: local warning">
+        </button>
+        
+        </div>
+        <div class="state-copy">
+            <h3>Verification threshold: local warning</h3>
+            <p>Local threshold lowered below 250 so the reader warns before the cloud default is reached.</p>
         </div>
     </article>
     

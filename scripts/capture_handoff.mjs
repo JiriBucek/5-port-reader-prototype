@@ -1792,6 +1792,25 @@ async function applyPreset(page, presetId) {
             }
             case 'settings_verification_threshold': {
                 setSignedIn('wifi');
+                deviceSettings.verificationCount = 286;
+                showSettingsDetailScreen('verification_threshold', {
+                    focusSection: 'settings-verification',
+                    thresholdInput: '250'
+                });
+                break;
+            }
+            case 'settings_verification_threshold_under': {
+                setSignedIn('wifi');
+                deviceSettings.verificationCount = 184;
+                showSettingsDetailScreen('verification_threshold', {
+                    focusSection: 'settings-verification',
+                    thresholdInput: '250'
+                });
+                break;
+            }
+            case 'settings_verification_threshold_local_warning': {
+                setSignedIn('wifi');
+                deviceSettings.verificationCount = 210;
                 showSettingsDetailScreen('verification_threshold', {
                     focusSection: 'settings-verification',
                     thresholdInput: '180'
@@ -1800,6 +1819,7 @@ async function applyPreset(page, presetId) {
             }
             case 'settings_verification_threshold_help': {
                 setSignedIn('wifi');
+                deviceSettings.verificationCount = 210;
                 showSettingsDetailScreen('verification_threshold', {
                     focusSection: 'settings-verification',
                     thresholdInput: '180',

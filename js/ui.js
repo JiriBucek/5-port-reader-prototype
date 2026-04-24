@@ -2916,26 +2916,41 @@ function renderVerificationThresholdScope() {
 function renderVerificationThresholdSummary(thresholdValue = deviceSettings.verificationThreshold) {
     const count = getVerificationTestCount();
     const threshold = Number(thresholdValue || 250);
+    const cloudThreshold = 250;
     const hasOutstandingWarning = isVerificationOutstanding(thresholdValue);
+    const hasCloudOutstanding = count > cloudThreshold;
     const progressPercent = getVerificationThresholdProgressPercent(thresholdValue);
+    const statusLabel = hasCloudOutstanding ? 'Cloud Outstanding' : hasOutstandingWarning ? 'Local Warning' : 'Within Limit';
+    const heading = hasCloudOutstanding ? 'Verification Required' : hasOutstandingWarning ? 'Local Warning Active' : 'Adjust Threshold';
+    const meterNote = hasCloudOutstanding
+        ? 'Above cloud default'
+        : hasOutstandingWarning
+            ? 'Below cloud default'
+            : 'No warning';
+    const summaryCopy = hasCloudOutstanding
+        ? 'This reader is above the 250-test cloud default. Run verification to reset the shared count for all ports.'
+        : hasOutstandingWarning
+            ? 'The lower local threshold warns before the 250-test cloud default. The cloud limit has not been reached yet.'
+            : 'All tests from ports 1-5 are counted together. A successful verification in any port resets the shared count to 0.';
 
     return `
         <section class="history-section-card settings-threshold-controls-card${hasOutstandingWarning ? ' is-warning' : ''}">
             <div class="settings-threshold-controls-head">
                 <div>
                     <span class="history-summary-kicker">Local reader warning</span>
-                    <h2>${hasOutstandingWarning ? 'Warning Active' : 'Adjust Threshold'}</h2>
+                    <h2>${heading}</h2>
                 </div>
                 <span class="settings-threshold-status-pill${hasOutstandingWarning ? ' is-warning' : ''}">
-                    ${hasOutstandingWarning ? 'Outstanding' : 'Within Limit'}
+                    ${statusLabel}
                 </span>
             </div>
             <p class="settings-threshold-controls-copy">
-                All tests from ports 1-5 are counted together. A successful verification in any port resets the shared count to 0.
+                ${summaryCopy}
             </p>
             <div class="settings-threshold-meter">
                 <div class="settings-threshold-meter-head">
                     <strong>${count} / ${threshold}</strong>
+                    <span>${meterNote}</span>
                 </div>
                 <div class="progress-bar settings-threshold-progress">
                     <div class="progress-fill${hasOutstandingWarning ? ' progress-alert' : ''}" style="width:${progressPercent.toFixed(2)}%"></div>
@@ -3984,6 +3999,12 @@ function showSettingsDetailScreen(view, state = {}) {
         const thresholdValue = sanitizeVerificationThreshold(detailState.thresholdInput);
         const totalCount = getVerificationTestCount();
         const hasOutstandingWarning = isVerificationOutstanding(thresholdValue);
+        const hasCloudOutstanding = totalCount > 250;
+        const totalTestsDetail = hasCloudOutstanding
+            ? 'Above cloud default'
+            : hasOutstandingWarning
+                ? 'Above local warning'
+                : 'All ports combined';
         title = 'Verification Threshold';
         subtitle = 'Set the local reader warning for total tests across all ports. Cloud default stays 250.';
         body = `
@@ -3991,7 +4012,7 @@ function showSettingsDetailScreen(view, state = {}) {
                 <div class="settings-section-body settings-threshold-body">
                     ${detailState.notice ? renderHistoryNotice(detailState.notice) : ''}
                     <div class="settings-threshold-bubble-row">
-                        <div class="settings-threshold-bubble">
+                        <div class="settings-threshold-bubble${hasCloudOutstanding ? ' is-warning' : ''}">
                             <span>Cloud Default</span>
                             <strong>250</strong>
                             <small class="settings-threshold-bubble-detail">Fixed in cloud</small>
@@ -3999,7 +4020,7 @@ function showSettingsDetailScreen(view, state = {}) {
                         <div class="settings-threshold-bubble${hasOutstandingWarning ? ' is-warning' : ''}">
                             <span>Total Tests</span>
                             <strong>${escapeHtml(String(totalCount))}</strong>
-                            <small class="settings-threshold-bubble-detail">All ports combined</small>
+                            <small class="settings-threshold-bubble-detail">${totalTestsDetail}</small>
                         </div>
                     </div>
                     ${renderVerificationThresholdSummary(thresholdValue)}
