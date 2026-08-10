@@ -5927,59 +5927,6 @@ function showDecisionModal(ch, variant) {
     });
 }
 
-// ---- Quantitative Result Modal ----
-// Quantitative tests skip the confirmation flow entirely. This popup only
-// announces that the test finished and shows the measured level — it never
-// reveals positive/negative and offers nothing but Close.
-
-function showQuantResultModal(ch) {
-    const overlay = document.getElementById('modal-overlay');
-    const modal = document.getElementById('decision-modal');
-    if (!overlay || !modal) return;
-
-    activeModal = { type: 'quant_result', channelId: ch.id };
-
-    const lastResult = ch.testResults[ch.testResults.length - 1];
-    const testTypeLabel = ch.testTypeName || ch.cassetteType || 'Test';
-    const substanceName = lastResult?.substances?.[0]?.name || 'Measured substance';
-    const levelDisplay = getQuantitativeLevelDisplay(lastResult?.substances);
-
-    modal.innerHTML = `
-        ${renderStructuredModalHeader(ch.id, 'Test Complete')}
-        <div class="modal-body modal-structured-body">
-            <section class="history-summary-card modal-summary-card is-quantitative">
-                <div class="history-summary-top">
-                    <div class="decision-summary-copy">
-                        <h2>${escapeHtml(substanceName)}</h2>
-                        <span class="decision-summary-type">${escapeHtml(testTypeLabel)}</span>
-                    </div>
-                    <div class="quant-level-display">
-                        <span class="quant-level-value">${escapeHtml(levelDisplay)}</span>
-                        <span class="quant-level-caption">Measured Level</span>
-                    </div>
-                </div>
-            </section>
-            <section class="history-section-card modal-section-card">
-                <div class="history-section-header">
-                    <h2>Substances</h2>
-                </div>
-                <div class="history-substance-list">
-                    ${renderHistorySubstanceRows(lastResult?.substances, ch.testTypeId)}
-                </div>
-            </section>
-        </div>
-        <div class="modal-footer">
-            <button class="modal-btn btn-primary" id="quant-result-close">Close</button>
-        </div>`;
-
-    overlay.classList.add('active');
-    modal.classList.add('active');
-
-    document.getElementById('quant-result-close').addEventListener('click', () => {
-        handleQuantResultClose(ch.id);
-    });
-}
-
 // ---- Insert Warning Modal ----
 // Shown whenever a cassette is inserted while another inserted cassette has
 // not been configured and started yet. Purely informational — one Close.

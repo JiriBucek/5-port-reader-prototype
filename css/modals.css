@@ -1221,32 +1221,6 @@
     color: var(--gray-500);
 }
 
-/* Quantitative result modal — measured level display */
-.quant-level-display {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-    flex-shrink: 0;
-}
-
-.quant-level-value {
-    font-size: 34px;
-    font-weight: 800;
-    line-height: 1;
-    color: var(--quant-text);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.quant-level-caption {
-    font-size: var(--font-xs);
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: var(--gray-500);
-}
-
 /* Decision modal buttons */
 .decision-modal .modal-footer {
     padding: 10px 16px 12px;

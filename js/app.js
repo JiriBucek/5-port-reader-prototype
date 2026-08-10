@@ -679,11 +679,11 @@ function completeReading(ch) {
     }
 
     // Quantitative tests never run the confirmation flow: the flow completes
-    // after one test and the operator only sees the measured level.
+    // after one test and the operator only sees the measured level, shown
+    // directly on the channel card — no result popup.
     if (selectedTestType?.quantitative) {
         ch.state = STATES.COMPLETE;
         ch.groupResult = overall;
-        queueQuantResultModal(ch);
 
         if (ch.scenario === 'test' &&
             (ch.groupResult === 'positive' || ch.groupResult === 'negative')) {
@@ -744,14 +744,6 @@ function queueDecisionModal(ch, variant) {
     }
 }
 
-function queueQuantResultModal(ch) {
-    if (activeModal) {
-        modalQueue.push({ type: 'quant_result', channelId: ch.id });
-    } else {
-        showQuantResultModal(ch);
-    }
-}
-
 function queueInsertWarningModal(ch) {
     if (activeModal) {
         // Never queue the same warning twice.
@@ -772,13 +764,6 @@ function processModalQueue() {
         const ch = getChannel(next.channelId);
         if (ch.state === STATES.RESULT) {
             showDecisionModal(ch, next.variant);
-        } else {
-            processModalQueue();
-        }
-    } else if (next.type === 'quant_result') {
-        const ch = getChannel(next.channelId);
-        if (ch.state === STATES.COMPLETE && ch.testResults.length > 0) {
-            showQuantResultModal(ch);
         } else {
             processModalQueue();
         }
@@ -820,11 +805,6 @@ function handleDecisionContinue(channelId) {
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
-    processModalQueue();
-}
-
-function handleQuantResultClose(channelId) {
-    hideModal();
     processModalQueue();
 }
 
