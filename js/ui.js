@@ -1704,9 +1704,10 @@ function renderHistoryTestBadge(flow, test, size = 'md') {
 
 function renderHistorySubstanceRows(substances, testTypeId) {
     return (substances || []).map(substance => {
+        // Masked quantitative rows show only the measured value — no label.
         const masked = isMaskedQuantResult(testTypeId, substance.result);
         const resultHtml = masked
-            ? '<span class="history-substance-result is-quantitative">Measured</span>'
+            ? ''
             : `<span class="history-substance-result is-${getHistoryResultTone(substance.result)}">${escapeHtml(formatHistoryResultLabel(substance.result))}</span>`;
         return `<div class="history-substance-row">
             <span class="history-substance-name">${escapeHtml(substance.name)}</span>
