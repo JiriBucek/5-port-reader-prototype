@@ -611,6 +611,21 @@ function hasFreshConfirmationCassette(ch) {
            !usedCassetteIds.has(ch.loadedCassetteId);
 }
 
+// An inserted cassette whose test has not been configured and started yet.
+// Such a cassette is already developing in the warm reader, so the operator
+// is warned when they insert further cassettes before starting this one.
+function hasUnstartedInsertedCassette(ch) {
+    if (!ch || !ch.physicalCassettePresent) return false;
+    if (ch.currentTestNumber > 0) return false;
+    return ch.state === STATES.EMPTY ||
+           ch.state === STATES.DETECTED ||
+           ch.state === STATES.CONFIGURING;
+}
+
+function getOtherUnstartedCassetteChannels(channelId) {
+    return channels.filter(ch => ch.id !== channelId && hasUnstartedInsertedCassette(ch));
+}
+
 // ---- Channel Data Factory ----
 
 function createChannel(id) {

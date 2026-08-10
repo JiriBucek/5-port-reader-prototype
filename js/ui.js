@@ -5980,6 +5980,43 @@ function showQuantResultModal(ch) {
     });
 }
 
+// ---- Insert Warning Modal ----
+// Shown whenever a cassette is inserted while another inserted cassette has
+// not been configured and started yet. Purely informational — one Close.
+
+function showInsertWarningModal(ch) {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('decision-modal');
+    if (!overlay || !modal) return;
+
+    activeModal = { type: 'insert_warning', channelId: ch.id };
+
+    const waitingChannels = getOtherUnstartedCassetteChannels(ch.id);
+    const waitingPorts = waitingChannels.map(channel => channel.id).join(', ');
+    const portLabel = waitingChannels.length === 1
+        ? `port ${waitingPorts}`
+        : `ports ${waitingPorts}`;
+
+    modal.innerHTML = `
+        ${renderStructuredModalHeader(ch.id, 'Start the Previous Cassette First')}
+        <div class="modal-body modal-structured-body">
+            <div class="insert-warning-copy">
+                <p>Configure the cassette on ${escapeHtml(portLabel)} and start its test before inserting another one.</p>
+                <p>A cassette with milk starts developing as soon as it is inserted into the warm reader. If it waits while you configure other tests, its result may be wrong.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn btn-primary" id="insert-warning-close">OK</button>
+        </div>`;
+
+    overlay.classList.add('active');
+    modal.classList.add('active');
+
+    document.getElementById('insert-warning-close').addEventListener('click', () => {
+        handleInsertWarningClose(ch.id);
+    });
+}
+
 // ---- Stop Confirmation Modal ----
 
 function showStopConfirmationModal(ch) {

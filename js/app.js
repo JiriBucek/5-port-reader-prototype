@@ -304,6 +304,12 @@ function handleInsert(channelId, outcome) {
     renderSlot(ch);
     renderSimulationButtons();
     refreshActiveConfigModal(channelId);
+
+    // Warn when another inserted cassette is still waiting to be configured
+    // and started — it is already developing in the warm reader.
+    if (getOtherUnstartedCassetteChannels(channelId).length > 0) {
+        queueInsertWarningModal(ch);
+    }
 }
 
 // Physical removal simulation (debug/testing aid).
@@ -746,6 +752,17 @@ function queueQuantResultModal(ch) {
     }
 }
 
+function queueInsertWarningModal(ch) {
+    if (activeModal) {
+        // Never queue the same warning twice.
+        if (!modalQueue.some(item => item.type === 'insert_warning')) {
+            modalQueue.push({ type: 'insert_warning', channelId: ch.id });
+        }
+    } else {
+        showInsertWarningModal(ch);
+    }
+}
+
 function processModalQueue() {
     if (activeModal) return;
     if (modalQueue.length === 0) return;
@@ -762,6 +779,14 @@ function processModalQueue() {
         const ch = getChannel(next.channelId);
         if (ch.state === STATES.COMPLETE && ch.testResults.length > 0) {
             showQuantResultModal(ch);
+        } else {
+            processModalQueue();
+        }
+    } else if (next.type === 'insert_warning') {
+        // Only still relevant if another unstarted cassette is still waiting.
+        const ch = getChannel(next.channelId);
+        if (getOtherUnstartedCassetteChannels(next.channelId).length > 0) {
+            showInsertWarningModal(ch);
         } else {
             processModalQueue();
         }
@@ -799,6 +824,11 @@ function handleDecisionContinue(channelId) {
 }
 
 function handleQuantResultClose(channelId) {
+    hideModal();
+    processModalQueue();
+}
+
+function handleInsertWarningClose(channelId) {
     hideModal();
     processModalQueue();
 }

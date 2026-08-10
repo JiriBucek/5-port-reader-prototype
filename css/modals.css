@@ -1203,6 +1203,24 @@
     color: var(--gray-500);
 }
 
+/* Insert warning modal — plain headline + description, no color coding */
+.insert-warning-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 2px;
+}
+
+.insert-warning-copy p {
+    font-size: var(--font-base);
+    color: var(--gray-700);
+    line-height: 1.4;
+}
+
+.insert-warning-copy p + p {
+    color: var(--gray-500);
+}
+
 /* Quantitative result modal — measured level display */
 .quant-level-display {
     display: flex;
