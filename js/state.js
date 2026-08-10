@@ -1452,6 +1452,27 @@ function getTestTypeById(testTypeId) {
     return TEST_TYPES.find(testType => testType.id === normalizedId) || null;
 }
 
+// ---- Quantitative display rules ----
+// Quantitative tests (e.g. Afla M1) never surface positive/negative in the UI.
+// The reader still records the outcome internally; the display layer shows the
+// measured substance level instead and skips the confirmation flow entirely.
+
+function isQuantitativeTestTypeId(testTypeId) {
+    return Boolean(getTestTypeById(testTypeId)?.quantitative);
+}
+
+// True when a recorded pos/neg outcome must be hidden behind the level display.
+// Invalid/inconclusive outcomes stay visible — a failed read has no level.
+function isMaskedQuantResult(testTypeId, result) {
+    return isQuantitativeTestTypeId(testTypeId) &&
+        (result === 'positive' || result === 'negative');
+}
+
+function getQuantitativeLevelDisplay(substances) {
+    const first = Array.isArray(substances) ? substances[0] : null;
+    return first?.displayValue || '--';
+}
+
 function getEnabledTestTypesForCurrentUser() {
     return TEST_TYPES.filter(testType => isTestTypeEnabledForCurrentUser(testType.id));
 }
@@ -2084,6 +2105,9 @@ function getCardStateClass(ch) {
         case STATES.COMPLETE:
             if (ch.scenario === 'pos_control' || ch.scenario === 'animal_control') {
                 return 'state-control';
+            }
+            if (isMaskedQuantResult(ch.testTypeId, ch.groupResult)) {
+                return 'state-complete-quantitative';
             }
             switch (ch.groupResult) {
                 case 'negative': return 'state-complete-negative';

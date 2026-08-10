@@ -184,6 +184,9 @@ function renderCassetteGraphic(ch) {
         currentResults = ch.testResults[ch.testResults.length - 1].substances;
     }
 
+    const maskQuantLines = isQuantitativeTestTypeId(ch.testTypeId) &&
+        ch.scenario !== 'pos_control' && ch.scenario !== 'animal_control';
+
     let linesHtml = lineItems.map((item, i) => {
         let resultClass = 'result-pending';
         if (ch.state === STATES.READING) {
@@ -192,7 +195,10 @@ function renderCassetteGraphic(ch) {
             resultClass = 'result-control';
         } else if (currentResults) {
             const resultIndex = item.isControl ? -1 : i - 1;
-            resultClass = getCassetteVisualResultClass(currentResults[resultIndex]?.result);
+            const lineResult = currentResults[resultIndex]?.result;
+            resultClass = maskQuantLines && (lineResult === 'positive' || lineResult === 'negative')
+                ? 'result-quant'
+                : getCassetteVisualResultClass(lineResult);
         }
         return `<div class="substance-line${item.isControl ? ' is-control' : ''}">
             <span class="line-label">${item.label}</span>
@@ -398,6 +404,12 @@ function renderCardGroupResult(ch) {
         groupResultHtml = `
             <span class="group-badge ${badgeClass}">${label}</span>
         `;
+    } else if (ch.state === STATES.COMPLETE && isMaskedQuantResult(ch.testTypeId, ch.groupResult)) {
+        const lastResult = ch.testResults[ch.testResults.length - 1];
+        const levelDisplay = getQuantitativeLevelDisplay(lastResult?.substances);
+        groupResultHtml = `
+            <span class="group-badge group-badge-quantitative">Level ${escapeHtml(levelDisplay)}</span>
+        `;
     } else if (ch.state === STATES.COMPLETE) {
         switch (ch.groupResult) {
             case 'negative':
@@ -599,6 +611,9 @@ function updateSlotLines(ch, linesEl) {
         currentResults = ch.testResults[ch.testResults.length - 1].substances;
     }
 
+    const maskQuantLines = isQuantitativeTestTypeId(ch.testTypeId) &&
+        ch.scenario !== 'pos_control' && ch.scenario !== 'animal_control';
+
     linesEl.innerHTML = lineItems.map((item, i) => {
         let lineClass = 'cassette-line-mark';
         if (ch.state === STATES.READING) {
@@ -608,9 +623,11 @@ function updateSlotLines(ch, linesEl) {
         } else if (currentResults) {
             const resultIndex = item.isControl ? -1 : i - 1;
             const result = currentResults[resultIndex]?.result;
-            lineClass += result === 'positive'
-                ? ' line-positive'
-                : (result === 'negative' ? ' line-negative' : ' line-invalid');
+            lineClass += maskQuantLines && (result === 'positive' || result === 'negative')
+                ? ' line-quant'
+                : (result === 'positive'
+                    ? ' line-positive'
+                    : (result === 'negative' ? ' line-negative' : ' line-invalid'));
         }
         return `<div class="${lineClass}"></div>`;
     }).join('');
@@ -1648,7 +1665,55 @@ function isHistoryControlFlow(flow) {
 }
 
 function getHistoryFlowTone(flow) {
-    return isHistoryControlFlow(flow) ? 'control' : getHistoryResultTone(flow?.result);
+    if (isHistoryControlFlow(flow)) return 'control';
+    if (isMaskedQuantResult(flow?.testTypeId, flow?.result)) return 'quantitative';
+    return getHistoryResultTone(flow?.result);
+}
+
+// ---- Quantitative display helpers ----
+// Controls keep their pos/neg display (their purpose is pass/fail validation);
+// everywhere else a quantitative pos/neg result renders as the measured level.
+
+function getHistoryTestTone(flow, test) {
+    if (isHistoryControlFlow(flow)) return 'control';
+    if (isMaskedQuantResult(test?.testTypeId ?? flow?.testTypeId, test?.overall)) {
+        return 'quantitative';
+    }
+    return getHistoryResultTone(test?.overall);
+}
+
+function formatQuantLevelLabel(substances) {
+    return `Level ${getQuantitativeLevelDisplay(substances)}`;
+}
+
+function renderFlowResultBadge(flow, size = 'md') {
+    if (!isHistoryControlFlow(flow) && isMaskedQuantResult(flow?.testTypeId, flow?.result)) {
+        const lastTest = flow?.tests?.[flow.tests.length - 1];
+        return renderToneBadge(formatQuantLevelLabel(lastTest?.substances), 'quantitative', size);
+    }
+    return renderHistoryResultBadge(flow?.result, size);
+}
+
+function renderHistoryTestBadge(flow, test, size = 'md') {
+    if (!isHistoryControlFlow(flow) &&
+        isMaskedQuantResult(test?.testTypeId ?? flow?.testTypeId, test?.overall)) {
+        return renderToneBadge(formatQuantLevelLabel(test?.substances), 'quantitative', size);
+    }
+    return renderHistoryResultBadge(test?.overall, size);
+}
+
+function renderHistorySubstanceRows(substances, testTypeId) {
+    return (substances || []).map(substance => {
+        const masked = isMaskedQuantResult(testTypeId, substance.result);
+        const resultHtml = masked
+            ? '<span class="history-substance-result is-quantitative">Measured</span>'
+            : `<span class="history-substance-result is-${getHistoryResultTone(substance.result)}">${escapeHtml(formatHistoryResultLabel(substance.result))}</span>`;
+        return `<div class="history-substance-row">
+            <span class="history-substance-name">${escapeHtml(substance.name)}</span>
+            <span class="history-substance-value">${escapeHtml(substance.displayValue || '')}</span>
+            ${resultHtml}
+        </div>`;
+    }).join('');
 }
 
 function formatHistoryResultLabel(result) {
@@ -1738,9 +1803,14 @@ function renderHistoryFlowMeta(flow) {
 
 function renderHistorySequenceChips(flow) {
     return flow.tests.map(test => {
-        const tone = getHistoryResultTone(test.overall);
+        const masked = !isHistoryControlFlow(flow) &&
+            isMaskedQuantResult(test.testTypeId ?? flow.testTypeId, test.overall);
+        const tone = masked ? 'quantitative' : getHistoryResultTone(test.overall);
+        const resultLabel = masked
+            ? getQuantitativeLevelDisplay(test.substances)
+            : formatHistoryResultLabel(test.overall);
         return `<span class="history-sequence-chip is-${tone}">
-            <span class="history-sequence-chip-text">${getHistoryAnnotationShortLabel(test.annotation)} ${formatHistoryResultLabel(test.overall)}</span>
+            <span class="history-sequence-chip-text">${getHistoryAnnotationShortLabel(test.annotation)} ${resultLabel}</span>
         </span>`;
     }).join('');
 }
@@ -1937,8 +2007,12 @@ function flattenHistoryFlowsForExport(flows) {
         'Completed At': formatHistoryExportTimestamp(test.timestamp),
         'Record Type': isHistoryControlFlow(flow) ? 'Control' : 'Test',
         'Control Type': isHistoryControlFlow(flow) ? flow.scenarioLabel : '',
-        'Flow Result': formatHistoryResultLabel(flow.result),
-        'Test Result': formatHistoryResultLabel(test.overall),
+        'Flow Result': !isHistoryControlFlow(flow) && isMaskedQuantResult(flow.testTypeId, flow.result)
+            ? formatQuantLevelLabel(flow.tests[flow.tests.length - 1]?.substances)
+            : formatHistoryResultLabel(flow.result),
+        'Test Result': !isHistoryControlFlow(flow) && isMaskedQuantResult(test.testTypeId ?? flow.testTypeId, test.overall)
+            ? formatQuantLevelLabel(test.substances)
+            : formatHistoryResultLabel(test.overall),
         'Test Number': String(test.testNumber),
         'Annotation': getHistoryAnnotationLabel(test.annotation),
         'Test Type': flow.testTypeName || test.testTypeName || flow.scenarioLabel || 'Test',
@@ -2084,7 +2158,7 @@ function renderHistoryListView({
                                 </div>
                                 <div class="history-flow-side">
                                     <span class="history-side-label">Flow Result</span>
-                                    ${renderHistoryResultBadge(flow.result)}
+                                    ${renderFlowResultBadge(flow)}
                                 </div>
                             </div>
                             <div class="history-flow-row-bottom">
@@ -2176,7 +2250,7 @@ function renderHistoryFlowView(flow, historyState) {
                         <span class="history-summary-kicker">${escapeHtml(summaryKicker)}</span>
                         <h2>${escapeHtml(flow.testTypeName || 'Test')}</h2>
                     </div>
-                    ${renderHistoryResultBadge(flow.result, 'lg')}
+                    ${renderFlowResultBadge(flow, 'lg')}
                 </div>
                 <div class="history-summary-grid">
                     ${renderHistoryField('Date & Time', latestFlowTimestamp)}
@@ -2196,14 +2270,14 @@ function renderHistoryFlowView(flow, historyState) {
                 </div>
                 <div class="history-test-list">
                     ${flow.tests.map(test => `
-                        <button class="history-test-row is-${isHistoryControlFlow(flow) ? 'control' : getHistoryResultTone(test.overall)}" data-history-action="open-test" data-history-key="${flow.historyKey}" data-history-test="${test.testNumber}">
+                        <button class="history-test-row is-${getHistoryTestTone(flow, test)}" data-history-action="open-test" data-history-key="${flow.historyKey}" data-history-test="${test.testNumber}">
                             <div class="history-test-main">
                                 <div class="history-test-title">Test ${test.testNumber}</div>
                                 <div class="history-test-meta">${escapeHtml(getHistoryAnnotationLabel(test.annotation))} &middot; ${escapeHtml(formatHistoryDateTime(test.timestamp))}</div>
                             </div>
                             <div class="history-test-side">
                                 <span class="history-side-label">Result</span>
-                                ${renderHistoryResultBadge(test.overall)}
+                                ${renderHistoryTestBadge(flow, test)}
                             </div>
                         </button>
                     `).join('')}
@@ -2220,7 +2294,7 @@ function renderHistoryFlowView(flow, historyState) {
 }
 
 function renderHistoryTestView(flow, test, notice = '') {
-    const tone = isHistoryControlFlow(flow) ? 'control' : getHistoryResultTone(test.overall);
+    const tone = getHistoryTestTone(flow, test);
     return `
         <div class="history-screen-header">
             <div class="history-screen-title-row">
@@ -2240,7 +2314,7 @@ function renderHistoryTestView(flow, test, notice = '') {
                         <span class="history-summary-kicker">Test ${test.testNumber}</span>
                         <h2>${escapeHtml(flow.testTypeName || test.testTypeName || 'Test')}</h2>
                     </div>
-                    ${renderHistoryResultBadge(test.overall, 'lg')}
+                    ${renderHistoryTestBadge(flow, test, 'lg')}
                 </div>
                 <div class="history-summary-grid">
                     ${renderHistoryField('Date & Time', formatHistoryDateTime(test.timestamp, true))}
@@ -2253,13 +2327,7 @@ function renderHistoryTestView(flow, test, notice = '') {
                     <h2>Substances</h2>
                 </div>
                 <div class="history-substance-list">
-                    ${test.substances.map(substance => `
-                        <div class="history-substance-row">
-                            <span class="history-substance-name">${escapeHtml(substance.name)}</span>
-                            <span class="history-substance-value">${escapeHtml(substance.displayValue || '')}</span>
-                            <span class="history-substance-result is-${getHistoryResultTone(substance.result)}">${escapeHtml(formatHistoryResultLabel(substance.result))}</span>
-                        </div>
-                    `).join('')}
+                    ${renderHistorySubstanceRows(test.substances, isHistoryControlFlow(flow) ? null : (test.testTypeId ?? flow.testTypeId))}
                 </div>
             </section>
             ${renderHistoryLightIntensityChart(test.lightIntensity)}
@@ -5859,6 +5927,59 @@ function showDecisionModal(ch, variant) {
     });
 }
 
+// ---- Quantitative Result Modal ----
+// Quantitative tests skip the confirmation flow entirely. This popup only
+// announces that the test finished and shows the measured level — it never
+// reveals positive/negative and offers nothing but Close.
+
+function showQuantResultModal(ch) {
+    const overlay = document.getElementById('modal-overlay');
+    const modal = document.getElementById('decision-modal');
+    if (!overlay || !modal) return;
+
+    activeModal = { type: 'quant_result', channelId: ch.id };
+
+    const lastResult = ch.testResults[ch.testResults.length - 1];
+    const testTypeLabel = ch.testTypeName || ch.cassetteType || 'Test';
+    const substanceName = lastResult?.substances?.[0]?.name || 'Measured substance';
+    const levelDisplay = getQuantitativeLevelDisplay(lastResult?.substances);
+
+    modal.innerHTML = `
+        ${renderStructuredModalHeader(ch.id, 'Test Complete')}
+        <div class="modal-body modal-structured-body">
+            <section class="history-summary-card modal-summary-card is-quantitative">
+                <div class="history-summary-top">
+                    <div class="decision-summary-copy">
+                        <h2>${escapeHtml(substanceName)}</h2>
+                        <span class="decision-summary-type">${escapeHtml(testTypeLabel)}</span>
+                    </div>
+                    <div class="quant-level-display">
+                        <span class="quant-level-value">${escapeHtml(levelDisplay)}</span>
+                        <span class="quant-level-caption">Measured Level</span>
+                    </div>
+                </div>
+            </section>
+            <section class="history-section-card modal-section-card">
+                <div class="history-section-header">
+                    <h2>Substances</h2>
+                </div>
+                <div class="history-substance-list">
+                    ${renderHistorySubstanceRows(lastResult?.substances, ch.testTypeId)}
+                </div>
+            </section>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn btn-primary" id="quant-result-close">Close</button>
+        </div>`;
+
+    overlay.classList.add('active');
+    modal.classList.add('active');
+
+    document.getElementById('quant-result-close').addEventListener('click', () => {
+        handleQuantResultClose(ch.id);
+    });
+}
+
 // ---- Stop Confirmation Modal ----
 
 function showStopConfirmationModal(ch) {
@@ -5958,6 +6079,10 @@ function showDetailModal(ch) {
         const resultKey = getRecordedTestOverall(lastResult) || 'invalid';
         summaryTone = 'control';
         summaryBadge = renderHistoryResultBadge(resultKey, 'lg');
+    } else if (isMaskedQuantResult(ch.testTypeId, ch.groupResult)) {
+        const lastResult = ch.testResults[ch.testResults.length - 1];
+        summaryTone = 'quantitative';
+        summaryBadge = renderToneBadge(formatQuantLevelLabel(lastResult?.substances), 'quantitative', 'lg');
     } else if (ch.groupResult) {
         summaryTone = getHistoryResultTone(ch.groupResult);
         summaryBadge = renderHistoryResultBadge(ch.groupResult, 'lg');
@@ -5965,22 +6090,21 @@ function showDetailModal(ch) {
 
     const testsHtml = ch.testResults.map(tr => {
         const resultKey = getRecordedTestOverall(tr) || 'invalid';
+        const maskedQuant = !isControl && isMaskedQuantResult(tr.testTypeId || ch.testTypeId, resultKey);
         const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
         const timestampLabel = tr.completedAt ? formatHistoryDateTime(tr.completedAt, true) : 'Just completed';
-        const subsHtml = tr.substances.map(s =>
-            `<div class="history-substance-row">
-                <span class="history-substance-name">${escapeHtml(s.name)}</span>
-                <span class="history-substance-value">${escapeHtml(s.displayValue || '')}</span>
-                <span class="history-substance-result is-${getHistoryResultTone(s.result)}">${escapeHtml(formatHistoryResultLabel(s.result))}</span>
-            </div>`
-        ).join('');
-        return `<div class="test-entry is-${isControl ? 'control' : getHistoryResultTone(resultKey)}">
+        const subsHtml = renderHistorySubstanceRows(tr.substances, isControl ? null : (tr.testTypeId || ch.testTypeId));
+        const entryTone = isControl ? 'control' : (maskedQuant ? 'quantitative' : getHistoryResultTone(resultKey));
+        const badgeHtml = maskedQuant
+            ? renderToneBadge(formatQuantLevelLabel(tr.substances), 'quantitative')
+            : renderHistoryResultBadge(resultKey);
+        return `<div class="test-entry is-${entryTone}">
             <div class="test-entry-header">
                 <div class="test-entry-title-group">
                     <span class="test-num">Test ${tr.testNumber}</span>
                     <span class="test-entry-meta">${escapeHtml(annotationLabel)} &middot; ${escapeHtml(timestampLabel)}</span>
                 </div>
-                ${renderHistoryResultBadge(resultKey)}
+                ${badgeHtml}
             </div>
             <div class="history-substance-list history-substance-list-compact">${subsHtml}</div>
         </div>`;

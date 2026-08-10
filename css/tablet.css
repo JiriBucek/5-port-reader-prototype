@@ -31,6 +31,12 @@
     --info: #0891b2;
     --info-light: #a5f3fc;
     --info-bg: #ecfeff;
+    /* Quantitative (level-only) results — neutral violet, deliberately
+       outside the positive/negative/inconclusive/control signal hues. */
+    --quant: #7c3aed;
+    --quant-light: #ddd6fe;
+    --quant-bg: #f5f3ff;
+    --quant-text: #5b21b6;
 
     /* Colors - Neutral */
     --gray-50: #f8fafc;
@@ -62,6 +68,8 @@
     --state-inconclusive-border: #ffc107;
     --state-control-bg: #d1ecf1;
     --state-control-border: #0c5460;
+    --state-quant-bg: #ede9fe;
+    --state-quant-border: #7c3aed;
 
     /* Wireframe system
        The prototype is intentionally not pixel-perfect, but it must clearly

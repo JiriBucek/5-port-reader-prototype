@@ -195,6 +195,13 @@
     background: var(--state-control-bg);
 }
 
+/* Quantitative flows show a measured level, never positive/negative. */
+.channel-card.state-complete-quantitative {
+    border-color: var(--state-quant-border);
+    border-left: 4px solid var(--state-quant-border);
+    background: var(--state-quant-bg);
+}
+
 .channel-card.state-alert {
     border-color: var(--danger);
     border-left: 4px solid var(--danger);
@@ -428,6 +435,11 @@
     background: #475569;
 }
 
+/* Quantitative lines never reveal positive/negative — one neutral tone. */
+.line-bar.result-quant {
+    background: #a78bfa;
+}
+
 .line-bar.result-pending {
     background: var(--gray-200);
     border: 1px dashed var(--gray-400);
@@ -496,6 +508,7 @@
 .mini-line.result-negative { background: #86efac; opacity: 0.7; }
 .mini-line.result-invalid { background: #fcd34d; }
 .mini-line.result-control { background: #475569; }
+.mini-line.result-quant { background: #a78bfa; }
 
 .mini-cassette-label {
     font-size: 10px;
@@ -742,6 +755,11 @@
 
 .group-badge-control {
     background: #0891b2;
+    color: var(--white);
+}
+
+.group-badge-quantitative {
+    background: var(--quant);
     color: var(--white);
 }
 
@@ -2398,6 +2416,12 @@
     border-color: #fbbf24;
 }
 
+.history-result-badge.is-quantitative {
+    background: var(--quant-light);
+    color: var(--quant-text);
+    border-color: #c4b5fd;
+}
+
 .history-sequence-chip.is-positive {
     border-color: #fecaca;
     color: #991b1b;
@@ -2411,6 +2435,11 @@
 .history-sequence-chip.is-inconclusive {
     border-color: #fde68a;
     color: #92400e;
+}
+
+.history-sequence-chip.is-quantitative {
+    border-color: #ddd6fe;
+    color: var(--quant-text);
 }
 
 .history-sync-badge.is-synced {
@@ -2500,6 +2529,13 @@
     background: var(--warning-bg);
 }
 
+.history-flow-row.is-quantitative,
+.history-summary-card.is-quantitative {
+    border-color: var(--state-quant-border);
+    border-left: 4px solid var(--state-quant-border);
+    background: var(--state-quant-bg);
+}
+
 .history-test-row.is-negative {
     border-color: var(--state-negative-border);
     border-left: 4px solid var(--state-negative-border);
@@ -2519,6 +2555,11 @@
     border-color: var(--state-control-border);
     border-left: 4px solid var(--state-control-border);
     background: rgba(8, 145, 178, 0.06);
+}
+
+.history-test-row.is-quantitative {
+    border-color: var(--state-quant-border);
+    border-left: 4px solid var(--state-quant-border);
 }
 
 .history-summary-card h2 {
@@ -2701,6 +2742,11 @@
 .history-substance-result.is-negative {
     background: var(--success-light);
     color: #166534;
+}
+
+.history-substance-result.is-quantitative {
+    background: var(--quant-light);
+    color: var(--quant-text);
 }
 
 .history-curve-header {

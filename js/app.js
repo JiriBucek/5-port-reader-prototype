@@ -672,6 +672,24 @@ function completeReading(ch) {
         return;
     }
 
+    // Quantitative tests never run the confirmation flow: the flow completes
+    // after one test and the operator only sees the measured level.
+    if (selectedTestType?.quantitative) {
+        ch.state = STATES.COMPLETE;
+        ch.groupResult = overall;
+        queueQuantResultModal(ch);
+
+        if (ch.scenario === 'test' &&
+            (ch.groupResult === 'positive' || ch.groupResult === 'negative')) {
+            incrementVerificationCount(ch.id);
+        }
+
+        renderCard(ch);
+        renderSlot(ch);
+        renderSimulationButtons();
+        return;
+    }
+
     switch (testNumber) {
         case 1:
             if (overall === 'negative') {
@@ -720,6 +738,14 @@ function queueDecisionModal(ch, variant) {
     }
 }
 
+function queueQuantResultModal(ch) {
+    if (activeModal) {
+        modalQueue.push({ type: 'quant_result', channelId: ch.id });
+    } else {
+        showQuantResultModal(ch);
+    }
+}
+
 function processModalQueue() {
     if (activeModal) return;
     if (modalQueue.length === 0) return;
@@ -729,6 +755,13 @@ function processModalQueue() {
         const ch = getChannel(next.channelId);
         if (ch.state === STATES.RESULT) {
             showDecisionModal(ch, next.variant);
+        } else {
+            processModalQueue();
+        }
+    } else if (next.type === 'quant_result') {
+        const ch = getChannel(next.channelId);
+        if (ch.state === STATES.COMPLETE && ch.testResults.length > 0) {
+            showQuantResultModal(ch);
         } else {
             processModalQueue();
         }
@@ -762,6 +795,11 @@ function handleDecisionContinue(channelId) {
     renderCard(ch);
     renderSlot(ch);
     renderSimulationButtons();
+    processModalQueue();
+}
+
+function handleQuantResultClose(channelId) {
+    hideModal();
     processModalQueue();
 }
 

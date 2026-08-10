@@ -1203,6 +1203,32 @@
     color: var(--gray-500);
 }
 
+/* Quantitative result modal — measured level display */
+.quant-level-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.quant-level-value {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--quant-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.quant-level-caption {
+    font-size: var(--font-xs);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--gray-500);
+}
+
 /* Decision modal buttons */
 .decision-modal .modal-footer {
     padding: 10px 16px 12px;
@@ -1328,6 +1354,12 @@
     border-color: var(--state-control-border);
     border-left: 4px solid var(--state-control-border);
     background: rgba(8, 145, 178, 0.06);
+}
+
+.test-entry.is-quantitative {
+    border-color: var(--state-quant-border);
+    border-left: 4px solid var(--state-quant-border);
+    background: rgba(124, 58, 237, 0.05);
 }
 
 .test-entry-header {
