@@ -5950,7 +5950,7 @@ function showInsertWarningModal(ch) {
         <div class="modal-body modal-structured-body">
             <div class="insert-warning-copy">
                 <p>Configure the cassette on ${escapeHtml(portLabel)} and start its test before inserting another one.</p>
-                <p>A cassette with milk starts developing as soon as it is inserted into the warm reader. If it waits while you configure other tests, its result may be wrong.</p>
+                <p>A cassette will start the reaction as soon as the milk is applied. Avoid applying milk in the cassette before the reader is fully ready to start the incubation.</p>
             </div>
         </div>
         <div class="modal-footer">
