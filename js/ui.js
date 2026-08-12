@@ -5920,7 +5920,7 @@ function showDecisionModal(ch, variant) {
     modal.classList.add('active');
 
     document.getElementById('decision-abort').addEventListener('click', () => {
-        handleDecisionAbort(ch.id);
+        showStopConfirmationModal(ch, { type: 'decision', variant });
     });
 
     document.getElementById('decision-continue').addEventListener('click', () => {
@@ -5966,76 +5966,108 @@ function showInsertWarningModal(ch) {
 }
 
 // ---- Stop Confirmation Modal ----
+// Confirms aborting a confirmation flow. Reached from the card's Abort Flow
+// button (READY_FOR_TEST_N) and from the decision modal's Abort Flow button;
+// `origin` = { type: 'decision', variant } when opened from the decision modal
+// so Keep Flow can return there.
 
-function showStopConfirmationModal(ch) {
+function renderAbortFlowField(label, value) {
+    return `<div class="abort-flow-field">
+        <span class="abort-flow-field-label">${escapeHtml(label)}</span>
+        <span class="abort-flow-field-value">${escapeHtml(value)}</span>
+    </div>`;
+}
+
+function renderAbortFlowCassette(ch, tr) {
+    const overall = getRecordedTestOverall(tr) || 'invalid';
+    const isControl = ch.scenario === 'pos_control' || ch.scenario === 'animal_control';
+    const maskQuant = !isControl && isMaskedQuantResult(tr.testTypeId || ch.testTypeId, overall);
+
+    const lineItems = [{ label: 'C', isControl: true, cls: 'result-control' }, ...tr.substances.map(s => ({
+        label: getSubstanceShortLabel(s.name),
+        isControl: false,
+        cls: maskQuant && (s.result === 'positive' || s.result === 'negative')
+            ? 'result-quant'
+            : getCassetteVisualResultClass(s.result)
+    }))];
+
+    const linesHtml = lineItems.map(item => `<div class="substance-line${item.isControl ? ' is-control' : ''}">
+            <span class="line-label">${escapeHtml(item.label)}</span>
+            <div class="line-bar ${item.cls}"></div>
+        </div>`).join('');
+
+    const tone = maskQuant ? 'quantitative' : getHistoryResultTone(overall);
+    const badge = maskQuant
+        ? renderToneBadge(formatQuantLevelLabel(tr.substances), 'quantitative')
+        : renderHistoryResultBadge(overall);
+    const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
+    const typeLabel = tr.testTypeName || ch.testTypeName || ch.cassetteType || 'Test';
+
+    return `<div class="abort-cassette">
+        <div class="abort-cassette-graphic is-${tone}">
+            <span class="cassette-test-label">T${tr.testNumber}</span>
+            <div class="substance-line-container">${linesHtml}</div>
+        </div>
+        <span class="abort-cassette-type">${escapeHtml(typeLabel)}</span>
+        ${badge}
+        <div class="abort-cassette-meta">
+            <span>${escapeHtml(annotationLabel)}</span>
+            <span>${escapeHtml(formatHistoryDateTime(tr.completedAt, true))}</span>
+        </div>
+    </div>`;
+}
+
+function showStopConfirmationModal(ch, origin = null) {
     const overlay = document.getElementById('modal-overlay');
     const modal = document.getElementById('decision-modal');
     if (!overlay || !modal) return;
 
-    activeModal = { type: 'stop_confirm', channelId: ch.id };
+    activeModal = { type: 'stop_confirm', channelId: ch.id, origin };
 
     const completedTests = ch.testResults.length;
-    const testsHtml = ch.testResults.map(tr => {
-        const resultKey = getRecordedTestOverall(tr) || 'invalid';
-        const annotationLabel = getHistoryAnnotationLabel(tr.annotation || getHistoryAnnotationForTest(ch.scenario, tr.testNumber));
-        return `<div class="history-test-row history-test-row-static is-${getHistoryResultTone(resultKey)}">
-            <div class="history-test-main">
-                <div class="history-test-title">Test ${tr.testNumber}</div>
-                <div class="history-test-meta">${escapeHtml(annotationLabel)} &middot; ${escapeHtml(formatHistoryDateTime(tr.completedAt, true))}</div>
-            </div>
-            <div class="history-test-side">
-                <span class="history-side-label">Result</span>
-                ${renderHistoryResultBadge(resultKey)}
-            </div>
-        </div>`;
-    }).join('');
+    const cassettesHtml = ch.testResults.map(tr => renderAbortFlowCassette(ch, tr)).join('');
 
     modal.innerHTML = `
         ${renderStructuredModalHeader(ch.id, 'Abort Flow')}
-        <div class="modal-body modal-structured-body">
-            <section class="history-summary-card modal-summary-card is-warning">
-                <div class="history-summary-top">
-                    <div>
-                        <span class="history-summary-kicker">Flow Action</span>
-                        <h2>${escapeHtml(ch.testTypeName || ch.cassetteType || 'Test')}</h2>
-                    </div>
-                    ${renderToneBadge('Inconclusive', 'inconclusive', 'lg')}
+        <div class="modal-body modal-structured-body abort-confirm-body">
+            <div class="abort-confirm-layout">
+                <div class="abort-confirm-main">
+                    <section class="abort-flow-card">
+                        <div class="abort-flow-card-header">
+                            <span class="abort-flow-card-title">Flow Action</span>
+                            ${renderToneBadge('Inconclusive', 'inconclusive')}
+                        </div>
+                        ${renderAbortFlowField('Sample ID', ch.sampleId || 'Not set')}
+                        ${renderAbortFlowField('Operator ID', ch.operatorId || 'Not set')}
+                        ${renderAbortFlowField('Completed Tests', String(completedTests))}
+                    </section>
+                    <p class="abort-flow-note">Aborting now records this flow as inconclusive.</p>
                 </div>
-                <div class="history-summary-grid">
-                    ${renderHistoryField('Sample ID', ch.sampleId || 'Not set')}
-                    ${renderHistoryField('Operator ID', ch.operatorId || 'Not set')}
-                    ${renderHistoryField('Completed Tests', String(completedTests))}
-                </div>
-            </section>
-            ${completedTests > 0 ? `
-                <section class="history-section-card modal-section-card">
-                    <div class="history-section-header">
-                        <h2>Completed Tests</h2>
-                        <span>${completedTests} test${completedTests === 1 ? '' : 's'}</span>
-                    </div>
-                    <div class="history-test-list">
-                        ${testsHtml}
-                    </div>
-                </section>
-            ` : ''}
-            <div class="decision-message is-warning">
-                <p>Aborting now records this flow as inconclusive.</p>
+                ${completedTests > 0 ? `<div class="abort-cassette-list">${cassettesHtml}</div>` : ''}
             </div>
         </div>
         <div class="modal-footer">
             <button class="modal-btn btn-secondary" id="stop-cancel">Keep Flow</button>
-            <button class="modal-btn btn-warning" id="stop-confirm">Abort Flow</button>
+            <button class="modal-btn btn-primary" id="stop-confirm">Abort Flow</button>
         </div>`;
 
     overlay.classList.add('active');
     modal.classList.add('active');
 
     document.getElementById('stop-cancel').addEventListener('click', () => {
-        handleStopCancel(ch.id);
+        if (origin && origin.type === 'decision') {
+            showDecisionModal(ch, origin.variant);
+        } else {
+            handleStopCancel(ch.id);
+        }
     });
 
     document.getElementById('stop-confirm').addEventListener('click', () => {
-        handleStopConfirm(ch.id);
+        if (origin && origin.type === 'decision') {
+            handleDecisionAbort(ch.id);
+        } else {
+            handleStopConfirm(ch.id);
+        }
     });
 }
 
