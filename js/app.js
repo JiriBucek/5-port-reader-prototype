@@ -283,21 +283,27 @@ function handleInsert(channelId, outcome) {
     const selectedType = selectedOption?.familyHint || '3BTC';
 
     ch.physicalCassettePresent = true;
-    ch.cassettePresent = true;
     ch.loadedCassetteId = nextCassetteId();
     ch.loadedCassetteType = selectedType;
     ch.loadedTestTypeId = selectedOption?.testType?.id || null;
     ch.simulatedOutcome = outcome;
 
-    // QR-enabled mode auto-loads cassette type from inserted cassette.
-    if (deviceSettings.qrScanningEnabled &&
-        selectedOption?.testType?.qrEnabled &&
-        (ch.state === STATES.EMPTY || ch.state === STATES.DETECTED || ch.currentTestNumber === 0)) {
-        ch.cassetteType = selectedType;
-    }
+    // With the microswitch off the reader gets no insertion event: the slot is
+    // physically occupied, but the reader keeps treating the channel as empty,
+    // nothing triggers a QR scan, and no insert warning can be raised.
+    if (isCassetteInsertionCheckEnabled()) {
+        ch.cassettePresent = true;
 
-    if (ch.state === STATES.EMPTY) {
-        ch.state = STATES.DETECTED;
+        // QR-enabled mode auto-loads cassette type from inserted cassette.
+        if (deviceSettings.qrScanningEnabled &&
+            selectedOption?.testType?.qrEnabled &&
+            (ch.state === STATES.EMPTY || ch.state === STATES.DETECTED || ch.currentTestNumber === 0)) {
+            ch.cassetteType = selectedType;
+        }
+
+        if (ch.state === STATES.EMPTY) {
+            ch.state = STATES.DETECTED;
+        }
     }
 
     renderCard(ch);
@@ -307,7 +313,7 @@ function handleInsert(channelId, outcome) {
 
     // Warn when another inserted cassette is still waiting to be configured
     // and started — it is already developing in the warm reader.
-    if (getOtherUnstartedCassetteChannels(channelId).length > 0) {
+    if (isCassetteInsertionCheckEnabled() && getOtherUnstartedCassetteChannels(channelId).length > 0) {
         queueInsertWarningModal(ch);
     }
 }
@@ -424,8 +430,11 @@ function startProcessing(ch) {
     }
 }
 
+// The optical head physically scans the slot at read time, so readability is
+// about physical occupancy — independent of whether the microswitch sensed
+// the insertion.
 function hasReadableCassette(ch) {
-    return hasInsertedCassette(ch) && ch.cassettePresent;
+    return hasInsertedCassette(ch);
 }
 
 function validateCassetteForCurrentTest(ch) {
@@ -546,7 +555,9 @@ function clearInsertedCassetteForNextStep(ch) {
 function handleStartTestN(channelId) {
     const ch = getChannel(channelId);
     if (ch.state !== STATES.READY_FOR_TEST_N) return;
-    if (!hasFreshConfirmationCassette(ch)) return;
+    // Microswitch off = the reader cannot require a sensed cassette; the test
+    // starts blind and a missing/wrong cassette fails at read time instead.
+    if (!hasFreshConfirmationCassette(ch) && !isCassetteInsertionBypassed()) return;
 
     ch.currentTestNumber++;
     const started = attemptStartCurrentTest(ch);
@@ -602,6 +613,9 @@ function startIncubationTimer(ch) {
                 return;
             }
 
+            // The head engaged the cassette — the reader now knows it is there
+            // even when the microswitch never reported the insertion.
+            ch.cassettePresent = true;
             ch.state = STATES.READING;
             renderCard(ch);
             renderSlot(ch);
@@ -630,6 +644,8 @@ function startReadingTimer(ch) {
                 return;
             }
 
+            // Same as above: a successful read means the cassette is known now.
+            ch.cassettePresent = true;
             completeReading(ch);
         }
     }, 1000);

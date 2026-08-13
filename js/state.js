@@ -615,7 +615,9 @@ function hasFreshConfirmationCassette(ch) {
 // Such a cassette is already developing in the warm reader, so the operator
 // is warned when they insert further cassettes before starting this one.
 function hasUnstartedInsertedCassette(ch) {
-    if (!ch || !ch.physicalCassettePresent) return false;
+    // Requires reader-sensed presence: with the microswitch off the reader
+    // never learns about the cassette, so it cannot warn about it.
+    if (!ch || !ch.physicalCassettePresent || !ch.cassettePresent) return false;
     if (ch.currentTestNumber > 0) return false;
     return ch.state === STATES.EMPTY ||
            ch.state === STATES.DETECTED ||

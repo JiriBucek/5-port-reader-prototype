@@ -471,7 +471,7 @@ function renderCardAction(ch) {
             break;
 
         case STATES.READY_FOR_TEST_N:
-            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}"${hasFreshConfirmationCassette(ch) ? '' : ' disabled'}>Start</button>`;
+            primaryButton = `<button class="action-btn btn-primary" data-action="start-test-n" data-ch="${ch.id}"${(hasFreshConfirmationCassette(ch) || isCassetteInsertionBypassed()) ? '' : ' disabled'}>Start</button>`;
             secondaryButtons = [
                 `<button class="action-btn btn-secondary" data-action="stop" data-ch="${ch.id}">Abort Flow</button>`
             ];
@@ -1242,7 +1242,9 @@ function showConfigModal(ch, draft = null, view = 'form') {
     const selectedTypeEnabled = !selectedType?.id || isTestTypeEnabledForCurrentUser(selectedType.id);
     const fastQrOnlyMode = Boolean(nextDraft.forceQrOnly);
     const lockTypeSelection = qrLocked || fastQrOnlyMode;
-    const cassetteReady = hasInsertedCassette(ch);
+    // Readiness reflects what the reader has sensed, not physical occupancy —
+    // with the microswitch off an inserted cassette is invisible to the reader.
+    const cassetteReady = ch.cassettePresent && hasInsertedCassette(ch);
     const startRequiresCassette = isCassetteInsertionCheckEnabled();
     const showSampleField = true;
     const showOperatorField = true;
