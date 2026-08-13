@@ -408,7 +408,7 @@ function renderCardGroupResult(ch) {
         const lastResult = ch.testResults[ch.testResults.length - 1];
         const levelDisplay = getQuantitativeLevelDisplay(lastResult?.substances);
         groupResultHtml = `
-            <span class="group-badge group-badge-quantitative">Level ${escapeHtml(levelDisplay)}</span>
+            <span class="group-badge group-badge-quantitative">CONC ${escapeHtml(levelDisplay)}</span>
         `;
     } else if (ch.state === STATES.COMPLETE) {
         switch (ch.groupResult) {
@@ -1683,7 +1683,7 @@ function getHistoryTestTone(flow, test) {
 }
 
 function formatQuantLevelLabel(substances) {
-    return `Level ${getQuantitativeLevelDisplay(substances)}`;
+    return `CONC ${getQuantitativeLevelDisplay(substances)}`;
 }
 
 function renderFlowResultBadge(flow, size = 'md') {
@@ -1878,7 +1878,7 @@ function normalizeHistoryExportScope(scope) {
 }
 
 function normalizeHistoryExportDestination(destination) {
-    if (destination === 'csv' || destination === 'lims') return destination;
+    if (destination === 'csv' || destination === 'excel' || destination === 'lims') return destination;
     return 'csv';
 }
 
@@ -2041,6 +2041,8 @@ function buildHistoryExportFilename(destination) {
     switch (destination) {
         case 'csv':
             return `milksafe-history-${datePart}.csv`;
+        case 'excel':
+            return `milksafe-history-${datePart}.xls`;
         case 'lims':
             return `milksafe-history-${datePart}-lims.json`;
         default:
@@ -2073,6 +2075,35 @@ function exportHistoryRowsToCsv(rows) {
     return `\ufeff${lines.join('\r\n')}`;
 }
 
+// Excel export uses the SpreadsheetML XML format (.xls) \u2014 Excel opens it
+// natively with proper columns, and it needs no zip library like .xlsx would.
+function escapeHistoryXmlValue(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function exportHistoryRowsToExcel(rows) {
+    const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+    const renderRow = cells => `<Row>${cells.map(cell =>
+        `<Cell><Data ss:Type="String">${escapeHistoryXmlValue(cell)}</Data></Cell>`
+    ).join('')}</Row>`;
+
+    const bodyRows = rows.map(row => renderRow(columns.map(column => row[column]))).join('\n');
+
+    return `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="History">
+<Table>
+${renderRow(columns)}
+${bodyRows}
+</Table>
+</Worksheet>
+</Workbook>`;
+}
+
 function performHistoryExport(exportState) {
     const range = getHistoryExportDateRange(exportState.startDate, exportState.endDate);
     if (!range.valid) {
@@ -2101,6 +2132,13 @@ function performHistoryExport(exportState) {
                 'text/csv;charset=utf-8'
             );
             return { ok: true, notice: `CSV export downloaded with ${recordLabel}.` };
+        case 'excel':
+            downloadHistoryExportFile(
+                buildHistoryExportFilename('excel'),
+                exportHistoryRowsToExcel(rows),
+                'application/vnd.ms-excel'
+            );
+            return { ok: true, notice: `Excel export downloaded with ${recordLabel}.` };
         case 'lims':
             return { ok: true, notice: `LIMS export queued with ${recordLabel}.` };
         default:
@@ -2348,6 +2386,7 @@ function renderHistoryExportModal(exportState, matchingRows) {
                 <label>Destination</label>
                 <div class="segmented-control compact history-export-segment">
                     <button class="seg-option${exportState.destination === 'csv' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="csv">CSV</button>
+                    <button class="seg-option${exportState.destination === 'excel' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="excel">Excel</button>
                     <button class="seg-option${exportState.destination === 'lims' ? ' selected' : ''}" data-history-export-action="set-destination" data-history-export-destination="lims">LIMS</button>
                 </div>
             </div>
