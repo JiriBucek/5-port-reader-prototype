@@ -295,6 +295,7 @@
         "bullets": [
           "Some tests require a specific reader temperature, usually 40 C or 50 C.",
           "Quantitative tests need a loaded quant curve before they can start.",
+          "Quantitative tests end after one test and show a concentration such as < 15, 65, or > 150 instead of Positive or Negative.",
           "History separates normal tests and controls.",
           "Exports are CSV or LIMS, not Excel.",
           "Root full-screen screens use Close, while pushed child screens use Back."
@@ -303,6 +304,13 @@
     ]
   },
   "changeLog": [
+    {
+      "date": "2026-08-17",
+      "items": [
+        "Added a Quantitative Tests section at the top of the catalog collecting the screens that still need design after the quantitative display change: dashboard concentration levels, quantitative flow detail, history list with quantitative rows, history flow and test details, and the insert warning popup.",
+        "The violet on those screens is a prototype placeholder; the final design should introduce a dedicated neutral color for quantitative results, such as gray or a light blue clearly distinct from the cyan used for controls."
+      ]
+    },
     {
       "date": "2026-08-10",
       "items": [
@@ -340,6 +348,78 @@
     }
   ],
   "sections": [
+    {
+      "id": "quantitative",
+      "title": "Quantitative Tests",
+      "summary": "New in August 2026 and not yet designed: quantitative test types (Afla M1) no longer run the confirmation flow and never show Positive, Negative, or Inconclusive. The flow always ends after the first test, there is no result popup, and the reader shows the measured concentration instead, formatted against the test type's measurable range (Afla M1: 15-150): readings below range show as < 15, in-range readings show the number, readings above range show as > 150, always prefixed with CONC. The violet in these captures is a prototype placeholder - the final design needs a dedicated neutral color for quantitative results, for example gray or a light blue clearly distinct from the cyan already used for controls. Red positive, green negative, amber inconclusive, and cyan control colors keep their current meanings.",
+      "subsections": [
+        {
+          "id": "quant-dashboard-results",
+          "title": "Dashboard Results",
+          "summary": "When a quantitative read finishes, no result popup is shown - the concentration appears directly on the channel card in the neutral completed state, and View Details opens the flow detail."
+        },
+        {
+          "id": "quant-history",
+          "title": "History",
+          "summary": "Quantitative records reuse the neutral color in the history list, flow detail, and test detail, and show the concentration wherever qualitative tests show Positive or Negative. Substance rows show only the measured concentration - the substance ratio and per-substance result labels belong to qualitative tests only."
+        },
+        {
+          "id": "quant-insert-warning",
+          "title": "Insert Warning",
+          "summary": "Not specific to quantitative tests, but new: inserting a cassette while another inserted cassette has not been configured and started yet raises a warning popup, because the waiting cassette is already developing in the warm reader."
+        }
+      ],
+      "states": [
+        {
+          "id": "quant-dashboard-levels",
+          "title": "Concentration levels on the dashboard",
+          "description": "Ports 1-3 show completed Afla M1 tests in the three display forms: below range (CONC < 15), in range (CONC 65), and above range (CONC > 150). Port 4 shows a completed qualitative negative test for color contrast.",
+          "preset": "quant_dashboard_levels",
+          "capture": "device",
+          "subsection": "quant-dashboard-results"
+        },
+        {
+          "id": "quant-flow-detail",
+          "title": "Flow detail: quantitative",
+          "description": "View Details for a completed quantitative test. The summary badge and the single contained test both show the concentration, and the substance row shows only the measured value - no ratio and no Positive or Negative label.",
+          "preset": "quant_flow_detail",
+          "capture": "detail_tall",
+          "subsection": "quant-dashboard-results"
+        },
+        {
+          "id": "quant-history-list",
+          "title": "History list with quantitative rows",
+          "description": "Test records list mixing quantitative and qualitative flows. Quantitative rows use the neutral color and their sequence chip shows the concentration instead of a result word.",
+          "preset": "quant_history_list",
+          "capture": "screen",
+          "subsection": "quant-history"
+        },
+        {
+          "id": "quant-history-flow-detail",
+          "title": "History flow detail: quantitative",
+          "description": "Flow detail for a quantitative record: the flow result is the concentration, the sequence chip carries the value, and the flow always contains exactly one test.",
+          "preset": "quant_history_flow_detail",
+          "capture": "history_tall",
+          "subsection": "quant-history"
+        },
+        {
+          "id": "quant-history-test-detail",
+          "title": "History test detail: quantitative",
+          "description": "Individual test detail for a quantitative record with the measured concentration and the light intensity curve. The substance row shows the value only.",
+          "preset": "quant_history_test_detail",
+          "capture": "history_tall",
+          "subsection": "quant-history"
+        },
+        {
+          "id": "quant-insert-warning",
+          "title": "Insert warning popup",
+          "description": "Port 1 holds an inserted cassette that was never configured and started; inserting a second cassette into port 2 raises the warning telling the operator to start the previous cassette first.",
+          "preset": "quant_insert_warning",
+          "capture": "screen",
+          "subsection": "quant-insert-warning"
+        }
+      ]
+    },
     {
       "id": "dashboard",
       "title": "Five-Port Dashboard",

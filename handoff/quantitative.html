@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Figma Handoff Catalog - Software Update</title>
+    <title>Figma Handoff Catalog - Quantitative Tests</title>
     <style>
         :root {
             --bg: #f3f5f8;
@@ -614,7 +614,7 @@
             <div class="sidebar-group">
                 <span class="sidebar-label">Sections</span>
                 
-            <a class="sidebar-link" href="quantitative.html">
+            <a class="sidebar-link is-active" href="quantitative.html">
                 <span>Quantitative Tests</span>
                 <strong>6</strong>
             </a>
@@ -639,7 +639,7 @@
                 <strong>25</strong>
             </a>
             
-            <a class="sidebar-link is-active" href="software.html">
+            <a class="sidebar-link" href="software.html">
                 <span>Software Update</span>
                 <strong>10</strong>
             </a>
@@ -669,217 +669,176 @@
     <header class="page-header">
         <div>
             <span class="section-kicker">Section</span>
-            <h2>Software Update</h2>
-            <p class="section-summary">Software update flow for Cloud and USB, including checking, transfer, install, and restart states.</p>
+            <h2>Quantitative Tests</h2>
+            <p class="section-summary">New in August 2026 and not yet designed: quantitative test types (Afla M1) no longer run the confirmation flow and never show Positive, Negative, or Inconclusive. The flow always ends after the first test, there is no result popup, and the reader shows the measured concentration instead, formatted against the test type&#x27;s measurable range (Afla M1: 15-150): readings below range show as &lt; 15, in-range readings show the number, readings above range show as &gt; 150, always prefixed with CONC. The violet in these captures is a prototype placeholder - the final design needs a dedicated neutral color for quantitative results, for example gray or a light blue clearly distinct from the cyan already used for controls. Red positive, green negative, amber inconclusive, and cyan control colors keep their current meanings.</p>
         </div>
-        <span class="section-count">10 states</span>
+        <span class="section-count">6 states</span>
     </header>
     
     
-    <div class="state-grid">
-        
-    <article class="state-card" id="state-software-home">
+        <div class="subsection-stack">
+            
+    <section class="subsection-block" id="subsection-quant-dashboard-results">
+        <header class="subsection-header">
+            <div>
+                <h3>Dashboard Results</h3>
+                <p class="subsection-summary">When a quantitative read finishes, no result popup is shown - the concentration appears directly on the channel card in the neutral completed state, and View Details opens the flow detail.</p>
+            </div>
+            <span class="subsection-count">2 states</span>
+        </header>
+        <div class="state-grid">
+            
+    <article class="state-card" id="state-quant-dashboard-levels">
         <div class="shot-frame">
             
         <button
             class="shot-open"
             type="button"
-            data-viewer-src="screenshots/software-home.png"
-            data-viewer-title="Software update home"
-            data-viewer-description="Default software update screen before the user checks Cloud or USB."
+            data-viewer-src="screenshots/quant-dashboard-levels.png"
+            data-viewer-title="Concentration levels on the dashboard"
+            data-viewer-description="Ports 1-3 show completed Afla M1 tests in the three display forms: below range (CONC &lt; 15), in range (CONC 65), and above range (CONC &gt; 150). Port 4 shows a completed qualitative negative test for color contrast."
         >
-            <img loading="lazy" src="screenshots/software-home.png" alt="Software update home">
+            <img loading="lazy" src="screenshots/quant-dashboard-levels.png" alt="Concentration levels on the dashboard">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Software update home</h3>
-            <p>Default software update screen before the user checks Cloud or USB.</p>
+            <h3>Concentration levels on the dashboard</h3>
+            <p>Ports 1-3 show completed Afla M1 tests in the three display forms: below range (CONC &lt; 15), in range (CONC 65), and above range (CONC &gt; 150). Port 4 shows a completed qualitative negative test for color contrast.</p>
         </div>
     </article>
     
-    <article class="state-card" id="state-software-checking-cloud">
+    <article class="state-card" id="state-quant-flow-detail">
         <div class="shot-frame">
             
         <button
             class="shot-open"
             type="button"
-            data-viewer-src="screenshots/software-checking-cloud.png"
-            data-viewer-title="Checking Cloud"
-            data-viewer-description="Cloud version check in progress."
+            data-viewer-src="screenshots/quant-flow-detail.png"
+            data-viewer-title="Flow detail: quantitative"
+            data-viewer-description="View Details for a completed quantitative test. The summary badge and the single contained test both show the concentration, and the substance row shows only the measured value - no ratio and no Positive or Negative label."
         >
-            <img loading="lazy" src="screenshots/software-checking-cloud.png" alt="Checking Cloud">
+            <img loading="lazy" src="screenshots/quant-flow-detail.png" alt="Flow detail: quantitative">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Checking Cloud</h3>
-            <p>Cloud version check in progress.</p>
+            <h3>Flow detail: quantitative</h3>
+            <p>View Details for a completed quantitative test. The summary badge and the single contained test both show the concentration, and the substance row shows only the measured value - no ratio and no Positive or Negative label.</p>
         </div>
     </article>
     
-    <article class="state-card" id="state-software-offline-blocked">
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-quant-history">
+        <header class="subsection-header">
+            <div>
+                <h3>History</h3>
+                <p class="subsection-summary">Quantitative records reuse the neutral color in the history list, flow detail, and test detail, and show the concentration wherever qualitative tests show Positive or Negative. Substance rows show only the measured concentration - the substance ratio and per-substance result labels belong to qualitative tests only.</p>
+            </div>
+            <span class="subsection-count">3 states</span>
+        </header>
+        <div class="state-grid">
+            
+    <article class="state-card" id="state-quant-history-list">
         <div class="shot-frame">
             
         <button
             class="shot-open"
             type="button"
-            data-viewer-src="screenshots/software-offline-blocked.png"
-            data-viewer-title="Cloud check blocked offline"
-            data-viewer-description="Cloud update check blocked until the reader is connected to Wi-Fi or Ethernet."
+            data-viewer-src="screenshots/quant-history-list.png"
+            data-viewer-title="History list with quantitative rows"
+            data-viewer-description="Test records list mixing quantitative and qualitative flows. Quantitative rows use the neutral color and their sequence chip shows the concentration instead of a result word."
         >
-            <img loading="lazy" src="screenshots/software-offline-blocked.png" alt="Cloud check blocked offline">
+            <img loading="lazy" src="screenshots/quant-history-list.png" alt="History list with quantitative rows">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Cloud check blocked offline</h3>
-            <p>Cloud update check blocked until the reader is connected to Wi-Fi or Ethernet.</p>
+            <h3>History list with quantitative rows</h3>
+            <p>Test records list mixing quantitative and qualitative flows. Quantitative rows use the neutral color and their sequence chip shows the concentration instead of a result word.</p>
         </div>
     </article>
     
-    <article class="state-card" id="state-software-up-to-date">
+    <article class="state-card" id="state-quant-history-flow-detail">
         <div class="shot-frame">
             
         <button
             class="shot-open"
             type="button"
-            data-viewer-src="screenshots/software-up-to-date.png"
-            data-viewer-title="Software up to date"
-            data-viewer-description="Cloud check completed with no newer version available."
+            data-viewer-src="screenshots/quant-history-flow-detail.png"
+            data-viewer-title="History flow detail: quantitative"
+            data-viewer-description="Flow detail for a quantitative record: the flow result is the concentration, the sequence chip carries the value, and the flow always contains exactly one test."
         >
-            <img loading="lazy" src="screenshots/software-up-to-date.png" alt="Software up to date">
+            <img loading="lazy" src="screenshots/quant-history-flow-detail.png" alt="History flow detail: quantitative">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Software up to date</h3>
-            <p>Cloud check completed with no newer version available.</p>
+            <h3>History flow detail: quantitative</h3>
+            <p>Flow detail for a quantitative record: the flow result is the concentration, the sequence chip carries the value, and the flow always contains exactly one test.</p>
         </div>
     </article>
     
-    <article class="state-card" id="state-software-package-ready">
+    <article class="state-card" id="state-quant-history-test-detail">
         <div class="shot-frame">
             
         <button
             class="shot-open"
             type="button"
-            data-viewer-src="screenshots/software-package-ready.png"
-            data-viewer-title="Cloud update ready"
-            data-viewer-description="Cloud check found a newer version and the reader can start the update."
+            data-viewer-src="screenshots/quant-history-test-detail.png"
+            data-viewer-title="History test detail: quantitative"
+            data-viewer-description="Individual test detail for a quantitative record with the measured concentration and the light intensity curve. The substance row shows the value only."
         >
-            <img loading="lazy" src="screenshots/software-package-ready.png" alt="Cloud update ready">
+            <img loading="lazy" src="screenshots/quant-history-test-detail.png" alt="History test detail: quantitative">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Cloud update ready</h3>
-            <p>Cloud check found a newer version and the reader can start the update.</p>
+            <h3>History test detail: quantitative</h3>
+            <p>Individual test detail for a quantitative record with the measured concentration and the light intensity curve. The substance row shows the value only.</p>
         </div>
     </article>
     
-    <article class="state-card" id="state-software-checking-usb">
+        </div>
+    </section>
+    
+    <section class="subsection-block" id="subsection-quant-insert-warning">
+        <header class="subsection-header">
+            <div>
+                <h3>Insert Warning</h3>
+                <p class="subsection-summary">Not specific to quantitative tests, but new: inserting a cassette while another inserted cassette has not been configured and started yet raises a warning popup, because the waiting cassette is already developing in the warm reader.</p>
+            </div>
+            <span class="subsection-count">1 states</span>
+        </header>
+        <div class="state-grid">
+            
+    <article class="state-card" id="state-quant-insert-warning">
         <div class="shot-frame">
             
         <button
             class="shot-open"
             type="button"
-            data-viewer-src="screenshots/software-checking-usb.png"
-            data-viewer-title="Checking USB"
-            data-viewer-description="USB package check in progress."
+            data-viewer-src="screenshots/quant-insert-warning.png"
+            data-viewer-title="Insert warning popup"
+            data-viewer-description="Port 1 holds an inserted cassette that was never configured and started; inserting a second cassette into port 2 raises the warning telling the operator to start the previous cassette first."
         >
-            <img loading="lazy" src="screenshots/software-checking-usb.png" alt="Checking USB">
+            <img loading="lazy" src="screenshots/quant-insert-warning.png" alt="Insert warning popup">
         </button>
         
         </div>
         <div class="state-copy">
-            <h3>Checking USB</h3>
-            <p>USB package check in progress.</p>
+            <h3>Insert warning popup</h3>
+            <p>Port 1 holds an inserted cassette that was never configured and started; inserting a second cassette into port 2 raises the warning telling the operator to start the previous cassette first.</p>
         </div>
     </article>
     
-    <article class="state-card" id="state-software-package-ready-usb">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/software-package-ready-usb.png"
-            data-viewer-title="USB update ready"
-            data-viewer-description="USB package found and ready to apply on the reader."
-        >
-            <img loading="lazy" src="screenshots/software-package-ready-usb.png" alt="USB update ready">
-        </button>
+        </div>
+    </section>
+    
+        </div>
         
-        </div>
-        <div class="state-copy">
-            <h3>USB update ready</h3>
-            <p>USB package found and ready to apply on the reader.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-software-transferring-cloud">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/software-transferring-cloud.png"
-            data-viewer-title="Downloading from Cloud"
-            data-viewer-description="Cloud update is being downloaded before installation."
-        >
-            <img loading="lazy" src="screenshots/software-transferring-cloud.png" alt="Downloading from Cloud">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Downloading from Cloud</h3>
-            <p>Cloud update is being downloaded before installation.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-software-transferring-usb">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/software-transferring-usb.png"
-            data-viewer-title="Loading from USB"
-            data-viewer-description="USB package is being loaded before installation."
-        >
-            <img loading="lazy" src="screenshots/software-transferring-usb.png" alt="Loading from USB">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Loading from USB</h3>
-            <p>USB package is being loaded before installation.</p>
-        </div>
-    </article>
-    
-    <article class="state-card" id="state-software-installing">
-        <div class="shot-frame">
-            
-        <button
-            class="shot-open"
-            type="button"
-            data-viewer-src="screenshots/software-installing.png"
-            data-viewer-title="Installing update"
-            data-viewer-description="Reader is applying the new software package."
-        >
-            <img loading="lazy" src="screenshots/software-installing.png" alt="Installing update">
-        </button>
-        
-        </div>
-        <div class="state-copy">
-            <h3>Installing update</h3>
-            <p>Reader is applying the new software package.</p>
-        </div>
-    </article>
-    
-    </div>
-    
     
         </main>
     </div>

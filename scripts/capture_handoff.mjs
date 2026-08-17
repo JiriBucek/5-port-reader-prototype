@@ -625,6 +625,98 @@ async function applyPreset(page, presetId) {
             historyEntryIdCounter = sessionHistory.reduce((maxId, entry) => Math.max(maxId, Number(entry.historyId) || 0), 0) + 1;
         }
 
+        function makeQuantSubstance(value) {
+            const quantTestType = getTestTypeById(20);
+            const range = quantTestType?.quantitativeRange || null;
+            return {
+                name: quantTestType?.substances?.[0] || 'Aflatoxin M1 (Concentration)',
+                result: getQuantitativeResultForValue(value, range),
+                measuredValue: value,
+                displayValue: formatQuantitativeMeasuredValue(value, range)
+            };
+        }
+
+        // Completes a single-test quantitative flow on a channel with an exact
+        // measured value so the below/in/above-range display forms are stable.
+        function completeQuantChannel(channelId, value, {
+            sampleId = 'AF-101',
+            offsetMinutes = 2
+        } = {}) {
+            const ch = configureChannel(channelId, {
+                testTypeId: 20,
+                sampleId,
+                operatorId: 'OP-204',
+                processing: 'read_only'
+            });
+            insertCassette(channelId, { testTypeId: 20, outcome: 'negative' });
+            addTest(ch, {
+                testNumber: 1,
+                overall: 'negative',
+                offsetMinutes
+            });
+            const substance = makeQuantSubstance(value);
+            const testResult = ch.testResults[ch.testResults.length - 1];
+            testResult.substances = [substance];
+            testResult.overall = substance.result;
+            ch.currentTestNumber = 1;
+            ch.state = STATES.COMPLETE;
+            ch.groupResult = substance.result;
+            return ch;
+        }
+
+        function seedQuantHistory() {
+            function quantFlow({ historyId, channelId, sampleId, value, timestamp, synced = true, flowId = null }) {
+                const substance = makeQuantSubstance(value);
+                return createHistoryFlowRecord({
+                    historyId,
+                    scenario: 'test',
+                    channelId,
+                    testTypeId: 20,
+                    testTypeName: 'MilkSafe™ Afla M1',
+                    cassetteType: '1L',
+                    sampleId,
+                    userName: DEFAULT_CLOUD_USERNAME,
+                    operatorId: 'OP-001',
+                    processing: 'read_only',
+                    result: substance.result,
+                    synced,
+                    flowId,
+                    timestamp,
+                    tests: [{
+                        testNumber: 1,
+                        overall: substance.result,
+                        timestamp,
+                        substances: [substance]
+                    }]
+                });
+            }
+
+            setHistoryRecords([
+                quantFlow({ historyId: 41, channelId: 2, sampleId: 'AF-118', value: 65, timestamp: '2026-03-18T08:36:00.000Z', flowId: 144581 }),
+                createHistoryFlowRecord({
+                    historyId: 42,
+                    scenario: 'test',
+                    channelId: 4,
+                    testTypeId: 37,
+                    testTypeName: 'MilkSafe™ FAST 3BTC (2.0) Read',
+                    cassetteType: '4L',
+                    sampleId: 'S-1052',
+                    userName: DEFAULT_CLOUD_USERNAME,
+                    operatorId: 'OP-042',
+                    processing: 'read_only',
+                    result: 'negative',
+                    synced: true,
+                    flowId: 144580,
+                    timestamp: '2026-03-18T08:12:00.000Z',
+                    tests: [
+                        { testNumber: 1, overall: 'negative', timestamp: '2026-03-18T08:12:00.000Z' }
+                    ]
+                }),
+                quantFlow({ historyId: 43, channelId: 1, sampleId: 'AF-117', value: 8, timestamp: '2026-03-18T07:44:00.000Z', synced: false }),
+                quantFlow({ historyId: 44, channelId: 3, sampleId: 'AF-116', value: 175, timestamp: '2026-03-17T16:20:00.000Z', flowId: 144579 })
+            ]);
+        }
+
         function getHistoryFlowById(historyId) {
             const flow = getHistoryFlows().find(item => String(item.historyId) === String(historyId));
             if (!flow) {
@@ -1339,6 +1431,60 @@ async function applyPreset(page, presetId) {
                 ch.groupResult = 'inconclusive';
                 clearInsertedCassetteForNextStep(ch);
                 openChannelDetail(ch);
+                break;
+            }
+            case 'quant_dashboard_levels': {
+                completeQuantChannel(1, 8, { sampleId: 'AF-101', offsetMinutes: 9 });
+                completeQuantChannel(2, 65, { sampleId: 'AF-102', offsetMinutes: 6 });
+                completeQuantChannel(3, 175, { sampleId: 'AF-103', offsetMinutes: 3 });
+                const ch = configureChannel(4, {
+                    testTypeId: 37,
+                    sampleId: 'S-1052',
+                    operatorId: 'OP-001',
+                    processing: 'read_only'
+                });
+                insertCassette(4, { testTypeId: 37, outcome: 'negative' });
+                addTest(ch, {
+                    testNumber: 1,
+                    overall: 'negative',
+                    offsetMinutes: 1
+                });
+                ch.currentTestNumber = 1;
+                ch.state = STATES.COMPLETE;
+                ch.groupResult = 'negative';
+                break;
+            }
+            case 'quant_flow_detail': {
+                const ch = completeQuantChannel(2, 65, { sampleId: 'AF-102', offsetMinutes: 2 });
+                openChannelDetail(ch);
+                break;
+            }
+            case 'quant_history_list': {
+                setSignedIn('wifi');
+                seedQuantHistory();
+                showHistoryList('tests', 0);
+                break;
+            }
+            case 'quant_history_flow_detail': {
+                setSignedIn('wifi');
+                seedQuantHistory();
+                showHistoryFlowById(41, 'tests');
+                break;
+            }
+            case 'quant_history_test_detail': {
+                setSignedIn('wifi');
+                seedQuantHistory();
+                showHistoryTestById(41, 1, 'tests');
+                break;
+            }
+            case 'quant_insert_warning': {
+                const first = getChannel(1);
+                insertCassette(1, { testTypeId: 43, outcome: 'negative' });
+                first.state = STATES.DETECTED;
+                const second = getChannel(2);
+                insertCassette(2, { testTypeId: 43, outcome: 'negative' });
+                second.state = STATES.DETECTED;
+                showInsertWarningModal(second);
                 break;
             }
             case 'history_list_tests': {
